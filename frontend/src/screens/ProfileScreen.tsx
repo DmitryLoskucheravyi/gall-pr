@@ -16,10 +16,7 @@ const ProfileScreen = () => {
                 email: {user.email}
             </TextLayout>
             <TextLayout>
-                
-            </TextLayout>
-            <TextLayout>
-                {user.lastName}
+                lastName: {user.lastName}
             </TextLayout>
             <TextLayout>
                 тел: {user.phone}

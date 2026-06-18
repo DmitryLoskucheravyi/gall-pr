@@ -1,11 +1,14 @@
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from 'styled-components/native';
 import { useTheme } from './src/hooks/useTheme';
-
-
+import { useEffect } from 'react';
+import { bootstrapAuth } from './src/auth/bootstrap';
 export default function App() {
   
   const theme = useTheme()
+  useEffect(() => {
+    bootstrapAuth();
+}, []);
   return (
     <ThemeProvider theme={theme}>
       <AppNavigator />

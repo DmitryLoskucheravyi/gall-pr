@@ -53,7 +53,7 @@ export class AuthService {
             phone: registerDto.phone,
         });
 
-        
+
         const tokens = await this.generateTokens(user);
 
         await this.usersService.updateRefreshToken(
