@@ -14,7 +14,12 @@ type RootStackParamList = {
     Profile: undefined;
     Register: undefined;
     Login: undefined;
+    Catalog: undefined;
+    Painting: {
+        id: number;
+    };
 };
+
 export type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const NavContainer = styled.View`
@@ -67,8 +72,8 @@ const Menu = () => {
                 left: '25%',
                 right: 0,
                 bottom: 0,
-                borderColor: theme.text,
-                borderWidth: 1,
+                borderLeftColor: theme.text,
+                borderLeftWidth: 1,
                 paddingVertical: 50,
                 paddingHorizontal: 25,
                 zIndex: 999,
@@ -78,20 +83,29 @@ const Menu = () => {
             }}
         >
             <NavContainer>
+                <LinkWrapper onPress={() => NavTo('Catalog')}>
+
+                    <Ionicons name="heart" size={35} color={theme.text} />
+                    <NavigateLink>Catalog</NavigateLink>
+                </LinkWrapper>
                 {isAuthenticated ? <LinkWrapper onPress={() => NavTo('Profile')}>
 
                     <Ionicons name="person" size={35} color={theme.text} />
                     <NavigateLink>Profile</NavigateLink>
                 </LinkWrapper> : null}
-                {!isAuthenticated ? <LinkWrapper onPress={() => NavTo('Login')}>
-                    <Ionicons name="chevron-forward-outline" size={35} color={theme.text} />
-                    <NavigateLink>Увійти</NavigateLink>
-                </LinkWrapper> : null}
+                {
+                    !isAuthenticated ?
+                        <LinkWrapper onPress={() => NavTo('Login')}>
+                            <Ionicons name="chevron-forward-outline" size={35} color={theme.text} />
+                            <NavigateLink>Увійти</NavigateLink>
+                        </LinkWrapper>
+                        :
+                        <LinkWrapper onPress={logout}>
+                            <Ionicons name="enter" size={35} color={theme.text} />
+                            <NavigateLink>Вийти</NavigateLink>
+                        </LinkWrapper>
+                }
 
-                {isAuthenticated ? <LinkWrapper onPress={logout}>
-                    <Ionicons name="enter" size={35} color={theme.text} />
-                    <NavigateLink>Вийти</NavigateLink>
-                </LinkWrapper> : null}
 
 
             </NavContainer>

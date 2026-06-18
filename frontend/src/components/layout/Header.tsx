@@ -1,5 +1,5 @@
 import styled from "styled-components/native";
-import { ContainerLayout, TitleLayout } from "./components.styled";
+import { TitleLayout } from "./components.styled";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useMenu } from "../../hooks/useMenu";
@@ -9,6 +9,14 @@ import { NavigationProps } from "../menu/Menu";
 import { useAuthStore } from "../../store/authStore";
 import { useThemeStore } from "../../store/themeStore";
 
+const HeaderContainer = styled.View`
+    width: 100%;
+    padding: 24px;
+    padding-top: 40px;
+    padding-bottom: 10px;
+
+    background-color: ${({ theme }) => theme.background};
+`;
 const HeaderLayout = styled.View`
     width: 100%;
     flex-direction: row;
@@ -30,7 +38,7 @@ const Header = () => {
     const navigation = useNavigation<NavigationProps>()
     const { openMenu } = useMenu()
     return (
-        <ContainerLayout>
+        <HeaderContainer>
             <HeaderLayout>
                 <Pressable onPress={() => navigation.navigate('Home')}>
                     <TitleLayout>Viktorumm</TitleLayout>
@@ -39,12 +47,10 @@ const Header = () => {
                 <IconContainer>
                     <Pressable onPress={toggleTheme}>
 
-                        <Ionicons name={ !isDark ? "sunny" : "moon"} size={24} color={theme.text} />
+                        <Ionicons name={!isDark ? "sunny" : "moon"} size={24} color={theme.text} />
 
                     </Pressable>
 
-                    <Ionicons name="cart" size={30} color={theme.text}
-                    />
 
                     <Ionicons name="menu" size={30} color={theme.text} onPress={openMenu}
                     />
@@ -52,7 +58,7 @@ const Header = () => {
             </HeaderLayout>
 
 
-        </ContainerLayout>
+        </HeaderContainer>
     );
 };
 

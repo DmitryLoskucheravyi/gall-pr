@@ -1,27 +1,63 @@
+import AppLayout from "../components/layout/AppLayout"
 import { TitleLayout, TextLayout } from "../components/layout/components.styled"
 import { ScreenLayout } from "../components/layout/components.styled"
-import Header from "../components/layout/Header"
 import { useAuthStore } from "../store/authStore"
-const ProfileScreen = () => {
+import { useNavigation } from "@react-navigation/native"
+import { NavigationProps } from "../components/menu/Menu"
+import { useEffect } from "react";
 
-    const user = useAuthStore(state => state.user)
-    if (!user) return
+const ProfileScreen = () => {
+    const user = useAuthStore(
+        state => state.user
+    );
+
+    const accessToken = useAuthStore(
+        state => state.accessToken
+    );
+
+    const navigation =
+        useNavigation<NavigationProps>();
+
+    useEffect(() => {
+        if (!user) {
+             navigation.navigate(
+                "Home"
+            );
+            navigation.navigate(
+                "Login"
+            );
+        }
+    }, [user]);
+
+    if (!user) {
+        return null;
+    }
+
+    console.log(accessToken)
     return (
-        <ScreenLayout>
-            <Header />
-            <TitleLayout>
-                Велкам, {user.firstName}!
-            </TitleLayout>
-            <TextLayout>
-                email: {user.email}
-            </TextLayout>
-            <TextLayout>
-                lastName: {user.lastName}
-            </TextLayout>
-            <TextLayout>
-                тел: {user.phone}
-            </TextLayout>
-        </ScreenLayout>
+        <AppLayout>
+            <ScreenLayout>
+                <TitleLayout>
+                    Велкам, {user.firstName}!
+                </TitleLayout>
+                <TextLayout>
+                    email: {user.email}
+                </TextLayout>
+                <TextLayout>
+                    lastName: {user.lastName}
+                </TextLayout>
+                <TextLayout>
+                    тел: {user.phone}
+                </TextLayout>
+                {user.role === 'ADMIN' ?
+                    <TextLayout>
+                        адміністратор
+                    </TextLayout>
+                    : null}
+
+
+            </ScreenLayout>
+        </AppLayout>
     )
 }
 export default ProfileScreen;
