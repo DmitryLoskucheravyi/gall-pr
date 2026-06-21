@@ -78,7 +78,12 @@ CREATE TABLE paintings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP
 );
+
 UPDATE users
 SET role = 'ADMIN'
+WHERE email = 'kererelore11@gmail.com';
+
+UPDATE users
+SET role = 'USER'
 WHERE email = 'kererelore11@gmail.com';
 

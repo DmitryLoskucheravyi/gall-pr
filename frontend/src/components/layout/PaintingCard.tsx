@@ -7,12 +7,18 @@ type Props = {
     painting: Painting;
     onPress?: () => void;
     onBuy?: () => void;
+    isAdmin?: boolean;
+    onEdit?: () => void;
+    onDelete?: () => void;
 };
 
 export default function PaintingCard({
     painting,
     onPress,
     onBuy,
+    isAdmin,
+    onEdit,
+    onDelete,
 }: Props) {
     const hasDiscount = painting.discount > 0;
 
@@ -82,6 +88,21 @@ export default function PaintingCard({
                         </BuyText>
                     </BuyButton>
                 </ButtonsRow>
+                {isAdmin && (
+                    <AdminButtonsRow>
+                        <EditButton onPress={onEdit}>
+                            <EditText>
+                                Редагувати
+                            </EditText>
+                        </EditButton>
+
+                        <DeleteButton onPress={onDelete}>
+                            <DeleteText>
+                                Видалити
+                            </DeleteText>
+                        </DeleteButton>
+                    </AdminButtonsRow>
+                )}
             </Content>
         </Container>
     );
@@ -216,5 +237,47 @@ const DetailsText = styled.Text`
 const BuyText = styled.Text`
     color: ${({ theme }) => theme.background};
 
+    font-weight: 600;
+`;
+
+const AdminButtonsRow = styled(View)`
+    flex-direction: row;
+
+    margin-top: 10px;
+`;
+
+const EditButton = styled(Pressable)`
+    flex: 1;
+
+    padding: 12px;
+
+    margin-right: 8px;
+
+    border-radius: 12px;
+
+    background: #2563eb;
+
+    align-items: center;
+`;
+
+const DeleteButton = styled(Pressable)`
+    flex: 1;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    background: #ef4444;
+
+    align-items: center;
+`;
+
+const EditText = styled.Text`
+    color: white;
+    font-weight: 600;
+`;
+
+const DeleteText = styled.Text`
+    color: white;
     font-weight: 600;
 `;
