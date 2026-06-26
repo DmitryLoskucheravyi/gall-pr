@@ -255,7 +255,7 @@ const EditButton = styled(Pressable)`
 
     border-radius: 12px;
 
-    background: #2563eb;
+    background: ${({ theme }) => theme.text};
 
     align-items: center;
 `;
@@ -267,7 +267,7 @@ const DeleteButton = styled(Pressable)`
 
     border-radius: 12px;
 
-    background: #ef4444;
+    background: ${({ theme }) => theme.text};
 
     align-items: center;
 `;
