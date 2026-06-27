@@ -24,6 +24,7 @@ export class UploadsService {
                 file.path,
                 {
                     folder: 'gallery',
+                    timestamp: Math.round(Date.now() / 1000),
                 },
             );
 
