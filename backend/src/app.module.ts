@@ -21,17 +21,20 @@ import { ConfigModule } from '@nestjs/config';
       isGlobal: true,
     }),
     TypeOrmModule.forRoot({
-
       type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      password: 'admin',
-      database: 'galleryDB',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
+
       entities: [User, Painting],
+
       synchronize: false,
 
-
+      ssl: {
+        rejectUnauthorized: true,
+      },
     }),
     UsersModule,
 
@@ -39,8 +42,8 @@ import { ConfigModule } from '@nestjs/config';
 
     PaintingsModule,
 
-    UploadsModule, 
-    
+    UploadsModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],
