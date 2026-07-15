@@ -338,8 +338,7 @@ const SwitchRow = styled.View`
 const Label = styled.Text`
     font-size: 16px;
     font-weight: 500;
-    /* color: ${({ theme }) => theme.border}; */
-    color: white;
+    color: ${({ theme }) => theme.text};
 `;
 
 
@@ -348,11 +347,10 @@ const PickButton = styled.Pressable`
     align-items: center;
     justify-content: center;
     border-radius: 14px;
-    background-color: ${({ theme }) =>
-        theme.background};
-    border-width: 1px;
-    border-color: ${({ theme }) =>
-        theme.border};
+  background-color: ${({ theme }) =>
+    theme.background === "#EFFDFF"
+        ? "#DC2626"
+        : "#991B1B"};
 `;
 
 const CreateButton = styled.Pressable`

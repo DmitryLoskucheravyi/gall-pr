@@ -1,5 +1,6 @@
 {
   "expo": {
+    "jsEngine": "hermes",
     "name": "frontend",
     "slug": "frontend",
     "version": "1.0.0",
@@ -11,6 +12,7 @@
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
+    
     },
     "ios": {
       "supportsTablet": true

@@ -216,15 +216,18 @@ const DetailsButton = styled(Pressable)`
 `;
 
 const BuyButton = styled(Pressable)`
-    flex: 1;
-
+     flex: 1;
     padding: 12px;
 
-    background: ${({ theme }) => theme.primary};
+    background-color: ${({ theme }) =>
+        theme.background === "#EFFDFF"
+            ? "#660029"
+            : "#AFE1FF"};
 
     border-radius: 12px;
-
+    overflow: hidden;
     align-items: center;
+    justify-content: center;
 `;
 
 const DetailsText = styled.Text`
@@ -255,7 +258,10 @@ const EditButton = styled(Pressable)`
 
     border-radius: 12px;
 
-    background: ${({ theme }) => theme.text};
+     background-color: ${({ theme }) =>
+    theme.background === "#EFFDFF"
+        ? "#2563EB"
+        : "#4B5563"};
 
     align-items: center;
 `;
@@ -267,7 +273,10 @@ const DeleteButton = styled(Pressable)`
 
     border-radius: 12px;
 
-    background: ${({ theme }) => theme.text};
+    background-color: ${({ theme }) =>
+    theme.background === "#EFFDFF"
+        ? "#DC2626"
+        : "#991B1B"};
 
     align-items: center;
 `;
