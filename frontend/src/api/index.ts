@@ -1,8 +1,19 @@
 import axios from "axios";
+import Constants from "expo-constants";
 import { useAuthStore } from "../store/authStore";
 
+function getApiUrl(): string {
+    if (__DEV__) {
+        const host = Constants.expoConfig?.hostUri?.split(":")[0];
+        if (host) return `http://${host}:3000`;
+    }
+    return process.env.EXPO_PUBLIC_API_URL ?? "";
+}
+
+const API_URL = getApiUrl();
+
 export const api = axios.create({
-    baseURL: "http://192.168.100.157:3000",
+    baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
     },
@@ -51,7 +62,7 @@ api.interceptors.response.use(
 
                 const response =
                     await axios.post(
-                        "http://192.168.100.157:3000/auth/refresh",
+                        `${API_URL}/auth/refresh`,
                         {
                             refreshToken:
                                 store.refreshToken,
