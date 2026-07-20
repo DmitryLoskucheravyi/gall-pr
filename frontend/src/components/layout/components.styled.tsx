@@ -56,3 +56,6 @@ export const NavigateLink = styled.Text`
     font-size: 15px;
     font-weight: 600;
 `;
+
+
+

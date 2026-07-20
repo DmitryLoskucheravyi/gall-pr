@@ -1,11 +1,23 @@
 import axios from "axios";
+import Constants from "expo-constants";
 import { useAuthStore } from "../store/authStore";
 
+function getApiUrl(): string {
+    if (__DEV__) {
+        const host = Constants.expoConfig?.hostUri?.split(":")[0];
+        if (host) return `http://${host}:3000`;
+    }
+    return process.env.EXPO_PUBLIC_API_URL ?? "";
+}
+
+const API_URL = getApiUrl();
+
 export const api = axios.create({
-  baseURL: "http://192.168.1.106:3000",
-  headers: {
-    "Content-Type": "application/json",
-  },
+    baseURL: API_URL,
+    headers: {
+        "Content-Type": "application/json",
+    },
+
 });
 
 api.interceptors.request.use(
@@ -24,20 +36,59 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response,
+    (response) => response,
 
-  async (error) => {
-    const originalRequest = error.config;
+    async (error) => {
+        const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+        if (
+            error.response?.status === 401 &&
+            !originalRequest._retry
+        ) {
+            originalRequest._retry = true;
 
-      try {
-        const store = useAuthStore.getState();
+            try {
+                const store =
+                    useAuthStore.getState();
 
-        if (!store.refreshToken) {
-          store.logout();
-          return Promise.reject(error);
+                if (!store.refreshToken) {
+                    store.logout();
+                    return Promise.reject(error);
+                }
+
+                const response =
+                    await axios.post(
+                        `${API_URL}/auth/refresh`,
+                        {
+                            refreshToken:
+                                store.refreshToken,
+                        }
+                    );
+
+                const {
+                    accessToken,
+                    refreshToken,
+                } = response.data;
+
+                store.refreshAuth(
+                    accessToken,
+                    refreshToken
+                );
+
+                originalRequest.headers.Authorization =
+                    `Bearer ${accessToken}`;
+
+                return api(originalRequest);
+
+            } catch (refreshError) {
+                useAuthStore
+                    .getState()
+                    .logout();
+
+                return Promise.reject(
+                    refreshError
+                );
+            }
         }
 
         const response = await axios.post(
