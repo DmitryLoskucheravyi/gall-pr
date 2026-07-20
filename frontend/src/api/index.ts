@@ -21,22 +21,18 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use(
-    (config) => {
-        const accessToken =
-            useAuthStore
-                .getState()
-                .accessToken;
+  (config) => {
+    const accessToken = useAuthStore.getState().accessToken;
 
-        if (accessToken) {
-            config.headers.Authorization =
-                `Bearer ${accessToken}`;
-        }
-
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
 );
 
 api.interceptors.response.use(
@@ -95,6 +91,27 @@ api.interceptors.response.use(
             }
         }
 
-        return Promise.reject(error);
+        const response = await axios.post(
+          "http://192.168.1.106:3000/auth/refresh",
+          {
+            refreshToken: store.refreshToken,
+          },
+        );
+
+        const { accessToken, refreshToken } = response.data;
+
+        store.refreshAuth(accessToken, refreshToken);
+
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+        return api(originalRequest);
+      } catch (refreshError) {
+        useAuthStore.getState().logout();
+
+        return Promise.reject(refreshError);
+      }
     }
+
+    return Promise.reject(error);
+  },
 );

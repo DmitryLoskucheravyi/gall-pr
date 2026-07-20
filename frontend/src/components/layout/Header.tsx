@@ -1,4 +1,3 @@
-import styled from "styled-components/native";
 import { TitleLayout } from "./components.styled";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
@@ -9,26 +8,8 @@ import { NavigationProps } from "../menu/Menu";
 import { useAuthStore } from "../../store/authStore";
 import { useThemeStore } from "../../store/themeStore";
 
-const HeaderContainer = styled.View`
-    width: 100%;
-    padding: 24px;
-    padding-top: 40px;
-    padding-bottom: 10px;
+import { HeaderContainer, HeaderLayout, IconContainer } from "./Header.styles";
 
-    background-color: ${({ theme }) => theme.background};
-`;
-const HeaderLayout = styled.View`
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-`;
-
-const IconContainer = styled.View`
-    flex-direction: row;
-    align-items: center;
-    gap: 20px;
-`;
 
 
 const Header = () => {
