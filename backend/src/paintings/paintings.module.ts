@@ -6,13 +6,9 @@ import { PaintingsController } from './paintings.controller';
 import { PaintingsService } from './paintings.service';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            Painting,
-        ]),
-    ],
-    providers: [PaintingsService],
-    controllers: [PaintingsController],
-    exports: [PaintingsService],
+  imports: [TypeOrmModule.forFeature([Painting])],
+  providers: [PaintingsService],
+  controllers: [PaintingsController],
+  exports: [PaintingsService],
 })
 export class PaintingsModule {}

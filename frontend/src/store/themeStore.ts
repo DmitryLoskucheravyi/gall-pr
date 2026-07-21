@@ -1,18 +1,11 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
-
-type ThemeState = {
-    isDark: boolean;
-    toggleTheme: () => void;
-}
-
+type ThemeState = { isDark: boolean; toggleTheme: () => void };
 
 export const useThemeStore = create<ThemeState>((set) => ({
-    isDark: false,
+  isDark: false,
 
-    toggleTheme: () => {
-        set(({ isDark }) => ({
-            isDark: !isDark
-        }))
-    },
-}))
+  toggleTheme: () => {
+    set(({ isDark }) => ({ isDark: !isDark }));
+  },
+}));

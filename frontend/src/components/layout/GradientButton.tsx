@@ -1,20 +1,16 @@
-import { Pressable, Text } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import styled from "styled-components/native";
-import { useThemeStore } from "../../store/themeStore";
+import { Pressable, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import styled from 'styled-components/native';
+import { useThemeStore } from '../../store/themeStore';
 
-type Props = {
-  title: string;
-  onPress?: () => void;
-};
+type Props = { title: string; onPress?: () => void };
 
-export default function GradientButton({
-  title,
-  onPress,
-}: Props) {
+export default function GradientButton({ title, onPress }: Props) {
   const { isDark } = useThemeStore();
 
-  const colors: [string, string, string] = isDark ? ["#AFE1FF", "#7DD3FC", "#AFE1FF"] : ["#660029", "#A00046", "#660029"];
+  const colors: [string, string, string] = isDark
+    ? ['#AFE1FF', '#7DD3FC', '#AFE1FF']
+    : ['#660029', '#A00046', '#660029'];
 
   return (
     <Pressable onPress={onPress}>

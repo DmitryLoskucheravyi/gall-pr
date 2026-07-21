@@ -4,17 +4,15 @@ import { useTheme } from './src/hooks/useTheme';
 import { useEffect } from 'react';
 import { bootstrapAuth } from './src/auth/bootstrap';
 export default function App() {
-  
-  const theme = useTheme()
+  const theme = useTheme();
   useEffect(() => {
     bootstrapAuth();
-}, []);
+  }, []);
   return (
     <ThemeProvider theme={theme}>
       <AppNavigator />
     </ThemeProvider>
-  )
-
+  );
 }
 
 // import { useEffect } from "react";
@@ -84,10 +82,7 @@ export default function App() {
 
 //     // testAuth();
 
-
 //   }, []);
 
 //   return <View />;
 // }
-
-

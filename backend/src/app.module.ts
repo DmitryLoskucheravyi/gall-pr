@@ -11,15 +11,12 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { UploadsModule } from './uploads/uploads.module';
 
-
 import { PaintingsModule } from './paintings/paintings.module';
 
 import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST,
@@ -32,9 +29,7 @@ import { ConfigModule } from '@nestjs/config';
 
       synchronize: false,
 
-      ssl: {
-        rejectUnauthorized: true,
-      },
+      ssl: { rejectUnauthorized: true },
     }),
     UsersModule,
 
@@ -43,9 +38,8 @@ import { ConfigModule } from '@nestjs/config';
     PaintingsModule,
 
     UploadsModule,
-
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

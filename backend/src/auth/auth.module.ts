@@ -15,9 +15,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule,
     JwtModule.register({
       secret: 'SUPER_SECRET_KEY',
-      signOptions: {
-        expiresIn: '15m',
-      },
+      signOptions: { expiresIn: '15m' },
     }),
   ],
   providers: [AuthService, JwtStrategy],

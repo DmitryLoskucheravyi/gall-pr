@@ -1,29 +1,29 @@
 export type CreatePaintingDto = {
-    title: string;
+  title: string;
 
-    subtitle?: string;
+  subtitle?: string;
 
-    cardImage: string;
+  cardImage: string;
 
-    images: string[];
+  images: string[];
 
-    price: number;
+  price: number;
 
-    discount?: number;
+  discount?: number;
 
-    isFeatured?: boolean;
+  isFeatured?: boolean;
 
-    author?: string;
+  author?: string;
 
-    technique?: string;
+  technique?: string;
 
-    material?: string;
+  material?: string;
 
-    width?: number;
+  width?: number;
 
-    height?: number;
+  height?: number;
 
-    year?: number;
+  year?: number;
 
-    description: string;
+  description: string;
 };

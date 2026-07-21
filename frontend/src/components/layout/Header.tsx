@@ -1,65 +1,65 @@
-import styled from "styled-components/native";
-import { TitleLayout } from "./components.styled";
-import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../hooks/useTheme";
-import { useMenu } from "../../hooks/useMenu";
-import { Pressable } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { NavigationProps } from "../menu/Menu";
-import { useAuthStore } from "../../store/authStore";
-import { useThemeStore } from "../../store/themeStore";
+import styled from 'styled-components/native';
+import { TitleLayout } from './components.styled';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../hooks/useTheme';
+import { useMenu } from '../../hooks/useMenu';
+import { Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NavigationProps } from '../menu/Menu';
+import { useThemeStore } from '../../store/themeStore';
 
 const HeaderContainer = styled.View`
-    width: 100%;
-    padding: 24px;
-    padding-top: 40px;
-    padding-bottom: 10px;
+  width: 100%;
+  padding: 24px;
+  padding-top: 40px;
+  padding-bottom: 10px;
 
-    background-color: ${({ theme }) => theme.background};
+  background-color: ${({ theme }) => theme.background};
 `;
 const HeaderLayout = styled.View`
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const IconContainer = styled.View`
-    flex-direction: row;
-    align-items: center;
-    gap: 20px;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
 `;
 
-
 const Header = () => {
-    const theme = useTheme();
-    const { isDark, toggleTheme } = useThemeStore()
-    const isAuthenticated = useAuthStore(state => state.isAuthenticated)
-    const navigation = useNavigation<NavigationProps>()
-    const { openMenu } = useMenu()
-    return (
-        <HeaderContainer>
-            <HeaderLayout>
-                <Pressable onPress={() => navigation.navigate('Home')}>
-                    <TitleLayout>Viktorumm</TitleLayout>
-                </Pressable>
+  const theme = useTheme();
+  const { isDark, toggleTheme } = useThemeStore();
+  const navigation = useNavigation<NavigationProps>();
+  const { openMenu } = useMenu();
+  return (
+    <HeaderContainer>
+      <HeaderLayout>
+        <Pressable onPress={() => navigation.navigate('Home')}>
+          <TitleLayout>Viktorumm</TitleLayout>
+        </Pressable>
 
-                <IconContainer>
-                    <Pressable onPress={toggleTheme}>
+        <IconContainer>
+          <Pressable onPress={toggleTheme}>
+            <Ionicons
+              name={!isDark ? 'sunny' : 'moon'}
+              size={24}
+              color={theme.text}
+            />
+          </Pressable>
 
-                        <Ionicons name={!isDark ? "sunny" : "moon"} size={24} color={theme.text} />
-
-                    </Pressable>
-
-
-                    <Ionicons name="menu" size={30} color={theme.text} onPress={openMenu}
-                    />
-                </IconContainer>
-            </HeaderLayout>
-
-
-        </HeaderContainer>
-    );
+          <Ionicons
+            name="menu"
+            size={30}
+            color={theme.text}
+            onPress={openMenu}
+          />
+        </IconContainer>
+      </HeaderLayout>
+    </HeaderContainer>
+  );
 };
 
 export default Header;

@@ -11,17 +11,10 @@ async function bootstrap() {
   //     cert: readFileSync('./cert/cert.pem'),
   //   },
   // });
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
-  app.enableCors({
-    origin: '*',
-  });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.enableCors({ origin: '*' });
 
   await app.listen(3000, '0.0.0.0');
 
@@ -29,4 +22,4 @@ async function bootstrap() {
   console.log('HTTP server running on http://localhost:3000');
 }
 
-bootstrap();
+void bootstrap();

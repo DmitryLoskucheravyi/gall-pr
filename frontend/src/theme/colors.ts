@@ -1,5 +1,5 @@
 export const lightTheme = {
-background: '#EFFDFF',
+  background: '#EFFDFF',
   card: '#FFFFFF',
   text: '#660029',
   secondaryText: '#8A5A6E',
@@ -16,7 +16,7 @@ background: '#EFFDFF',
 };
 
 export const darkTheme = {
-   background: '#111827',
+  background: '#111827',
   card: '#1F2937',
   text: '#FFFFFF',
   secondaryText: '#9CA3AF',
@@ -31,10 +31,3 @@ export const darkTheme = {
   border: '#374151',
   error: '#FF4D4F',
 };
-
-
-
-
-
-
-

@@ -1,41 +1,41 @@
 export type Painting = {
-    id: number;
+  id: number;
 
-    title: string;
-    subtitle: string | null;
+  title: string;
+  subtitle: string | null;
 
-    cardImage: string;
-    images: string[];
+  cardImage: string;
+  images: string[];
 
-    price: string;
+  price: string;
 
-    discount: number;
+  discount: number;
 
-    amount: number;
+  amount: number;
 
-    isAvailable: boolean;
-    isFeatured: boolean;
+  isAvailable: boolean;
+  isFeatured: boolean;
 
-    author: string | null;
-    technique: string | null;
-    material: string | null;
+  author: string | null;
+  technique: string | null;
+  material: string | null;
 
-    width: number | null;
-    height: number | null;
+  width: number | null;
+  height: number | null;
 
-    year: number | null;
+  year: number | null;
 
-    description: string;
+  description: string;
 
-    createdAt: string;
-    updatedAt: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type PaintingsResponse = {
-    data: Painting[];
+  data: Painting[];
 
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };

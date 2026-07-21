@@ -1,63 +1,63 @@
 import {
-    IsArray,
-    IsBoolean,
-    IsNumber,
-    IsOptional,
-    IsString,
-    Min,
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
 } from 'class-validator';
 
 export class CreatePaintingDto {
-    @IsString()
-    title: string;
+  @IsString()
+  title: string;
 
-    @IsOptional()
-    @IsString()
-    subtitle?: string;
+  @IsOptional()
+  @IsString()
+  subtitle?: string;
 
-    @IsString()
-    cardImage: string;
+  @IsString()
+  cardImage: string;
 
-    @IsArray()
-    images: string[];
+  @IsArray()
+  images: string[];
 
-    @IsNumber()
-    @Min(0)
-    price: number;
+  @IsNumber()
+  @Min(0)
+  price: number;
 
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    discount?: number;
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discount?: number;
 
-    @IsOptional()
-    @IsBoolean()
-    isFeatured?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
 
-    @IsOptional()
-    @IsString()
-    author?: string;
+  @IsOptional()
+  @IsString()
+  author?: string;
 
-    @IsOptional()
-    @IsString()
-    technique?: string;
+  @IsOptional()
+  @IsString()
+  technique?: string;
 
-    @IsOptional()
-    @IsString()
-    material?: string;
+  @IsOptional()
+  @IsString()
+  material?: string;
 
-    @IsOptional()
-    @IsNumber()
-    width?: number;
+  @IsOptional()
+  @IsNumber()
+  width?: number;
 
-    @IsOptional()
-    @IsNumber()
-    height?: number;
+  @IsOptional()
+  @IsNumber()
+  height?: number;
 
-    @IsOptional()
-    @IsNumber()
-    year?: number;
+  @IsOptional()
+  @IsNumber()
+  year?: number;
 
-    @IsString()
-    description: string;
+  @IsString()
+  description: string;
 }
