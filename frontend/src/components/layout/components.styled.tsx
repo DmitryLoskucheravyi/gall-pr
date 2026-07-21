@@ -1,10 +1,11 @@
 import styled from 'styled-components/native';
+import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 
 export const ContainerLayout = styled.View`
   flex: 1;
   width: 100%;
-  padding: 24px;
-  padding-top: 50px;
+  padding: ${spacing.xxl}px;
   background-color: ${({ theme }) => theme.background};
 `;
 
@@ -15,34 +16,20 @@ export const ScreenLayout = styled.ScrollView`
 
 export const TitleLayout = styled.Text`
   color: ${({ theme }) => theme.text};
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: -1px;
+  font-family: ${typography.h1.fontFamily};
+  font-size: ${typography.h1.fontSize}px;
+  letter-spacing: ${typography.h1.letterSpacing}px;
 `;
 
 export const TextLayout = styled.Text`
   color: ${({ theme }) => theme.text};
-  font-size: 15px;
-  line-height: 22px;
-`;
-
-export const Button = styled.Pressable`
-  height: 58px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 18px;
-  background-color: ${({ theme }) => theme.primary};
-`;
-
-export const ButtonText = styled.Text`
-  color: ${({ theme }) => theme.primaryText};
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  font-family: ${typography.body.fontFamily};
+  font-size: ${typography.bodyLg.fontSize}px;
+  line-height: ${typography.bodyLg.lineHeight}px;
 `;
 
 export const NavigateLink = styled.Text`
   color: ${({ theme }) => theme.text};
-  font-size: 15px;
-  font-weight: 600;
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
 `;

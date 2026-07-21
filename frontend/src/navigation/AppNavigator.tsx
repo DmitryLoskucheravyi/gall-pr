@@ -8,21 +8,38 @@ import LoginScreen from '../screens/LoginScreen';
 import CatalogScreen from '../screens/CatalogScreen';
 import PaintingScreen from '../screens/PaintingScreen';
 import Menu from '../components/menu/Menu';
+import { RootStackParamList } from './types';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        screenOptions={{ headerShown: false, animation: 'none' }}
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          animationDuration: 260,
+        }}
       >
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ animation: 'fade' }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ animation: 'fade' }}
+        />
         <Stack.Screen name="Catalog" component={CatalogScreen} />
-        <Stack.Screen name="Painting" component={PaintingScreen} />
+        <Stack.Screen
+          name="Painting"
+          component={PaintingScreen}
+          options={{ animation: 'fade_from_bottom' }}
+        />
       </Stack.Navigator>
       <Menu />
     </NavigationContainer>

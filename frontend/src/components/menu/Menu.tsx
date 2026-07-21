@@ -1,118 +1,194 @@
+import { Pressable } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
-
-import { Animated } from 'react-native';
-import { useTheme } from '../../hooks/useTheme';
-import { NavigateLink } from '../layout/components.styled';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { useMenu } from '../../hooks/useMenu';
-import { useEffect, useRef } from 'react';
-import { useAuthStore } from '../../store/authStore';
-type RootStackParamList = {
-  Home: undefined;
-  Profile: undefined;
-  Register: undefined;
-  Login: undefined;
-  Catalog: undefined;
-  Painting: { id: number };
-};
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
-export type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
+import { useAppTheme } from '../../hooks/useTheme';
+import { useMenu } from '../../hooks/useMenu';
+import { useAuthStore } from '../../store/authStore';
+import { NavigationProps } from '../../navigation/types';
+import { spacing } from '../../theme/spacing';
+import { radius } from '../../theme/radius';
+import { typography } from '../../theme/typography';
+
+export default function Menu() {
+  const theme = useAppTheme();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const logout = useAuthStore((state) => state.logout);
+  const navigation = useNavigation<NavigationProps>();
+  const { isMenuOpen, closeMenu } = useMenu();
+  const insets = useSafeAreaInsets();
+
+  const navTo = (route: 'Home' | 'Catalog' | 'Profile' | 'Login') => {
+    closeMenu();
+    setTimeout(() => navigation.navigate(route as any), 180);
+  };
+
+  const panelStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: withSpring(isMenuOpen ? 0 : 420, {
+          damping: 22,
+          stiffness: 220,
+        }),
+      },
+    ],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(isMenuOpen ? 1 : 0, { duration: 220 }),
+  }));
+
+  return (
+    <Root pointerEvents={isMenuOpen ? 'auto' : 'none'}>
+      <Backdrop style={backdropStyle}>
+        <Pressable style={{ flex: 1 }} onPress={closeMenu} />
+      </Backdrop>
+
+      <Panel style={[panelStyle, { paddingTop: insets.top + spacing.xxxl }]}>
+        <CloseButton onPress={closeMenu} hitSlop={12}>
+          <Ionicons name="close-outline" size={28} color={theme.text} />
+        </CloseButton>
+
+        {isAuthenticated && user && (
+          <Greeting>
+            <GreetingLabel>Вітаємо,</GreetingLabel>
+            <GreetingName>{user.firstName}</GreetingName>
+          </Greeting>
+        )}
+
+        <NavContainer>
+          <LinkWrapper onPress={() => navTo('Home')}>
+            <Ionicons name="home-outline" size={22} color={theme.text} />
+            <LinkText>Головна</LinkText>
+          </LinkWrapper>
+
+          <LinkWrapper onPress={() => navTo('Catalog')}>
+            <Ionicons name="grid-outline" size={22} color={theme.text} />
+            <LinkText>Каталог</LinkText>
+          </LinkWrapper>
+
+          {isAuthenticated ? (
+            <LinkWrapper onPress={() => navTo('Profile')}>
+              <Ionicons name="person-outline" size={22} color={theme.text} />
+              <LinkText>Профіль</LinkText>
+            </LinkWrapper>
+          ) : (
+            <LinkWrapper onPress={() => navTo('Login')}>
+              <Ionicons name="log-in-outline" size={22} color={theme.text} />
+              <LinkText>Увійти</LinkText>
+            </LinkWrapper>
+          )}
+        </NavContainer>
+
+        {isAuthenticated && (
+          <LogoutWrapper
+            onPress={() => {
+              closeMenu();
+              logout();
+            }}
+          >
+            <Ionicons name="log-out-outline" size={20} color={theme.error} />
+            <LogoutText>Вийти</LogoutText>
+          </LogoutWrapper>
+        )}
+      </Panel>
+    </Root>
+  );
+}
+
+const Root = styled.View`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+`;
+
+const Backdrop = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: ${({ theme }) => theme.overlay};
+`;
+
+const Panel = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 78%;
+  padding: 0 ${spacing.xxl}px;
+  background-color: ${({ theme }) => theme.background};
+`;
+
+const CloseButton = styled.Pressable`
+  position: absolute;
+  top: ${spacing.xl}px;
+  right: ${spacing.xl}px;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: ${radius.pill}px;
+  background-color: ${({ theme }) => theme.backgroundAlt};
+`;
+
+const Greeting = styled.View`
+  margin-bottom: ${spacing.xxxl}px;
+`;
+
+const GreetingLabel = styled.Text`
+  font-family: ${typography.body.fontFamily};
+  font-size: ${typography.body.fontSize}px;
+  color: ${({ theme }) => theme.textSecondary};
+`;
+
+const GreetingName = styled.Text`
+  margin-top: 2px;
+  font-family: ${typography.h1.fontFamily};
+  font-size: 26px;
+  color: ${({ theme }) => theme.text};
+`;
 
 const NavContainer = styled.View`
-  gap: 14px;
+  gap: ${spacing.sm}px;
 `;
 
 const LinkWrapper = styled.Pressable`
   flex-direction: row;
   align-items: center;
-  gap: 10px;
-  min-height: 56px;
-  padding: 0 4px;
+  gap: ${spacing.lg}px;
+  min-height: 52px;
 `;
 
-const Menu = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const logout = useAuthStore((state) => state.logout);
-  const theme = useTheme();
-  const navigation = useNavigation<NavigationProps>();
-  const { isMenuOpen, closeMenu } = useMenu();
+const LinkText = styled.Text`
+  font-family: ${typography.h3.fontFamily};
+  font-size: ${typography.h3.fontSize}px;
+  color: ${({ theme }) => theme.text};
+`;
 
-  const NavTo = (route: keyof RootStackParamList) => {
-    setTimeout(() => {
-      navigation.navigate(route);
-    }, 150);
+const LogoutWrapper = styled.Pressable`
+  position: absolute;
+  bottom: ${spacing.huge}px;
+  left: ${spacing.xxl}px;
+  flex-direction: row;
+  align-items: center;
+  gap: ${spacing.md}px;
+`;
 
-    closeMenu();
-  };
-
-  const translateX = useRef(new Animated.Value(500)).current;
-  useEffect(() => {
-    Animated.timing(translateX, {
-      toValue: isMenuOpen ? 0 : 500,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [isMenuOpen, translateX]);
-
-  return (
-    <Animated.ScrollView
-      pointerEvents={isMenuOpen ? 'auto' : 'none'}
-      style={{
-        flex: 1,
-        position: 'absolute',
-        top: 0,
-        left: '25%',
-        right: 0,
-        bottom: 0,
-        borderLeftColor: theme.text,
-        borderLeftWidth: 1,
-        paddingVertical: 50,
-        paddingHorizontal: 25,
-        zIndex: 999,
-        height: '100%',
-        backgroundColor: theme.background,
-        transform: [{ translateX }],
-      }}
-    >
-      <NavContainer>
-        <LinkWrapper onPress={() => NavTo('Catalog')}>
-          <Ionicons name="heart" size={35} color={theme.text} />
-          <NavigateLink>Catalog</NavigateLink>
-        </LinkWrapper>
-        {isAuthenticated ? (
-          <LinkWrapper onPress={() => NavTo('Profile')}>
-            <Ionicons name="person" size={35} color={theme.text} />
-            <NavigateLink>Profile</NavigateLink>
-          </LinkWrapper>
-        ) : null}
-        {!isAuthenticated ? (
-          <LinkWrapper onPress={() => NavTo('Login')}>
-            <Ionicons
-              name="chevron-forward-outline"
-              size={35}
-              color={theme.text}
-            />
-            <NavigateLink>Увійти</NavigateLink>
-          </LinkWrapper>
-        ) : (
-          <LinkWrapper onPress={logout}>
-            <Ionicons name="enter" size={35} color={theme.text} />
-            <NavigateLink>Вийти</NavigateLink>
-          </LinkWrapper>
-        )}
-      </NavContainer>
-
-      <Ionicons
-        style={{ position: 'absolute', top: 10, right: 0 }}
-        name="close-outline"
-        size={35}
-        color={theme.text}
-        onPress={closeMenu}
-      />
-    </Animated.ScrollView>
-  );
-};
-
-export default Menu;
+const LogoutText = styled.Text`
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
+  color: ${({ theme }) => theme.error};
+`;

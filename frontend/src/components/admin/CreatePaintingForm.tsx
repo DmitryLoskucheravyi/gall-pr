@@ -2,11 +2,16 @@ import { useState } from 'react';
 
 import * as ImagePicker from 'expo-image-picker';
 
-import { ActivityIndicator, Image, Switch } from 'react-native';
-import styled from 'styled-components/native';
+import { Image, Pressable, Switch } from 'react-native';
+import styled, { useTheme } from 'styled-components/native';
+import { Ionicons } from '@expo/vector-icons';
 import { Painting } from '../../types/painting.types';
 import { paintingsService } from '../../api/paintings.api';
 import { uploadImage } from '../../api/uploads.api';
+import { Button, TextField } from '../ui';
+import { spacing } from '../../theme/spacing';
+import { radius } from '../../theme/radius';
+import { typography, fontFamily } from '../../theme/typography';
 
 type Props = {
   onCreated: () => void;
@@ -19,69 +24,71 @@ export default function CreatePaintingForm({
   onClose,
   painting,
 }: Props) {
+  const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState(painting?.title ?? '');
-
   const [author, setAuthor] = useState(painting?.author ?? '');
-
   const [description, setDescription] = useState(painting?.description ?? '');
-
   const [price, setPrice] = useState(painting?.price?.toString() ?? '');
-
   const [discount, setDiscount] = useState(
     painting?.discount?.toString() ?? '',
   );
-
   const [technique, setTechnique] = useState(painting?.technique ?? '');
-
   const [material, setMaterial] = useState(painting?.material ?? '');
-
   const [width, setWidth] = useState(painting?.width?.toString() ?? '');
-
   const [height, setHeight] = useState(painting?.height?.toString() ?? '');
-
   const [year, setYear] = useState(painting?.year?.toString() ?? '');
-
   const [isFeatured, setIsFeatured] = useState(painting?.isFeatured ?? false);
+  const [images, setImages] = useState<string[]>(() => {
+    if (painting?.images?.length) return painting.images;
+    if (painting?.cardImage) return [painting.cardImage];
+    return [];
+  });
 
-  const [image, setImage] = useState<string | null>(
-    painting?.cardImage ?? null,
-  );
-
-  const pickImage = async () => {
+  const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-
+      allowsMultipleSelection: true,
+      selectionLimit: 0,
       quality: 1,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      const uris = result.assets.map((asset) => asset.uri);
+      setImages((prev) => [...prev, ...uris]);
     }
+  };
+
+  const removeImage = (uri: string) => {
+    setImages((prev) => prev.filter((item) => item !== uri));
+  };
+
+  const makeCover = (uri: string) => {
+    setImages((prev) => [uri, ...prev.filter((item) => item !== uri)]);
   };
 
   const handleSubmit = async () => {
     try {
-      if (!image || isLoading) {
+      if (images.length === 0 || isLoading) {
         return;
       }
 
       setIsLoading(true);
 
-      let imageUrl = image;
-
-      if (image && !image.startsWith('http')) {
-        const uploadResult = await uploadImage(image);
-
-        imageUrl = uploadResult.url;
-      }
+      const uploadedUrls = await Promise.all(
+        images.map(async (uri) => {
+          if (uri.startsWith('http')) return uri;
+          const uploadResult = await uploadImage(uri);
+          return uploadResult.url;
+        }),
+      );
 
       const payload = {
         title,
         author,
         description,
-        cardImage: imageUrl,
-        images: [imageUrl],
+        cardImage: uploadedUrls[0],
+        images: uploadedUrls,
         price: Number(price),
         discount: Number(discount) || 0,
         isFeatured,
@@ -113,7 +120,7 @@ export default function CreatePaintingForm({
       setHeight('');
       setYear('');
       setDiscount('');
-      setImage(null);
+      setImages([]);
     } catch (error) {
       console.log(error);
     } finally {
@@ -123,174 +130,205 @@ export default function CreatePaintingForm({
 
   return (
     <Container>
-      <Title>Створення картини</Title>
-      <Input placeholder="Назва" value={title} onChangeText={setTitle} />
+      <Title>{painting ? 'Редагування картини' : 'Створення картини'}</Title>
 
-      <Input placeholder="Автор" value={author} onChangeText={setAuthor} />
-
-      <Input
+      <TextField placeholder="Назва" value={title} onChangeText={setTitle} />
+      <TextField placeholder="Автор" value={author} onChangeText={setAuthor} />
+      <TextField
         placeholder="Ціна"
         keyboardType="numeric"
         value={price}
         onChangeText={setPrice}
       />
-
-      <Input
+      <TextField
         placeholder="Техніка"
         value={technique}
         onChangeText={setTechnique}
       />
-
-      <Input
+      <TextField
         placeholder="Матеріал"
         value={material}
         onChangeText={setMaterial}
       />
-
-      <Input
+      <TextField
         placeholder="Ширина"
         keyboardType="numeric"
         value={width}
         onChangeText={setWidth}
       />
-
-      <Input
+      <TextField
         placeholder="Висота"
         keyboardType="numeric"
         value={height}
         onChangeText={setHeight}
       />
-
-      <Input
+      <TextField
         placeholder="Рік"
         keyboardType="numeric"
         value={year}
         onChangeText={setYear}
       />
-
-      <Input
+      <TextField
         placeholder="Знижка"
         keyboardType="numeric"
         value={discount}
         onChangeText={setDiscount}
       />
-
-      <DescriptionInput
+      <TextField
         multiline
+        numberOfLines={4}
         placeholder="Опис"
         value={description}
         onChangeText={setDescription}
+        style={{ height: 110, textAlignVertical: 'top' }}
       />
 
       <SwitchRow>
         <Label>Featured</Label>
-
-        <Switch value={isFeatured} onValueChange={setIsFeatured} />
+        <Switch
+          value={isFeatured}
+          onValueChange={setIsFeatured}
+          trackColor={{ true: theme.accent }}
+        />
       </SwitchRow>
 
-      <PickButton onPress={pickImage}>
-        <ButtonText>Обрати фото</ButtonText>
-      </PickButton>
+      <PhotosLabel>
+        Фото ({images.length}) {images.length > 0 && '— перше є головним'}
+      </PhotosLabel>
 
-      {image && <Preview source={{ uri: image }} />}
+      <PhotosGrid>
+        {images.map((uri, index) => (
+          <PhotoThumb key={uri} onPress={() => makeCover(uri)}>
+            <ThumbImage source={{ uri }} />
 
-      <CreateButton disabled={isLoading} onPress={handleSubmit}>
-        {isLoading ? (
-          <>
-            <ActivityIndicator size="small" color="#fff" />
-            <ButtonText>Завантаження...</ButtonText>
-          </>
-        ) : (
-          <ButtonText>
-            {painting ? 'Оновити картину' : 'Створити картину'}
-          </ButtonText>
-        )}
-      </CreateButton>
+            {index === 0 && (
+              <CoverBadge>
+                <CoverBadgeText>Головне</CoverBadgeText>
+              </CoverBadge>
+            )}
+
+            <RemoveButton onPress={() => removeImage(uri)} hitSlop={8}>
+              <Ionicons name="close" size={14} color="#FFFFFF" />
+            </RemoveButton>
+          </PhotoThumb>
+        ))}
+
+        <AddPhotoButton onPress={pickImages}>
+          <Ionicons name="add" size={26} color={theme.textSecondary} />
+          <AddPhotoText>Додати</AddPhotoText>
+        </AddPhotoButton>
+      </PhotosGrid>
+
+      <SubmitWrap>
+        <Button onPress={handleSubmit} loading={isLoading}>
+          {painting ? 'Оновити картину' : 'Створити картину'}
+        </Button>
+      </SubmitWrap>
     </Container>
   );
 }
 
 const Container = styled.View`
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 20px;
-  background-color: ${({ theme }) => theme.card};
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.border};
-  shadow-color: #000;
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.15;
-  shadow-radius: 10px;
-  elevation: 5;
+  padding-top: ${spacing.sm}px;
 `;
 
 const Title = styled.Text`
-  margin-bottom: 20px;
-  font-size: 20px;
-  font-weight: 700;
+  margin-bottom: ${spacing.xl}px;
+  font-family: ${typography.h2.fontFamily};
+  font-size: ${typography.h2.fontSize}px;
   color: ${({ theme }) => theme.text};
-`;
-
-const Input = styled.TextInput.attrs(({ theme }) => ({
-  placeholderTextColor: theme.secondaryText,
-}))`
-  margin-bottom: 12px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  color: ${({ theme }) => theme.text};
-  background-color: ${({ theme }) => theme.background};
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.border};
-`;
-
-const DescriptionInput = styled(Input)`
-  height: 120px;
-  text-align-vertical: top;
 `;
 
 const SwitchRow = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  margin: 8px 0 16px;
+  margin: ${spacing.sm}px 0 ${spacing.xl}px;
 `;
 
 const Label = styled.Text`
-  font-size: 16px;
-  font-weight: 500;
+  font-family: ${fontFamily.bodyMedium};
+  font-size: ${typography.bodyLg.fontSize}px;
   color: ${({ theme }) => theme.text};
 `;
 
-const PickButton = styled.Pressable`
-  height: 52px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  background-color: ${({ theme }) =>
-    theme.background === '#EFFDFF' ? '#DC2626' : '#991B1B'};
+const PhotosLabel = styled.Text`
+  margin-bottom: ${spacing.md}px;
+  font-family: ${typography.caption.fontFamily};
+  font-size: ${typography.caption.fontSize}px;
+  color: ${({ theme }) => theme.textSecondary};
 `;
 
-const CreateButton = styled.Pressable`
-  height: 56px;
-  margin-top: 16px;
+const PhotosGrid = styled.View`
   flex-direction: row;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: ${spacing.md}px;
+  margin-bottom: ${spacing.xl}px;
+`;
+
+const THUMB_SIZE = 88;
+
+const PhotoThumb = styled(Pressable)`
+  width: ${THUMB_SIZE}px;
+  height: ${THUMB_SIZE}px;
+  border-radius: ${radius.md}px;
+  overflow: hidden;
+  background-color: ${({ theme }) => theme.backgroundAlt};
+`;
+
+const ThumbImage = styled(Image)`
+  width: 100%;
+  height: 100%;
+`;
+
+const CoverBadge = styled.View`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 3px ${spacing.xs}px;
+  background-color: ${({ theme }) => `${theme.primary}E6`};
+`;
+
+const CoverBadgeText = styled.Text`
+  font-family: ${typography.overline.fontFamily};
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: ${({ theme }) => theme.onPrimary};
+`;
+
+const RemoveButton = styled(Pressable)`
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: ${radius.pill}px;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background-color: ${({ theme }) => theme.primary};
+  background-color: rgba(0, 0, 0, 0.55);
 `;
 
-const ButtonText = styled.Text`
-  font-size: 16px;
-  font-weight: 600;
-
-  color: ${({ theme }) => theme.primaryText};
+const AddPhotoButton = styled(Pressable)`
+  width: ${THUMB_SIZE}px;
+  height: ${THUMB_SIZE}px;
+  border-radius: ${radius.md}px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-width: 1px;
+  border-style: dashed;
+  border-color: ${({ theme }) => theme.border};
 `;
 
-const Preview = styled(Image)`
-  width: 100%;
-  height: 240px;
-  margin-top: 16px;
-  border-radius: 16px;
+const AddPhotoText = styled.Text`
+  font-family: ${typography.caption.fontFamily};
+  font-size: 11px;
+  color: ${({ theme }) => theme.textSecondary};
+`;
+
+const SubmitWrap = styled.View`
+  margin-top: ${spacing.md}px;
 `;

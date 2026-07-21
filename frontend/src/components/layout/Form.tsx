@@ -1,200 +1,18 @@
 import styled from 'styled-components/native';
-import { Ionicons, AntDesign } from '@expo/vector-icons';
+import { AntDesign } from '@expo/vector-icons';
 import { useState } from 'react';
-import { useTheme } from '../../hooks/useTheme';
+import { useTheme } from 'styled-components/native';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigation } from '@react-navigation/native';
 import { register, login } from '../../api/auth.api';
 import { Pressable } from 'react-native';
 import { RegisterDto, LoginDto } from '../../types/auth.types';
-import { NavigationProps } from '../menu/Menu';
+import { NavigationProps } from '../../navigation/types';
+import { Button, TextField } from '../ui';
+import { spacing } from '../../theme/spacing';
+import { radius } from '../../theme/radius';
+import { typography, fontFamily } from '../../theme/typography';
 
-const Container = styled.View`
-  flex: 1;
-  padding: 24px;
-  padding-top: 80px;
-`;
-
-const LoginText = styled.Text`
-  margin-top: 24px;
-  text-align: center;
-  color: ${({ theme }) => theme.secondaryText};
-`;
-
-const LoginLink = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-weight: 700;
-  text-decoration-line: underline;
-`;
-
-const FormCard = styled.View`
-  width: 100%;
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.border};
-  padding: 32px 24px;
-
-  border-radius: 24px;
-
-  background-color: ${({ theme }) => `${theme.background}B3`};
-`;
-
-const Title = styled.Text`
-  font-size: 34px;
-  font-weight: 800;
-
-  letter-spacing: -1px;
-
-  color: ${({ theme }) => theme.text};
-`;
-
-const Subtitle = styled.Text`
-  margin-top: 6px;
-  margin-bottom: 36px;
-
-  font-size: 15px;
-  line-height: 22px;
-
-  color: ${({ theme }) => theme.text};
-`;
-
-const Field = styled.View`
-  margin-bottom: 16px;
-`;
-
-const InputBox = styled.View<{ hasError?: boolean }>`
-  flex-direction: row;
-  align-items: center;
-
-  min-height: 58px;
-
-  padding: 0 18px;
-
-  border-radius: 18px;
-
-  background-color: ${({ theme }) => theme.background};
-  border-width: 1px;
-  border-color: ${({ theme, hasError }) =>
-    hasError ? theme.error : theme.border};
-`;
-
-const StyledInput = styled.TextInput`
-  flex: 1;
-
-  font-size: 16px;
-
-  color: ${({ theme }) => theme.text};
-`;
-
-const InputIcon = styled.View`
-  margin-right: 14px;
-`;
-
-const PasswordContainer = styled.View`
-  flex: 1;
-`;
-
-const EyeButton = styled.Pressable`
-  position: absolute;
-
-  right: 0;
-  top: 50%;
-
-  transform: translateY(-10px);
-`;
-
-const ErrorRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-
-  margin-top: 8px;
-`;
-
-const ErrorText = styled.Text`
-  margin-left: 6px;
-
-  font-size: 12px;
-  font-weight: 600;
-
-  color: ${({ theme }) => theme.error};
-`;
-
-const SubmitButton = styled.Pressable`
-  height: 58px;
-
-  margin-top: 12px;
-
-  justify-content: center;
-  align-items: center;
-
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.border};
-
-  border-radius: 18px;
-
-  background-color: ${({ theme }) => theme.card};
-`;
-
-const SubmitText = styled.Text`
-  color: ${({ theme }) => theme.text};
-
-  font-size: 16px;
-  font-weight: 700;
-`;
-
-const Divider = styled.View`
-  flex-direction: row;
-  align-items: center;
-
-  margin: 28px 0;
-`;
-
-const Line = styled.View`
-  flex: 1;
-
-  height: 1px;
-
-  background-color: ${({ theme }) => theme.border};
-`;
-
-const DividerText = styled.Text`
-  margin: 0 12px;
-
-  font-size: 13px;
-  font-weight: 500;
-
-  color: ${({ theme }) => theme.secondaryText};
-`;
-
-const SocialRow = styled.View`
-  flex-direction: row;
-  gap: 12px;
-`;
-
-const SocialButton = styled.Pressable`
-  flex: 1;
-
-  height: 56px;
-
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-
-  gap: 10px;
-
-  border-radius: 18px;
-
-  background-color: ${({ theme }) => theme.card};
-
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.border};
-`;
-
-const SocialText = styled.Text`
-  color: ${({ theme }) => theme.text};
-
-  font-size: 14px;
-  font-weight: 600;
-`;
 type FormProps = { type: 'login' | 'register' };
 
 const Form = ({ type }: FormProps) => {
@@ -206,8 +24,7 @@ const Form = ({ type }: FormProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [errors, setErrors] = useState({ name: '', email: '', password: '' });
 
@@ -267,10 +84,12 @@ const Form = ({ type }: FormProps) => {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (!validateForm() || submitting) return;
 
     const cleanName = sanitizeName(name);
     const cleanEmail = sanitizeEmail(email);
+
+    setSubmitting(true);
 
     try {
       if (isRegister) {
@@ -298,137 +117,78 @@ const Form = ({ type }: FormProps) => {
       }
     } catch (e) {
       console.log(e);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <Container>
       <FormCard>
-        <Title>{isRegister ? 'Створити акаунт' : 'Вхід в акаунт'}</Title>
+        <Overline>{isRegister ? 'Реєстрація' : 'Вхід'}</Overline>
+        <Title>{isRegister ? 'Створити акаунт' : 'З поверненням'}</Title>
 
         <Subtitle>
           {isRegister
-            ? 'Зареєструйтесь для продовження'
-            : 'Увійдіть для продовження'}
+            ? 'Зареєструйтесь, щоб зберігати обрані картини'
+            : 'Увійдіть, щоб продовжити перегляд галереї'}
         </Subtitle>
 
         {isRegister && (
-          <Field>
-            <InputBox hasError={!!errors.name}>
-              <InputIcon>
-                <Ionicons name="person-outline" size={20} color={theme.text} />
-              </InputIcon>
-
-              <StyledInput
-                placeholder="Ваше ім'я"
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-
-                  if (errors.name) {
-                    setErrors((prev) => ({ ...prev, name: '' }));
-                  }
-                }}
-                autoCapitalize="words"
-                autoCorrect={false}
-                textContentType="givenName"
-                placeholderTextColor={theme.text}
-              />
-            </InputBox>
-
-            {!!errors.name && (
-              <ErrorRow>
-                <Ionicons name="alert-circle" size={14} color={theme.error} />
-                <ErrorText>{errors.name}</ErrorText>
-              </ErrorRow>
-            )}
-          </Field>
+          <TextField
+            icon="person-outline"
+            placeholder="Ваше ім'я"
+            value={name}
+            onChangeText={(text) => {
+              setName(text);
+              if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
+            }}
+            autoCapitalize="words"
+            autoCorrect={false}
+            textContentType="givenName"
+            error={errors.name}
+          />
         )}
 
-        <Field>
-          <InputBox hasError={!!errors.email}>
-            <InputIcon>
-              <Ionicons name="mail-outline" size={20} color={theme.text} />
-            </InputIcon>
+        <TextField
+          icon="mail-outline"
+          placeholder="Email"
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
+          }}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          textContentType="emailAddress"
+          importantForAutofill="yes"
+          error={errors.email}
+        />
 
-            <StyledInput
-              placeholder="Email"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
+        <TextField
+          icon="lock-closed-outline"
+          placeholder="Пароль"
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (errors.password)
+              setErrors((prev) => ({ ...prev, password: '' }));
+          }}
+          secure
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="password"
+          textContentType="password"
+          error={errors.password}
+        />
 
-                if (errors.email) {
-                  setErrors((prev) => ({ ...prev, email: '' }));
-                }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              textContentType="emailAddress"
-              importantForAutofill="yes"
-              placeholderTextColor={theme.text}
-            />
-          </InputBox>
-
-          {!!errors.email && (
-            <ErrorRow>
-              <Ionicons name="alert-circle" size={14} color={theme.error} />
-              <ErrorText>{errors.email}</ErrorText>
-            </ErrorRow>
-          )}
-        </Field>
-
-        <Field>
-          <InputBox hasError={!!errors.password}>
-            <InputIcon>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={theme.text}
-              />
-            </InputIcon>
-
-            <PasswordContainer>
-              <StyledInput
-                placeholder="Пароль"
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-
-                  if (errors.password) {
-                    setErrors((prev) => ({ ...prev, password: '' }));
-                  }
-                }}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="password"
-                textContentType="password"
-                placeholderTextColor={theme.text}
-              />
-
-              <EyeButton onPress={() => setShowPassword((prev) => !prev)}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={22}
-                  color={theme.text}
-                />
-              </EyeButton>
-            </PasswordContainer>
-          </InputBox>
-
-          {!!errors.password && (
-            <ErrorRow>
-              <Ionicons name="alert-circle" size={14} color={theme.error} />
-              <ErrorText>{errors.password}</ErrorText>
-            </ErrorRow>
-          )}
-        </Field>
-
-        <SubmitButton onPress={handleSubmit}>
-          <SubmitText>{isRegister ? 'Створити акаунт' : 'Увійти'}</SubmitText>
-        </SubmitButton>
+        <ButtonWrap>
+          <Button onPress={handleSubmit} loading={submitting}>
+            {isRegister ? 'Створити акаунт' : 'Увійти'}
+          </Button>
+        </ButtonWrap>
 
         <Divider>
           <Line />
@@ -438,27 +198,23 @@ const Form = ({ type }: FormProps) => {
 
         <SocialRow>
           <SocialButton>
-            <AntDesign name="google" size={20} color={theme.text} />
+            <AntDesign name="google" size={18} color={theme.text} />
             <SocialText>Google</SocialText>
           </SocialButton>
 
           <SocialButton>
-            <AntDesign name="apple" size={20} color={theme.text} />
+            <AntDesign name="apple" size={18} color={theme.text} />
             <SocialText>Apple</SocialText>
           </SocialButton>
         </SocialRow>
+
         <Pressable
           onPress={() => {
-            if (isRegister) {
-              navigation.navigate('Login');
-            } else {
-              navigation.navigate('Register');
-            }
+            navigation.navigate(isRegister ? 'Login' : 'Register');
           }}
         >
           <LoginText>
             {isRegister ? 'Вже маєте акаунт? ' : 'Ще не маєте акаунта? '}
-
             <LoginLink>{isRegister ? 'Увійти' : 'Зареєструватися'}</LoginLink>
           </LoginText>
         </Pressable>
@@ -468,3 +224,104 @@ const Form = ({ type }: FormProps) => {
 };
 
 export default Form;
+
+const Container = styled.View`
+  flex: 1;
+  padding: ${spacing.xxl}px;
+  padding-top: ${spacing.huge}px;
+  justify-content: center;
+`;
+
+const FormCard = styled.View`
+  width: 100%;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.border};
+  padding: ${spacing.xxxl}px ${spacing.xxl}px;
+  border-radius: ${radius.xxl}px;
+  background-color: ${({ theme }) => `${theme.surface}F0`};
+`;
+
+const Overline = styled.Text`
+  font-family: ${typography.overline.fontFamily};
+  font-size: ${typography.overline.fontSize}px;
+  letter-spacing: ${typography.overline.letterSpacing}px;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.accent};
+  margin-bottom: ${spacing.sm}px;
+`;
+
+const Title = styled.Text`
+  font-family: ${typography.display.fontFamily};
+  font-size: 30px;
+  color: ${({ theme }) => theme.text};
+`;
+
+const Subtitle = styled.Text`
+  margin-top: ${spacing.sm}px;
+  margin-bottom: ${spacing.xxxl}px;
+  font-family: ${typography.body.fontFamily};
+  font-size: ${typography.bodyLg.fontSize}px;
+  line-height: ${typography.bodyLg.lineHeight}px;
+  color: ${({ theme }) => theme.textSecondary};
+`;
+
+const ButtonWrap = styled.View`
+  margin-top: ${spacing.sm}px;
+`;
+
+const Divider = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin: ${spacing.xxl}px 0;
+`;
+
+const Line = styled.View`
+  flex: 1;
+  height: 1px;
+  background-color: ${({ theme }) => theme.border};
+`;
+
+const DividerText = styled.Text`
+  margin: 0 ${spacing.md}px;
+  font-family: ${typography.body.fontFamily};
+  font-size: ${typography.caption.fontSize}px;
+  color: ${({ theme }) => theme.textSecondary};
+`;
+
+const SocialRow = styled.View`
+  flex-direction: row;
+  gap: ${spacing.md}px;
+`;
+
+const SocialButton = styled.Pressable`
+  flex: 1;
+  height: 52px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: ${spacing.sm}px;
+  border-radius: ${radius.lg}px;
+  background-color: ${({ theme }) => theme.background};
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.border};
+`;
+
+const SocialText = styled.Text`
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
+  color: ${({ theme }) => theme.text};
+`;
+
+const LoginText = styled.Text`
+  margin-top: ${spacing.xxl}px;
+  text-align: center;
+  font-family: ${typography.body.fontFamily};
+  font-size: ${typography.body.fontSize}px;
+  color: ${({ theme }) => theme.textSecondary};
+`;
+
+const LoginLink = styled.Text`
+  font-family: ${fontFamily.bodyBold};
+  font-size: ${typography.body.fontSize}px;
+  color: ${({ theme }) => theme.primary};
+`;

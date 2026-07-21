@@ -2,59 +2,58 @@ import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import styled from 'styled-components/native';
-import { useTheme } from '../hooks/useTheme';
-import { useThemeStore } from '../store/themeStore';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+
+import { useAppTheme } from '../hooks/useTheme';
+import { useThemeStore } from '../store/themeStore';
+import { NavigationProps } from './types';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { makeShadows } from '../theme/shadows';
+
+const ITEMS: {
+  name: 'Home' | 'Catalog' | 'Profile';
+  icon: keyof typeof Ionicons.glyphMap;
+  activeIcon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { name: 'Home', icon: 'home-outline', activeIcon: 'home' },
+  { name: 'Catalog', icon: 'grid-outline', activeIcon: 'grid' },
+  { name: 'Profile', icon: 'person-outline', activeIcon: 'person' },
+];
+
 export default function BottomMenu() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProps>();
   const route = useRoute();
-  const theme = useTheme();
+  const theme = useAppTheme();
   const isDark = useThemeStore(({ isDark }) => isDark);
-  const items = [
-    { name: 'Home', icon: 'home-outline', activeIcon: 'home' },
-    { name: 'Catalog', icon: 'grid-outline', activeIcon: 'grid' },
-    { name: 'Cart', icon: 'cart-outline', activeIcon: 'cart' },
-    { name: 'Profile', icon: 'person-outline', activeIcon: 'person' },
-  ];
+  const insets = useSafeAreaInsets();
+  const shadows = makeShadows(theme);
 
   return (
-    <ShadowContainer>
+    <ShadowContainer
+      style={[shadows.lg, { bottom: insets.bottom + spacing.md }]}
+    >
       <BlurView
-        intensity={40}
+        intensity={45}
         tint={isDark ? 'dark' : 'light'}
-        style={{
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: 20,
-          borderRadius: 999,
-          overflow: 'hidden',
-
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
-          shadowRadius: 24,
-
-          elevation: 12,
-        }}
+        style={{ borderRadius: radius.pill, overflow: 'hidden' }}
       >
         <Container>
-          {items.map((item) => {
+          {ITEMS.map((item) => {
             const active = route.name === item.name;
 
             return (
-              <Pressable
+              <Tab
                 key={item.name}
-                onPress={() => navigation.navigate(item.name)}
-              >
-                <IconWrapper active={active}>
-                  <Ionicons
-                    name={active ? item.activeIcon : item.icon}
-                    size={22}
-                    color={active ? '#FFFFFF' : theme.text}
-                  />
-                </IconWrapper>
-              </Pressable>
+                active={active}
+                icon={active ? item.activeIcon : item.icon}
+                onPress={() => navigation.navigate(item.name as any)}
+              />
             );
           })}
         </Container>
@@ -62,42 +61,57 @@ export default function BottomMenu() {
     </ShadowContainer>
   );
 }
+
+function Tab({
+  active,
+  icon,
+  onPress,
+}: {
+  active: boolean;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+}) {
+  const theme = useAppTheme();
+
+  const wrapperStyle = useAnimatedStyle(() => ({
+    width: withSpring(active ? 46 : 42, { damping: 16 }),
+    backgroundColor: active ? theme.primary : 'transparent',
+  }));
+
+  return (
+    <Pressable onPress={onPress} hitSlop={8}>
+      <AnimatedIconWrapper style={wrapperStyle}>
+        <Ionicons
+          name={icon}
+          size={22}
+          color={active ? theme.onPrimary : theme.text}
+        />
+      </AnimatedIconWrapper>
+    </Pressable>
+  );
+}
+
 const Container = styled.View`
   height: 64px;
-
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
-  background-color: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
+  padding: 0 ${spacing.lg}px;
+  background-color: rgba(255, 255, 255, 0.06);
   border-width: 1px;
   border-color: rgba(255, 255, 255, 0.12);
 `;
 
-const IconWrapper = styled.View<{ active: boolean }>`
-  width: 42px;
+const AnimatedIconWrapper = styled(Animated.View)`
   height: 42px;
-
-  border-radius: 21px;
-
+  border-radius: ${radius.pill}px;
   justify-content: center;
   align-items: center;
-
-  background-color: ${({ active, theme }) =>
-    active ? `${theme.primary}AC` : 'transparent'};
 `;
-const ShadowContainer = styled.View`
+
+const ShadowContainer = styled(Animated.View)`
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 20px;
-
-  border-radius: 999px;
-
-  shadow-color: #000;
-  shadow-offset: 0px 10px;
-  shadow-opacity: 0.25;
-  shadow-radius: 30px;
-
-  elevation: 20;
+  left: ${spacing.xl}px;
+  right: ${spacing.xl}px;
+  border-radius: ${radius.pill}px;
 `;

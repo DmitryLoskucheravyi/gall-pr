@@ -1,26 +1,27 @@
 import { useEffect, useState } from 'react';
 import {
-  View,
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  ScrollView,
+  View,
 } from 'react-native';
 import { Alert } from 'react-native';
-import { Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NavigationProps } from '../components/menu/Menu';
+import styled, { useTheme } from 'styled-components/native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+
+import { NavigationProps } from '../navigation/types';
 import { paintingsService } from '../api/paintings.api';
 import { Painting } from '../types/painting.types';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
-import { useTheme } from '../hooks/useTheme';
-import { Ionicons } from '@expo/vector-icons';
 import PaintingCard from '../components/layout/PaintingCard';
-import styled from 'styled-components/native';
-
+import { Button, BottomSheet } from '../components/ui';
 import { useAuthStore } from '../store/authStore';
 import AppLayout from '../components/layout/AppLayout';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 export default function CatalogScreen() {
   const navigation = useNavigation<NavigationProps>();
@@ -31,8 +32,8 @@ export default function CatalogScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-
   const [editingPainting, setEditingPainting] = useState<Painting | null>(null);
+
   useEffect(() => {
     loadPaintings();
   }, []);
@@ -48,6 +49,7 @@ export default function CatalogScreen() {
       setRefreshing(false);
     }
   };
+
   const handleDelete = (painting: Painting) => {
     Alert.alert('Видалити картину?', painting.title, [
       { text: 'Скасувати', style: 'cancel' },
@@ -57,7 +59,6 @@ export default function CatalogScreen() {
         onPress: async () => {
           try {
             await paintingsService.deletePainting(painting.id);
-
             setPaintings((prev) =>
               prev.filter((item) => item.id !== painting.id),
             );
@@ -73,134 +74,107 @@ export default function CatalogScreen() {
     setRefreshing(true);
     await loadPaintings();
   };
+
   const renderHeader = () => {
-    if (user?.role !== 'ADMIN') {
-      return null;
-    }
+    if (user?.role !== 'ADMIN') return null;
 
     return (
       <ListHeaderContainer>
-        <CreateButton onPress={() => setShowCreateForm(true)}>
-          <Ionicons name="add-circle-outline" size={22} color="white" />
-
-          <CreateButtonText>Створити картину</CreateButtonText>
-        </CreateButton>
+        <Button
+          icon={
+            <Ionicons
+              name="add-circle-outline"
+              size={20}
+              color={theme.onPrimary}
+            />
+          }
+          onPress={() => setShowCreateForm(true)}
+        >
+          Створити картину
+        </Button>
       </ListHeaderContainer>
     );
   };
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Centered>
         <ActivityIndicator size="large" color={theme.primary} />
-      </View>
+      </Centered>
     );
   }
 
   return (
     <AppLayout>
       <ScreenLayout>
-        <View style={{ flex: 1 }}>
-          <FlatList
-            data={paintings}
-            ListHeaderComponent={renderHeader}
-            keyExtractor={(item) => item.id.toString()}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingTop: 10,
-              paddingBottom: insets.bottom + 70,
-              paddingHorizontal: 8,
-            }}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            renderItem={({ item }) => (
+        <FlatList
+          data={paintings}
+          ListHeaderComponent={renderHeader}
+          keyExtractor={(item) => item.id.toString()}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingTop: spacing.md,
+            paddingBottom: insets.bottom + 90,
+            paddingHorizontal: spacing.sm,
+          }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <EmptyState>
+              <Ionicons
+                name="image-outline"
+                size={40}
+                color={theme.textMuted}
+              />
+              <EmptyText>Картин поки немає</EmptyText>
+            </EmptyState>
+          }
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInUp.duration(360).delay((index % 6) * 60)}
+              style={{ flex: 1 }}
+            >
               <PaintingCard
                 painting={item}
                 isAdmin={user?.role === 'ADMIN'}
-                onPress={() => {
-                  navigation.navigate('Painting', { id: item.id });
-                }}
-                onBuy={() => {
-                  console.log('buy', item.id);
-                }}
-                onEdit={() => {
-                  setEditingPainting(item);
-                }}
-                onDelete={() => {
-                  handleDelete(item);
-                }}
+                onPress={() => navigation.navigate('Painting', { id: item.id })}
+                onBuy={() => console.log('buy', item.id)}
+                onEdit={() => setEditingPainting(item)}
+                onDelete={() => handleDelete(item)}
               />
-            )}
+            </Animated.View>
+          )}
+        />
+
+        <BottomSheet
+          visible={!!editingPainting}
+          onClose={() => setEditingPainting(null)}
+        >
+          {editingPainting && (
+            <CreatePaintingForm
+              painting={editingPainting}
+              onCreated={() => {
+                loadPaintings();
+                setEditingPainting(null);
+              }}
+              onClose={() => setEditingPainting(null)}
+            />
+          )}
+        </BottomSheet>
+
+        <BottomSheet
+          visible={showCreateForm}
+          onClose={() => setShowCreateForm(false)}
+        >
+          <CreatePaintingForm
+            onCreated={() => {
+              setShowCreateForm(false);
+              loadPaintings();
+            }}
+            onClose={() => setShowCreateForm(false)}
           />
-          <Modal
-            visible={!!editingPainting}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setEditingPainting(null)}
-          >
-            <ModalContainer>
-              <ModalBackground onPress={() => setEditingPainting(null)} />
-              <ModalContent>
-                <ModalHeader>
-                  <ModalCloseButton onPress={() => setEditingPainting(null)}>
-                    <ModalCloseText>✕</ModalCloseText>
-                  </ModalCloseButton>
-                </ModalHeader>
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ paddingBottom: 30 }}
-                  scrollEnabled={true}
-                >
-                  {editingPainting && (
-                    <CreatePaintingForm
-                      painting={editingPainting}
-                      onCreated={() => {
-                        loadPaintings();
-                        setEditingPainting(null);
-                      }}
-                      onClose={() => {
-                        setEditingPainting(null);
-                      }}
-                    />
-                  )}
-                </ScrollView>
-              </ModalContent>
-            </ModalContainer>
-          </Modal>
-          <Modal
-            visible={showCreateForm}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setShowCreateForm(false)}
-          >
-            <ModalContainer>
-              <ModalBackground onPress={() => setShowCreateForm(false)} />
-              <ModalContent>
-                <ModalHeader>
-                  <ModalCloseButton onPress={() => setShowCreateForm(false)}>
-                    <ModalCloseText>✕</ModalCloseText>
-                  </ModalCloseButton>
-                </ModalHeader>
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ paddingBottom: 30 }}
-                  scrollEnabled={true}
-                >
-                  <CreatePaintingForm
-                    onCreated={() => {
-                      setShowCreateForm(false);
-                      loadPaintings();
-                    }}
-                    onClose={() => {
-                      setShowCreateForm(false);
-                    }}
-                  />
-                </ScrollView>
-              </ModalContent>
-            </ModalContainer>
-          </Modal>
-        </View>
+        </BottomSheet>
       </ScreenLayout>
     </AppLayout>
   );
@@ -210,68 +184,25 @@ const ScreenLayout = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.background};
 `;
-const ListHeaderContainer = styled.View`
-  margin: 12px 8px 20px;
-`;
 
-const CreateButton = styled.Pressable`
-  height: 56px;
-
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-
-  gap: 10px;
-
-  border-radius: 16px;
-
-  background-color: ${({ theme }) => theme.primary};
-`;
-
-const CreateButtonText = styled.Text`
-  color: ${({ theme }) => theme.primaryText};
-
-  font-size: 16px;
-  font-weight: 700;
-`;
-
-const ModalContainer = styled.View`
+const Centered = styled(View)`
   flex: 1;
-  justify-content: flex-end;
-`;
-
-const ModalBackground = styled.Pressable`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-`;
-
-const ModalContent = styled.View`
-  background-color: ${({ theme }) => theme.background};
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  max-height: 90%;
-  padding: 16px;
-`;
-
-const ModalHeader = styled.View`
-  flex-direction: row;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-`;
-
-const ModalCloseButton = styled.Pressable`
-  width: 40px;
-  height: 40px;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  background-color: ${({ theme }) => theme.background};
 `;
 
-const ModalCloseText = styled.Text`
-  font-size: 24px;
-  color: ${({ theme }) => theme.text};
-  font-weight: 700;
+const ListHeaderContainer = styled.View`
+  margin: ${spacing.md}px ${spacing.sm}px ${spacing.xl}px;
+`;
+
+const EmptyState = styled.View`
+  padding-top: ${spacing.huge}px;
+  align-items: center;
+  gap: ${spacing.md}px;
+`;
+
+const EmptyText = styled.Text`
+  font-family: ${typography.body.fontFamily};
+  color: ${({ theme }) => theme.textSecondary};
 `;

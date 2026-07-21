@@ -1,18 +1,24 @@
-import { ScrollView } from 'react-native';
-
 import { useEffect, useState } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
-
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  interpolate,
+  Extrapolation,
+  FadeIn,
+} from 'react-native-reanimated';
 
 import AppLayout from '../components/layout/AppLayout';
-import { ScreenLayout } from '../components/layout/components.styled';
-
 import { paintingsService } from '../api/paintings.api';
 import { Painting } from '../types/painting.types';
-
-import { useTheme } from '../hooks/useTheme';
+import { useAppTheme } from '../hooks/useTheme';
+import { Button, Collapsible } from '../components/ui';
+import { NavigationProps } from '../navigation/types';
+import { spacing } from '../theme/spacing';
 
 import {
   LoaderContainer,
@@ -22,23 +28,26 @@ import {
   Author,
   Price,
   Description,
-  BuyButton,
-  BuyButtonText,
   GalleryImage,
   ContentCard,
-  SectionTitle,
+  SectionHeaderStandalone,
   ImageWrapper,
   BottomBar,
   InfoLabel,
   InfoRow,
   HideWrapper,
   InfoValue,
-} from './stydel/painting.styled';
+  PriceTag,
+  SectionTitle,
+} from './styled/painting.styled';
+
+const HERO_HEIGHT = 440;
 
 export default function PaintingScreen() {
-  const theme = useTheme();
+  const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
 
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProps>();
   const route = useRoute<any>();
 
   const [painting, setPainting] = useState<Painting | null>(null);
@@ -46,6 +55,32 @@ export default function PaintingScreen() {
 
   const [isHideChar, setIsHideChar] = useState(true);
   const [isHideDesc, setIsHideDesc] = useState(true);
+
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+
+  const imageStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [-HERO_HEIGHT, 0, HERO_HEIGHT],
+          [-HERO_HEIGHT / 2, 0, HERO_HEIGHT * 0.4],
+          Extrapolation.CLAMP,
+        ),
+      },
+      {
+        scale: interpolate(
+          scrollY.value,
+          [-HERO_HEIGHT, 0],
+          [2, 1],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
 
   useEffect(() => {
     loadPainting();
@@ -75,122 +110,121 @@ export default function PaintingScreen() {
 
   return (
     <AppLayout>
-      <ScreenLayout>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <ImageWrapper>
-            <CoverImage source={{ uri: painting.cardImage }} />
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+      >
+        <ImageWrapper>
+          <CoverImage source={{ uri: painting.cardImage }} style={imageStyle} />
 
-            <BackButton
-              onPress={() => navigation.goBack()}
-              style={{ top: 12, backgroundColor: theme.primary }}
-            >
-              <Ionicons name="arrow-back" size={22} color={theme.background} />
-            </BackButton>
-          </ImageWrapper>
+          <BackButton
+            onPress={() => navigation.goBack()}
+            style={{
+              top: insets.top + spacing.sm,
+              backgroundColor: theme.primary,
+            }}
+          >
+            <Ionicons name="arrow-back" size={20} color={theme.onPrimary} />
+          </BackButton>
+        </ImageWrapper>
 
-          <ContentCard>
-            <Title>{painting.title}</Title>
+        <ContentCard entering={FadeIn.duration(400)}>
+          <Title>{painting.title}</Title>
 
-            {painting.author && <Author>{painting.author}</Author>}
+          {painting.author && <Author>{painting.author}</Author>}
 
-            <Price>₴ {Number(painting.price).toLocaleString()}</Price>
-            <HideWrapper onPress={() => setIsHideDesc((prev) => !prev)}>
-              <SectionTitle>
-                Опис
-                <Ionicons
-                  name={
-                    isHideDesc
-                      ? 'arrow-down-circle-sharp'
-                      : 'arrow-up-circle-sharp'
-                  }
-                  size={20}
-                />
-              </SectionTitle>
-            </HideWrapper>
+          <Price>₴ {Number(painting.price).toLocaleString()}</Price>
 
-            {!isHideDesc ? (
-              <Description>{painting.description}</Description>
-            ) : null}
+          <HideWrapper onPress={() => setIsHideDesc((prev) => !prev)}>
+            <SectionTitle>Опис</SectionTitle>
+            <Ionicons
+              name={isHideDesc ? 'chevron-down' : 'chevron-up'}
+              size={18}
+              color={theme.textSecondary}
+            />
+          </HideWrapper>
 
-            <HideWrapper onPress={() => setIsHideChar((prev) => !prev)}>
-              <SectionTitle>
-                Характеристики
-                <Ionicons
-                  name={
-                    isHideChar
-                      ? 'arrow-down-circle-sharp'
-                      : 'arrow-up-circle-sharp'
-                  }
-                  size={20}
-                />
-              </SectionTitle>
-            </HideWrapper>
+          <Collapsible open={!isHideDesc}>
+            <Description>{painting.description}</Description>
+          </Collapsible>
 
-            {!isHideChar && painting.author && (
-              <InfoRow>
-                <InfoLabel>Автор</InfoLabel>
-                <InfoValue>{painting.author}</InfoValue>
-              </InfoRow>
-            )}
+          <HideWrapper onPress={() => setIsHideChar((prev) => !prev)}>
+            <SectionTitle>Характеристики</SectionTitle>
+            <Ionicons
+              name={isHideChar ? 'chevron-down' : 'chevron-up'}
+              size={18}
+              color={theme.textSecondary}
+            />
+          </HideWrapper>
 
-            {!isHideChar && painting.year && (
-              <InfoRow>
-                <InfoLabel>Рік</InfoLabel>
-                <InfoValue>{painting.year}</InfoValue>
-              </InfoRow>
-            )}
+          <Collapsible open={!isHideChar}>
+            <>
+              {painting.author && (
+                <InfoRow>
+                  <InfoLabel>Автор</InfoLabel>
+                  <InfoValue>{painting.author}</InfoValue>
+                </InfoRow>
+              )}
 
-            {!isHideChar && painting.technique && (
-              <InfoRow>
-                <InfoLabel>Техніка</InfoLabel>
-                <InfoValue>{painting.technique}</InfoValue>
-              </InfoRow>
-            )}
+              {painting.year && (
+                <InfoRow>
+                  <InfoLabel>Рік</InfoLabel>
+                  <InfoValue>{painting.year}</InfoValue>
+                </InfoRow>
+              )}
 
-            {!isHideChar && painting.material && (
-              <InfoRow>
-                <InfoLabel>Матеріал</InfoLabel>
-                <InfoValue>{painting.material}</InfoValue>
-              </InfoRow>
-            )}
+              {painting.technique && (
+                <InfoRow>
+                  <InfoLabel>Техніка</InfoLabel>
+                  <InfoValue>{painting.technique}</InfoValue>
+                </InfoRow>
+              )}
 
-            {!isHideChar && painting.width && painting.height && (
-              <InfoRow>
-                <InfoLabel>Розмір</InfoLabel>
-                <InfoValue>
-                  {painting.width} × {painting.height} см
-                </InfoValue>
-              </InfoRow>
-            )}
+              {painting.material && (
+                <InfoRow>
+                  <InfoLabel>Матеріал</InfoLabel>
+                  <InfoValue>{painting.material}</InfoValue>
+                </InfoRow>
+              )}
 
-            {painting.images.length > 0 && (
-              <>
-                <SectionTitle>Галерея</SectionTitle>
+              {painting.width && painting.height && (
+                <InfoRow>
+                  <InfoLabel>Розмір</InfoLabel>
+                  <InfoValue>
+                    {painting.width} × {painting.height} см
+                  </InfoValue>
+                </InfoRow>
+              )}
+            </>
+          </Collapsible>
 
-                <FlatList
-                  horizontal
-                  pagingEnabled
-                  data={painting.images}
-                  keyExtractor={(item, index) => `${item}-${index}`}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingRight: 20 }}
-                  renderItem={({ item }) => (
-                    <GalleryImage source={{ uri: item }} />
-                  )}
-                />
-              </>
-            )}
-          </ContentCard>
-        </ScrollView>
+          {painting.images.length > 0 && (
+            <>
+              <SectionHeaderStandalone>Галерея</SectionHeaderStandalone>
 
-        <BottomBar>
-          <BuyButton>
-            <BuyButtonText>
-              Купити за {Number(painting.price).toLocaleString()} ₴
-            </BuyButtonText>
-          </BuyButton>
-        </BottomBar>
-      </ScreenLayout>
+              <FlatList
+                horizontal
+                pagingEnabled
+                data={painting.images}
+                keyExtractor={(item, index) => `${item}-${index}`}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: spacing.xxl }}
+                renderItem={({ item }) => (
+                  <GalleryImage source={{ uri: item }} />
+                )}
+              />
+            </>
+          )}
+        </ContentCard>
+      </Animated.ScrollView>
+
+      <BottomBar style={{ paddingBottom: insets.bottom + spacing.md }}>
+        <PriceTag>₴ {Number(painting.price).toLocaleString()}</PriceTag>
+        <Button onPress={() => {}} fullWidth={false} style={{ flex: 1 }}>
+          Купити
+        </Button>
+      </BottomBar>
     </AppLayout>
   );
 }

@@ -1,7 +1,12 @@
-import { Image, Pressable, View } from 'react-native';
-import styled from 'styled-components/native';
+import { Image } from 'react-native';
+import styled, { useTheme } from 'styled-components/native';
 
 import { Painting } from '../../types/painting.types';
+import AnimatedPressable from '../ui/AnimatedPressable';
+import { radius } from '../../theme/radius';
+import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
+import { makeShadows } from '../../theme/shadows';
 
 type Props = {
   painting: Painting;
@@ -20,6 +25,8 @@ export default function PaintingCard({
   onEdit,
   onDelete,
 }: Props) {
+  const theme = useTheme();
+  const shadows = makeShadows(theme);
   const hasDiscount = painting.discount > 0;
 
   const currentPrice = Number(painting.price);
@@ -29,72 +36,84 @@ export default function PaintingCard({
     : currentPrice;
 
   return (
-    <Container>
-      <ImageWrapper>
-        <CardImage source={{ uri: painting.cardImage }} />
-
-        {hasDiscount && (
-          <DiscountBadge>
-            <DiscountText>-{painting.discount}%</DiscountText>
-          </DiscountBadge>
-        )}
-      </ImageWrapper>
-
-      <Content>
-        <Title numberOfLines={1}>{painting.title}</Title>
-
-        {!!painting.author && (
-          <Author numberOfLines={1}>{painting.author}</Author>
-        )}
-
-        {painting.width && painting.height && (
-          <Size>
-            {painting.width} × {painting.height} см
-          </Size>
-        )}
-
-        <PriceContainer>
-          <CurrentPrice>{currentPrice.toLocaleString()} ₴</CurrentPrice>
+    <Container style={shadows.sm}>
+      <AnimatedPressable
+        onPress={onPress}
+        scaleTo={0.98}
+        style={{ width: '100%' }}
+      >
+        <ImageWrapper>
+          <CardImage source={{ uri: painting.cardImage }} />
 
           {hasDiscount && (
-            <OldPrice>{Math.round(oldPrice).toLocaleString()} ₴</OldPrice>
+            <DiscountBadge>
+              <DiscountText>-{painting.discount}%</DiscountText>
+            </DiscountBadge>
           )}
-        </PriceContainer>
 
-        <ButtonsRow>
-          <DetailsButton onPress={onPress}>
-            <DetailsText>Детальніше</DetailsText>
-          </DetailsButton>
+          {painting.isFeatured && (
+            <FeaturedBadge>
+              <FeaturedText>Featured</FeaturedText>
+            </FeaturedBadge>
+          )}
+        </ImageWrapper>
 
-          <BuyButton onPress={onBuy}>
-            <BuyText>Купити</BuyText>
-          </BuyButton>
-        </ButtonsRow>
-        {isAdmin && (
-          <AdminButtonsRow>
-            <EditButton onPress={onEdit}>
-              <EditText>Редагувати</EditText>
-            </EditButton>
+        <Content>
+          <Title numberOfLines={1}>{painting.title}</Title>
 
-            <DeleteButton onPress={onDelete}>
-              <DeleteText>Видалити</DeleteText>
-            </DeleteButton>
-          </AdminButtonsRow>
-        )}
-      </Content>
+          {!!painting.author && (
+            <Author numberOfLines={1}>{painting.author}</Author>
+          )}
+
+          {painting.width && painting.height && (
+            <Size>
+              {painting.width} × {painting.height} см
+            </Size>
+          )}
+
+          <PriceContainer>
+            <CurrentPrice>{currentPrice.toLocaleString()} ₴</CurrentPrice>
+
+            {hasDiscount && (
+              <OldPrice>{Math.round(oldPrice).toLocaleString()} ₴</OldPrice>
+            )}
+          </PriceContainer>
+        </Content>
+      </AnimatedPressable>
+
+      <ButtonsRow>
+        <DetailsButton onPress={onPress}>
+          <DetailsText>Детальніше</DetailsText>
+        </DetailsButton>
+
+        <BuyButton onPress={onBuy}>
+          <BuyText>Купити</BuyText>
+        </BuyButton>
+      </ButtonsRow>
+
+      {isAdmin && (
+        <AdminButtonsRow>
+          <EditButton onPress={onEdit}>
+            <EditText>Редагувати</EditText>
+          </EditButton>
+
+          <DeleteButton onPress={onDelete}>
+            <DeleteText>Видалити</DeleteText>
+          </DeleteButton>
+        </AdminButtonsRow>
+      )}
     </Container>
   );
 }
 
 const Container = styled.View`
   flex: 1;
-  margin: 8px;
-  background: ${({ theme }) => theme.card};
-  border-radius: 20px;
+  margin: ${spacing.sm}px;
+  background-color: ${({ theme }) => theme.surface};
+  border-radius: ${radius.xl}px;
   overflow: hidden;
-  elevation: 4;
   border-width: 1px;
-  border-color: ${({ theme }) => theme.text};
+  border-color: ${({ theme }) => theme.border};
 `;
 
 const ImageWrapper = styled.View`
@@ -103,126 +122,151 @@ const ImageWrapper = styled.View`
 
 const CardImage = styled(Image)`
   width: 100%;
-  height: 240px;
+  height: 220px;
 `;
 
 const DiscountBadge = styled.View`
   position: absolute;
-  top: 12px;
-  left: 12px;
-  background: #ff4d4f;
-  padding: 6px 10px;
-  border-radius: 999px;
+  top: ${spacing.md}px;
+  left: ${spacing.md}px;
+  background-color: ${({ theme }) => theme.error};
+  padding: ${spacing.xs}px ${spacing.md}px;
+  border-radius: ${radius.pill}px;
 `;
 
 const DiscountText = styled.Text`
   color: white;
-  font-weight: 700;
+  font-family: ${typography.overline.fontFamily};
+  font-size: ${typography.overline.fontSize}px;
+`;
+
+const FeaturedBadge = styled.View`
+  position: absolute;
+  top: ${spacing.md}px;
+  right: ${spacing.md}px;
+  background-color: ${({ theme }) => theme.accent};
+  padding: ${spacing.xs}px ${spacing.md}px;
+  border-radius: ${radius.pill}px;
+`;
+
+const FeaturedText = styled.Text`
+  color: ${({ theme }) => theme.onAccent};
+  font-family: ${typography.overline.fontFamily};
+  font-size: ${typography.overline.fontSize}px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 `;
 
 const Content = styled.View`
-  padding: 14px;
+  padding: ${spacing.lg}px;
 `;
 
 const Title = styled.Text`
-  font-size: 16px;
-  font-weight: 700;
+  font-family: ${typography.h3.fontFamily};
+  font-size: ${typography.h3.fontSize}px;
   color: ${({ theme }) => theme.text};
 `;
 
 const Author = styled.Text`
   margin-top: 4px;
-  color: ${({ theme }) => theme.secondaryText};
+  font-family: ${typography.body.fontFamily};
+  color: ${({ theme }) => theme.textSecondary};
+  font-size: ${typography.body.fontSize}px;
 `;
 
 const Size = styled.Text`
   margin-top: 6px;
-  color: ${({ theme }) => theme.secondaryText};
-  font-size: 12px;
+  font-family: ${typography.caption.fontFamily};
+  color: ${({ theme }) => theme.textMuted};
+  font-size: ${typography.caption.fontSize}px;
 `;
 
 const PriceContainer = styled.View`
-  margin-top: 12px;
+  margin-top: ${spacing.md}px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: ${spacing.sm}px;
 `;
 
 const CurrentPrice = styled.Text`
-  font-size: 20px;
-  font-weight: 700;
+  font-family: ${typography.h3.fontFamily};
+  font-size: 19px;
   color: ${({ theme }) => theme.primary};
 `;
 
 const OldPrice = styled.Text`
-  margin-top: 2px;
+  font-family: ${typography.body.fontFamily};
+  font-size: ${typography.body.fontSize}px;
   text-decoration-line: line-through;
-  color: ${({ theme }) => theme.secondaryText};
+  color: ${({ theme }) => theme.textMuted};
 `;
 
-const ButtonsRow = styled(View)`
+const ButtonsRow = styled.View`
   flex-direction: row;
-  margin-top: 16px;
+  gap: ${spacing.sm}px;
+  padding: 0 ${spacing.lg}px ${spacing.lg}px;
 `;
 
-const DetailsButton = styled(Pressable)`
+const DetailsButton = styled.Pressable`
   flex: 1;
-  padding: 12px;
-  margin-right: 8px;
+  padding: ${spacing.md}px;
   border-width: 1px;
-  border-color: ${({ theme }) => theme.primary};
-  border-radius: 12px;
+  border-color: ${({ theme }) => theme.border};
+  border-radius: ${radius.md}px;
   align-items: center;
 `;
 
-const BuyButton = styled(Pressable)`
+const BuyButton = styled.Pressable`
   flex: 1;
-  padding: 12px;
-  background-color: ${({ theme }) =>
-    theme.background === '#EFFDFF' ? '#660029' : '#AFE1FF'};
-  border-radius: 12px;
-  overflow: hidden;
+  padding: ${spacing.md}px;
+  background-color: ${({ theme }) => theme.primary};
+  border-radius: ${radius.md}px;
   align-items: center;
   justify-content: center;
 `;
 
 const DetailsText = styled.Text`
-  color: ${({ theme }) => theme.primary};
-  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
 `;
 
 const BuyText = styled.Text`
-  color: ${({ theme }) => theme.background};
-  font-weight: 600;
+  color: ${({ theme }) => theme.onPrimary};
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
 `;
 
-const AdminButtonsRow = styled(View)`
+const AdminButtonsRow = styled.View`
   flex-direction: row;
-  margin-top: 10px;
+  gap: ${spacing.sm}px;
+  padding: 0 ${spacing.lg}px ${spacing.lg}px;
 `;
 
-const EditButton = styled(Pressable)`
+const EditButton = styled.Pressable`
   flex: 1;
-  padding: 12px;
-  margin-right: 8px;
-  border-radius: 12px;
-  background-color: ${({ theme }) =>
-    theme.background === '#EFFDFF' ? '#2563EB' : '#4B5563'};
+  padding: ${spacing.md}px;
+  border-radius: ${radius.md}px;
+  background-color: ${({ theme }) => theme.backgroundAlt};
   align-items: center;
 `;
 
-const DeleteButton = styled(Pressable)`
+const DeleteButton = styled.Pressable`
   flex: 1;
-  padding: 12px;
-  border-radius: 12px;
-  background-color: ${({ theme }) =>
-    theme.background === '#EFFDFF' ? '#DC2626' : '#991B1B'};
+  padding: ${spacing.md}px;
+  border-radius: ${radius.md}px;
+  background-color: ${({ theme }) => theme.error};
   align-items: center;
 `;
 
 const EditText = styled.Text`
-  color: white;
-  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
 `;
 
 const DeleteText = styled.Text`
   color: white;
-  font-weight: 600;
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
 `;

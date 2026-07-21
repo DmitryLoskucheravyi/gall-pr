@@ -1,14 +1,7 @@
 import 'styled-components/native';
+import { AppTheme } from './colors';
 
 declare module 'styled-components/native' {
-  export interface DefaultTheme {
-    background: string;
-    card: string;
-    text: string;
-    secondaryText: string;
-    primary: string;
-    primaryText: string;
-    border: string;
-    error: string;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- required shape for styled-components theme augmentation
+  export interface DefaultTheme extends AppTheme {}
 }
