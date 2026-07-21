@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppLayout from "../components/layout/AppLayout";
 import { ScreenLayout } from "../components/layout/components.styled";
 
-import { getPainting } from "../api/paintings.api";
+import { paintingsService } from "../api/paintings.api";;
 import { Painting } from "../types/painting.types";
 
 import { useTheme } from "../hooks/useTheme";
@@ -65,7 +65,7 @@ export default function PaintingScreen() {
 
     const loadPainting = async () => {
         try {
-            const data = await getPainting(route.params.id);
+            const data = await paintingsService.getPainting(route.params.id);
             setPainting(data);
         } catch (error) {
             console.log(error);

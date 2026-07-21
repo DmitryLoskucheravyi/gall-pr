@@ -8,12 +8,11 @@ import {
     Pressable,
 } from "react-native";
 import { Alert } from "react-native";
-import { deletePainting } from "../api/paintings.api";
 import { Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NavigationProps } from "../components/menu/Menu";
-import { getPaintings } from "../api/paintings.api";
+import { paintingsService } from "../api/paintings.api";
 import { Painting } from "../types/painting.types";
 import CreatePaintingForm from "../components/admin/CreatePaintingForm";
 import { useTheme } from "../hooks/useTheme";
@@ -49,10 +48,7 @@ export default function CatalogScreen() {
 
     const loadPaintings = async () => {
         try {
-            const response = await getPaintings();
-            console.log(
-                response.data.map(item => item.id)
-            );
+            const response = await paintingsService.getPaintings();
             setPaintings(response.data);
         } catch (error) {
             console.log(error);
@@ -75,7 +71,7 @@ export default function CatalogScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            await deletePainting(
+                            await paintingsService.deletePainting(
                                 painting.id
                             );
 

@@ -9,10 +9,7 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import { Painting } from "../../types/painting.types";
-import {
-    createPainting,
-    updatePainting,
-} from "../../api/paintings.api";
+import { paintingsService } from "../../api/paintings.api";
 import { uploadImage } from "../../api/uploads.api";
 
 type Props = {
@@ -128,18 +125,12 @@ export default function CreatePaintingForm({
             };
 
             if (painting) {
-                await updatePainting(
-                    painting.id,
-                    payload
-                );
+                await paintingsService.updatePainting(painting.id,payload);
             } else {
-                await createPainting(
-                    payload
-                );
+                await paintingsService.createPainting(payload);
             }
 
             onCreated();
-
             if (onClose) {
                 onClose();
             }
@@ -317,10 +308,10 @@ const Input = styled.TextInput.attrs(
     border-radius: 14px;
     color: ${({ theme }) => theme.text};
     background-color: ${({ theme }) =>
-        theme.background};
+    theme.background};
     border-width: 1px;
     border-color: ${({ theme }) =>
-        theme.border};
+    theme.border};
 `;
 
 const DescriptionInput = styled(Input)`
@@ -347,10 +338,8 @@ const PickButton = styled.Pressable`
     align-items: center;
     justify-content: center;
     border-radius: 14px;
-  background-color: ${({ theme }) =>
-    theme.background === "#EFFDFF"
-        ? "#DC2626"
-        : "#991B1B"};
+    background-color: ${({ theme }) =>
+    theme.background === "#EFFDFF" ? "#DC2626" : "#991B1B"};
 `;
 
 const CreateButton = styled.Pressable`
