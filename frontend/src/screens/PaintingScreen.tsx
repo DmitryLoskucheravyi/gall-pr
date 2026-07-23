@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { FlatList, ActivityIndicator } from 'react-native';
+import {
+  FlatList,
+  ActivityIndicator,
+  Pressable,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +23,7 @@ import AppLayout from '../components/layout/AppLayout';
 import { paintingsService } from '../api/paintings.api';
 import { Painting } from '../types/painting.types';
 import { useAppTheme } from '../hooks/useTheme';
-import { Button, Collapsible } from '../components/ui';
+import { Button, Collapsible, ImageViewer } from '../components/ui';
 import { NavigationProps } from '../navigation/types';
 import { useAddToCart } from '../hooks/useAddToCart';
 import { spacing } from '../theme/spacing';
@@ -24,14 +31,16 @@ import { spacing } from '../theme/spacing';
 import {
   LoaderContainer,
   BackButton,
+  FullscreenButton,
   CoverImage,
+  HeroAnimatedWrap,
+  DotsRow,
+  Dot,
   Title,
   Author,
   Price,
   Description,
-  GalleryImage,
   ContentCard,
-  SectionHeaderStandalone,
   ImageWrapper,
   BottomBar,
   InfoLabel,
@@ -44,6 +53,7 @@ import {
 } from './styled/painting.styled';
 
 const HERO_HEIGHT = 440;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function PaintingScreen() {
   const theme = useAppTheme();
@@ -58,6 +68,8 @@ export default function PaintingScreen() {
 
   const [isHideChar, setIsHideChar] = useState(true);
   const [isHideDesc, setIsHideDesc] = useState(true);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [heroIndex, setHeroIndex] = useState(0);
 
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler((event) => {
@@ -90,6 +102,13 @@ export default function PaintingScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
+  const handleHeroScrollEnd = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    setHeroIndex(index);
+  };
+
   const loadPainting = async () => {
     try {
       const data = await paintingsService.getPainting(route.params.id);
@@ -111,6 +130,9 @@ export default function PaintingScreen() {
 
   if (!painting) return null;
 
+  const galleryImages =
+    painting.images.length > 0 ? painting.images : [painting.cardImage];
+
   return (
     <AppLayout>
       <Animated.ScrollView
@@ -119,7 +141,24 @@ export default function PaintingScreen() {
         scrollEventThrottle={16}
       >
         <ImageWrapper>
-          <CoverImage source={{ uri: painting.cardImage }} style={imageStyle} />
+          <HeroAnimatedWrap style={imageStyle}>
+            <FlatList
+              data={galleryImages}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item, index) => `${item}-${index}`}
+              onMomentumScrollEnd={handleHeroScrollEnd}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => setViewerIndex(heroIndex)}
+                  style={{ width: SCREEN_WIDTH, height: '100%' }}
+                >
+                  <CoverImage source={{ uri: item }} />
+                </Pressable>
+              )}
+            />
+          </HeroAnimatedWrap>
 
           <BackButton
             onPress={() => navigation.goBack()}
@@ -130,6 +169,21 @@ export default function PaintingScreen() {
           >
             <Ionicons name="arrow-back" size={20} color={theme.onPrimary} />
           </BackButton>
+
+          <FullscreenButton
+            onPress={() => setViewerIndex(heroIndex)}
+            style={{ top: insets.top + spacing.sm }}
+          >
+            <Ionicons name="expand-outline" size={18} color="#FFFFFF" />
+          </FullscreenButton>
+
+          {galleryImages.length > 1 && (
+            <DotsRow>
+              {galleryImages.map((_, index) => (
+                <Dot key={index} $active={index === heroIndex} />
+              ))}
+            </DotsRow>
+          )}
         </ImageWrapper>
 
         <ContentCard entering={FadeIn.duration(400)}>
@@ -205,24 +259,6 @@ export default function PaintingScreen() {
               )}
             </>
           </Collapsible>
-
-          {painting.images.length > 0 && (
-            <>
-              <SectionHeaderStandalone>Галерея</SectionHeaderStandalone>
-
-              <FlatList
-                horizontal
-                pagingEnabled
-                data={painting.images}
-                keyExtractor={(item, index) => `${item}-${index}`}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingRight: spacing.xxl }}
-                renderItem={({ item }) => (
-                  <GalleryImage source={{ uri: item }} />
-                )}
-              />
-            </>
-          )}
         </ContentCard>
       </Animated.ScrollView>
 
@@ -236,6 +272,13 @@ export default function PaintingScreen() {
           Купити
         </Button>
       </BottomBar>
+
+      <ImageViewer
+        visible={viewerIndex !== null}
+        images={galleryImages}
+        initialIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+      />
     </AppLayout>
   );
 }

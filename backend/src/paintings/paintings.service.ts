@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 
 import { Painting } from './entities/painting.entity';
 import { CreatePaintingDto } from './dto/create-painting.dto';
@@ -93,7 +93,21 @@ export class PaintingsService {
       throw new NotFoundException('Painting not found');
     }
 
-    await this.paintingsRepository.remove(painting);
+    try {
+      await this.paintingsRepository.remove(painting);
+    } catch (error) {
+      if (
+        error instanceof QueryFailedError &&
+        (error.driverError as { code?: string })?.code ===
+          'ER_ROW_IS_REFERENCED_2'
+      ) {
+        throw new BadRequestException(
+          'Неможливо видалити картину: вона є в замовленнях клієнтів',
+        );
+      }
+
+      throw error;
+    }
 
     return { message: 'Painting deleted' };
   }

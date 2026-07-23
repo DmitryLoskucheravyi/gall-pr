@@ -64,8 +64,11 @@ export default function CatalogScreen() {
             setPaintings((prev) =>
               prev.filter((item) => item.id !== painting.id),
             );
-          } catch (error) {
-            console.log(error);
+          } catch (error: any) {
+            Alert.alert(
+              'Не вдалося видалити картину',
+              error?.response?.data?.message ?? 'Спробуйте ще раз пізніше',
+            );
           }
         },
       },

@@ -84,6 +84,42 @@ export class OrdersService {
     });
   }
 
+  async cancel(userId: number, id: number): Promise<Order> {
+    const order = await this.ordersRepository.findOne({
+      where: { id, userId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException('Order is already cancelled');
+    }
+
+    if (order.status === OrderStatus.COMPLETED) {
+      throw new BadRequestException('Completed orders cannot be cancelled');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      for (const item of order.items) {
+        const painting = await manager.findOne(Painting, {
+          where: { id: item.paintingId },
+        });
+
+        if (painting) {
+          painting.amount += item.quantity;
+          painting.isAvailable = true;
+          await manager.save(painting);
+        }
+      }
+
+      order.status = OrderStatus.CANCELLED;
+
+      return manager.save(order);
+    });
+  }
+
   findAllForUser(userId: number): Promise<Order[]> {
     return this.ordersRepository.find({
       where: { userId },
@@ -101,5 +137,116 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  async findAllAdmin() {
+    const orders = await this.ordersRepository.find({
+      relations: { user: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    return orders.map((order) => ({
+      ...order,
+      user: order.user
+        ? {
+            id: order.user.id,
+            email: order.user.email,
+            firstName: order.user.firstName,
+            lastName: order.user.lastName,
+            phone: order.user.phone,
+          }
+        : null,
+    }));
+  }
+
+  async updateStatusAdmin(id: number, status: OrderStatus): Promise<Order> {
+    const order = await this.ordersRepository.findOne({ where: { id } });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status === status) {
+      return order;
+    }
+
+    const wasCancelled = order.status === OrderStatus.CANCELLED;
+    const willBeCancelled = status === OrderStatus.CANCELLED;
+
+    if (!wasCancelled && willBeCancelled) {
+      return this.dataSource.transaction(async (manager) => {
+        for (const item of order.items) {
+          const painting = await manager.findOne(Painting, {
+            where: { id: item.paintingId },
+          });
+
+          if (painting) {
+            painting.amount += item.quantity;
+            painting.isAvailable = true;
+            await manager.save(painting);
+          }
+        }
+
+        order.status = status;
+
+        return manager.save(order);
+      });
+    }
+
+    if (wasCancelled && !willBeCancelled) {
+      return this.dataSource.transaction(async (manager) => {
+        const paintings = new Map<number, Painting>();
+
+        for (const item of order.items) {
+          const painting = await manager.findOne(Painting, {
+            where: { id: item.paintingId },
+          });
+
+          if (!painting || painting.amount < item.quantity) {
+            throw new BadRequestException(
+              `"${painting?.title ?? 'Картина'}" більше недоступна в потрібній кількості`,
+            );
+          }
+
+          paintings.set(item.paintingId, painting);
+        }
+
+        for (const item of order.items) {
+          const painting = paintings.get(item.paintingId)!;
+
+          painting.amount -= item.quantity;
+          if (painting.amount <= 0) {
+            painting.amount = 0;
+            painting.isAvailable = false;
+          }
+
+          await manager.save(painting);
+        }
+
+        order.status = status;
+
+        return manager.save(order);
+      });
+    }
+
+    order.status = status;
+
+    return this.ordersRepository.save(order);
+  }
+
+  async removeAdmin(id: number) {
+    const order = await this.ordersRepository.findOne({ where: { id } });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status !== OrderStatus.CANCELLED) {
+      throw new BadRequestException('Only cancelled orders can be deleted');
+    }
+
+    await this.ordersRepository.remove(order);
+
+    return { message: 'Order deleted' };
   }
 }

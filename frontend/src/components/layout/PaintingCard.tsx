@@ -3,6 +3,7 @@ import styled, { useTheme } from 'styled-components/native';
 
 import { Painting } from '../../types/painting.types';
 import AnimatedPressable from '../ui/AnimatedPressable';
+import { useImageAspectRatio } from '../../hooks/useImageAspectRatio';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -29,6 +30,8 @@ export default function PaintingCard({
   const shadows = makeShadows(theme);
   const hasDiscount = painting.discount > 0;
 
+  const aspectRatio = useImageAspectRatio(painting.cardImage, 1);
+
   const currentPrice = Number(painting.price);
 
   const oldPrice = hasDiscount
@@ -43,7 +46,10 @@ export default function PaintingCard({
         style={{ width: '100%' }}
       >
         <ImageWrapper>
-          <CardImage source={{ uri: painting.cardImage }} />
+          <CardImage
+            source={{ uri: painting.cardImage }}
+            $aspectRatio={aspectRatio}
+          />
 
           {hasDiscount && (
             <DiscountBadge>
@@ -59,25 +65,31 @@ export default function PaintingCard({
         </ImageWrapper>
 
         <Content>
-          <Title numberOfLines={1}>{painting.title}</Title>
+          <TopRow>
+            <Title numberOfLines={1}>{painting.title}</Title>
 
-          {!!painting.author && (
-            <Author numberOfLines={1}>{painting.author}</Author>
-          )}
+            <PriceContainer>
+              <CurrentPrice>{currentPrice.toLocaleString()} ₴</CurrentPrice>
 
-          {painting.width && painting.height && (
-            <Size>
-              {painting.width} × {painting.height} см
-            </Size>
-          )}
+              {hasDiscount && (
+                <OldPrice>{Math.round(oldPrice).toLocaleString()} ₴</OldPrice>
+              )}
+            </PriceContainer>
+          </TopRow>
 
-          <PriceContainer>
-            <CurrentPrice>{currentPrice.toLocaleString()} ₴</CurrentPrice>
-
-            {hasDiscount && (
-              <OldPrice>{Math.round(oldPrice).toLocaleString()} ₴</OldPrice>
+          <BottomRow>
+            {painting.width && painting.height ? (
+              <Size numberOfLines={1}>
+                {painting.width} × {painting.height} см
+              </Size>
+            ) : (
+              <Size />
             )}
-          </PriceContainer>
+
+            {!!painting.author && (
+              <Author numberOfLines={1}>{painting.author}</Author>
+            )}
+          </BottomRow>
         </Content>
       </AnimatedPressable>
 
@@ -120,9 +132,9 @@ const ImageWrapper = styled.View`
   position: relative;
 `;
 
-const CardImage = styled(Image)`
+const CardImage = styled(Image)<{ $aspectRatio: number }>`
   width: 100%;
-  height: 220px;
+  aspect-ratio: ${({ $aspectRatio }) => $aspectRatio};
 `;
 
 const DiscountBadge = styled.View`
@@ -161,28 +173,42 @@ const Content = styled.View`
   padding: ${spacing.lg}px;
 `;
 
+const TopRow = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: ${spacing.sm}px;
+`;
+
+const BottomRow = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: ${spacing.sm}px;
+  margin-top: ${spacing.sm}px;
+`;
+
 const Title = styled.Text`
+  flex: 1;
   font-family: ${typography.h3.fontFamily};
   font-size: ${typography.h3.fontSize}px;
   color: ${({ theme }) => theme.text};
 `;
 
 const Author = styled.Text`
-  margin-top: 4px;
   font-family: ${typography.body.fontFamily};
   color: ${({ theme }) => theme.textSecondary};
   font-size: ${typography.body.fontSize}px;
 `;
 
 const Size = styled.Text`
-  margin-top: 6px;
   font-family: ${typography.caption.fontFamily};
   color: ${({ theme }) => theme.textMuted};
   font-size: ${typography.caption.fontSize}px;
 `;
 
 const PriceContainer = styled.View`
-  margin-top: ${spacing.md}px;
+  flex-shrink: 0;
   flex-direction: row;
   align-items: baseline;
   gap: ${spacing.sm}px;

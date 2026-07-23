@@ -2,6 +2,7 @@ export { default as Button } from './Button';
 export { default as TextField } from './TextField';
 export { default as Select } from './Select';
 export { default as Toast } from './Toast';
+export { default as ImageViewer } from './ImageViewer';
 export { default as Card } from './Card';
 export { default as Badge } from './Badge';
 export { default as Skeleton } from './Skeleton';

@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, ActivityIndicator, Image } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  ActivityIndicator,
+  Image,
+  Pressable,
+} from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -33,7 +39,14 @@ const STATUS_TONE: Record<
   COMPLETED: 'primary',
 };
 
-export default function OrdersScreen() {
+const STATUS_OPTIONS: OrderStatus[] = [
+  'PENDING',
+  'CONFIRMED',
+  'CANCELLED',
+  'COMPLETED',
+];
+
+export default function AdminOrdersScreen() {
   const navigation = useNavigation<NavigationProps>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -43,14 +56,14 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      navigation.navigate('Login');
+    if (user && user.role !== 'ADMIN') {
+      navigation.navigate('Home');
     }
   }, [user, navigation]);
 
   const loadOrders = useCallback(async () => {
     try {
-      const data = await ordersService.getOrders();
+      const data = await ordersService.getAllOrders();
       setOrders(data);
     } catch (error) {
       console.log(error);
@@ -61,27 +74,41 @@ export default function OrdersScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user) {
+      if (user?.role === 'ADMIN') {
         loadOrders();
       }
     }, [user, loadOrders]),
   );
 
-  const handleCancel = (order: Order) => {
-    Alert.alert('Скасувати замовлення?', `Замовлення №${order.id}`, [
-      { text: 'Ні', style: 'cancel' },
+  const handleStatusChange = async (order: Order, status: OrderStatus) => {
+    if (status === order.status) return;
+
+    try {
+      const updated = await ordersService.updateStatus(order.id, status);
+      setOrders((prev) =>
+        prev.map((item) => (item.id === order.id ? updated : item)),
+      );
+    } catch (error: any) {
+      Alert.alert(
+        'Не вдалося змінити статус',
+        error?.response?.data?.message ?? 'Спробуйте ще раз пізніше',
+      );
+    }
+  };
+
+  const handleDelete = (order: Order) => {
+    Alert.alert('Видалити замовлення?', `Замовлення №${order.id}`, [
+      { text: 'Скасувати', style: 'cancel' },
       {
-        text: 'Скасувати',
+        text: 'Видалити',
         style: 'destructive',
         onPress: async () => {
           try {
-            const updated = await ordersService.cancelOrder(order.id);
-            setOrders((prev) =>
-              prev.map((item) => (item.id === order.id ? updated : item)),
-            );
+            await ordersService.deleteOrder(order.id);
+            setOrders((prev) => prev.filter((item) => item.id !== order.id));
           } catch (error: any) {
             Alert.alert(
-              'Не вдалося скасувати замовлення',
+              'Не вдалося видалити замовлення',
               error?.response?.data?.message ?? 'Спробуйте ще раз пізніше',
             );
           }
@@ -90,7 +117,9 @@ export default function OrdersScreen() {
     ]);
   };
 
-  if (!user) return null;
+  if (user && user.role !== 'ADMIN') {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -114,7 +143,7 @@ export default function OrdersScreen() {
             paddingBottom: insets.bottom + 90,
             paddingHorizontal: spacing.xl,
           }}
-          ListHeaderComponent={<Title>Мої замовлення</Title>}
+          ListHeaderComponent={<Title>Замовлення</Title>}
           ListEmptyComponent={
             <EmptyState>
               <Ionicons
@@ -141,6 +170,13 @@ export default function OrdersScreen() {
                   {new Date(item.createdAt).toLocaleDateString('uk-UA')}
                 </OrderDate>
 
+                {item.user && (
+                  <CustomerText numberOfLines={1}>
+                    {item.user.firstName} {item.user.lastName} ·{' '}
+                    {item.user.email}
+                  </CustomerText>
+                )}
+
                 <ThumbsRow>
                   {item.items.map((orderItem) => (
                     <Thumb
@@ -160,16 +196,34 @@ export default function OrdersScreen() {
                   </TotalValue>
                 </CardFooter>
 
-                {(item.status === 'PENDING' || item.status === 'CONFIRMED') && (
-                  <CancelButtonWrap>
+                <StatusChipsRow>
+                  {STATUS_OPTIONS.map((status) => {
+                    const active = status === item.status;
+
+                    return (
+                      <StatusChip
+                        key={status}
+                        $active={active}
+                        onPress={() => handleStatusChange(item, status)}
+                      >
+                        <StatusChipText $active={active}>
+                          {STATUS_LABEL[status]}
+                        </StatusChipText>
+                      </StatusChip>
+                    );
+                  })}
+                </StatusChipsRow>
+
+                {item.status === 'CANCELLED' && (
+                  <DeleteButtonWrap>
                     <Button
-                      variant="secondary"
+                      variant="destructive"
                       size="sm"
-                      onPress={() => handleCancel(item)}
+                      onPress={() => handleDelete(item)}
                     >
-                      Скасувати замовлення
+                      Видалити замовлення
                     </Button>
-                  </CancelButtonWrap>
+                  </DeleteButtonWrap>
                 )}
               </Card>
             </Animated.View>
@@ -237,6 +291,13 @@ const OrderDate = styled.Text`
   color: ${({ theme }) => theme.textMuted};
 `;
 
+const CustomerText = styled.Text`
+  margin-top: ${spacing.sm}px;
+  font-family: ${typography.body.fontFamily};
+  font-size: ${typography.caption.fontSize}px;
+  color: ${({ theme }) => theme.textSecondary};
+`;
+
 const ThumbsRow = styled.View`
   flex-direction: row;
   gap: ${spacing.sm}px;
@@ -270,6 +331,29 @@ const TotalValue = styled.Text`
   color: ${({ theme }) => theme.primary};
 `;
 
-const CancelButtonWrap = styled.View`
+const DeleteButtonWrap = styled.View`
   margin-top: ${spacing.md}px;
+`;
+
+const StatusChipsRow = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: ${spacing.sm}px;
+  margin-top: ${spacing.md}px;
+`;
+
+const StatusChip = styled(Pressable)<{ $active: boolean }>`
+  padding: ${spacing.xs}px ${spacing.md}px;
+  border-radius: ${radius.pill}px;
+  border-width: 1px;
+  border-color: ${({ theme, $active }) =>
+    $active ? theme.primary : theme.border};
+  background-color: ${({ theme, $active }) =>
+    $active ? theme.primary : theme.backgroundAlt};
+`;
+
+const StatusChipText = styled.Text<{ $active: boolean }>`
+  font-family: ${typography.caption.fontFamily};
+  font-size: ${typography.caption.fontSize}px;
+  color: ${({ theme, $active }) => ($active ? theme.onPrimary : theme.text)};
 `;

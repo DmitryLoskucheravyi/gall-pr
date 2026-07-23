@@ -146,6 +146,33 @@ export default function CreatePaintingForm({
     <Container>
       <Title>{painting ? 'Редагування картини' : 'Створення картини'}</Title>
 
+      <PhotosLabel>
+        Фото ({images.length}) {images.length > 0 && '— перше є головним'}
+      </PhotosLabel>
+
+      <PhotosGrid>
+        {images.map((uri, index) => (
+          <PhotoThumb key={uri} onPress={() => makeCover(uri)}>
+            <ThumbImage source={{ uri }} />
+
+            {index === 0 && (
+              <CoverBadge>
+                <CoverBadgeText>Головне</CoverBadgeText>
+              </CoverBadge>
+            )}
+
+            <RemoveButton onPress={() => removeImage(uri)} hitSlop={8}>
+              <Ionicons name="close" size={14} color="#FFFFFF" />
+            </RemoveButton>
+          </PhotoThumb>
+        ))}
+
+        <AddPhotoButton onPress={pickImages}>
+          <Ionicons name="add" size={26} color={theme.textSecondary} />
+          <AddPhotoText>Додати</AddPhotoText>
+        </AddPhotoButton>
+      </PhotosGrid>
+
       <TextField placeholder="Назва" value={title} onChangeText={setTitle} />
       <TextField placeholder="Автор" value={author} onChangeText={setAuthor} />
       <TextField
@@ -207,33 +234,6 @@ export default function CreatePaintingForm({
           trackColor={{ true: theme.accent }}
         />
       </SwitchRow>
-
-      <PhotosLabel>
-        Фото ({images.length}) {images.length > 0 && '— перше є головним'}
-      </PhotosLabel>
-
-      <PhotosGrid>
-        {images.map((uri, index) => (
-          <PhotoThumb key={uri} onPress={() => makeCover(uri)}>
-            <ThumbImage source={{ uri }} />
-
-            {index === 0 && (
-              <CoverBadge>
-                <CoverBadgeText>Головне</CoverBadgeText>
-              </CoverBadge>
-            )}
-
-            <RemoveButton onPress={() => removeImage(uri)} hitSlop={8}>
-              <Ionicons name="close" size={14} color="#FFFFFF" />
-            </RemoveButton>
-          </PhotoThumb>
-        ))}
-
-        <AddPhotoButton onPress={pickImages}>
-          <Ionicons name="add" size={26} color={theme.textSecondary} />
-          <AddPhotoText>Додати</AddPhotoText>
-        </AddPhotoButton>
-      </PhotosGrid>
 
       <SubmitWrap>
         <Button onPress={handleSubmit} loading={isLoading}>

@@ -61,21 +61,6 @@ export default function CartScreen() {
     }, [user, loadCart]),
   );
 
-  const handleQuantityChange = async (item: CartItem, quantity: number) => {
-    if (quantity < 1) {
-      await handleRemove(item);
-      return;
-    }
-
-    try {
-      await cartService.updateItem(item.paintingId, quantity);
-      await loadCart();
-      useCartStore.getState().refresh();
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const handleRemove = async (item: CartItem) => {
     try {
       await cartService.removeItem(item.paintingId);
@@ -146,61 +131,30 @@ export default function CartScreen() {
               <EmptyText>Кошик порожній</EmptyText>
             </EmptyState>
           }
-          renderItem={({ item, index }) => {
-            const atMax = item.quantity >= item.painting.amount;
-            const lineTotal = Number(item.painting.price) * item.quantity;
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInUp.duration(300).delay((index % 8) * 40)}
+            >
+              <Row>
+                <Thumb source={{ uri: item.painting.cardImage }} />
 
-            return (
-              <Animated.View
-                entering={FadeInUp.duration(300).delay((index % 8) * 40)}
-              >
-                <Row>
-                  <Thumb source={{ uri: item.painting.cardImage }} />
+                <RowContent>
+                  <RowTitle numberOfLines={1}>{item.painting.title}</RowTitle>
+                  <RowPrice>
+                    {Number(item.painting.price).toLocaleString()} ₴
+                  </RowPrice>
+                </RowContent>
 
-                  <RowContent>
-                    <RowTitle numberOfLines={1}>{item.painting.title}</RowTitle>
-                    <RowPrice>
-                      {Number(item.painting.price).toLocaleString()} ₴
-                    </RowPrice>
-
-                    <StepperRow>
-                      <StepButton
-                        onPress={() =>
-                          handleQuantityChange(item, item.quantity - 1)
-                        }
-                        hitSlop={8}
-                      >
-                        <Ionicons name="remove" size={16} color={theme.text} />
-                      </StepButton>
-
-                      <QuantityText>{item.quantity}</QuantityText>
-
-                      <StepButton
-                        disabled={atMax}
-                        onPress={() =>
-                          handleQuantityChange(item, item.quantity + 1)
-                        }
-                        hitSlop={8}
-                        style={{ opacity: atMax ? 0.4 : 1 }}
-                      >
-                        <Ionicons name="add" size={16} color={theme.text} />
-                      </StepButton>
-
-                      <LineTotal>{lineTotal.toLocaleString()} ₴</LineTotal>
-                    </StepperRow>
-                  </RowContent>
-
-                  <RemoveButton onPress={() => handleRemove(item)} hitSlop={8}>
-                    <Ionicons
-                      name="trash-outline"
-                      size={18}
-                      color={theme.error}
-                    />
-                  </RemoveButton>
-                </Row>
-              </Animated.View>
-            );
-          }}
+                <RemoveButton onPress={() => handleRemove(item)} hitSlop={8}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color={theme.error}
+                  />
+                </RemoveButton>
+              </Row>
+            </Animated.View>
+          )}
         />
 
         {items.length > 0 && (
@@ -286,37 +240,6 @@ const RowPrice = styled.Text`
   font-family: ${typography.caption.fontFamily};
   font-size: ${typography.caption.fontSize}px;
   color: ${({ theme }) => theme.textMuted};
-`;
-
-const StepperRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: ${spacing.sm}px;
-  margin-top: ${spacing.sm}px;
-`;
-
-const StepButton = styled(Pressable)`
-  width: 26px;
-  height: 26px;
-  border-radius: ${radius.pill}px;
-  align-items: center;
-  justify-content: center;
-  background-color: ${({ theme }) => theme.backgroundAlt};
-`;
-
-const QuantityText = styled.Text`
-  min-width: 18px;
-  text-align: center;
-  font-family: ${typography.bodySemiBold.fontFamily};
-  font-size: ${typography.body.fontSize}px;
-  color: ${({ theme }) => theme.text};
-`;
-
-const LineTotal = styled.Text`
-  margin-left: auto;
-  font-family: ${typography.bodySemiBold.fontFamily};
-  font-size: ${typography.body.fontSize}px;
-  color: ${({ theme }) => theme.primary};
 `;
 
 const RemoveButton = styled(Pressable)`

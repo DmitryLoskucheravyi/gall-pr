@@ -27,7 +27,14 @@ export default function Menu() {
   const insets = useSafeAreaInsets();
 
   const navTo = (
-    route: 'Home' | 'Catalog' | 'Cart' | 'Dictionaries' | 'Profile' | 'Login',
+    route:
+      | 'Home'
+      | 'Catalog'
+      | 'Cart'
+      | 'Dictionaries'
+      | 'AdminOrders'
+      | 'Profile'
+      | 'Login',
   ) => {
     closeMenu();
     setTimeout(() => navigation.navigate(route as any), 180);
@@ -86,6 +93,13 @@ export default function Menu() {
             <LinkWrapper onPress={() => navTo('Dictionaries')}>
               <Ionicons name="pricetags-outline" size={22} color={theme.text} />
               <LinkText>Матеріали і техніки</LinkText>
+            </LinkWrapper>
+          )}
+
+          {user?.role === 'ADMIN' && (
+            <LinkWrapper onPress={() => navTo('AdminOrders')}>
+              <Ionicons name="receipt-outline" size={22} color={theme.text} />
+              <LinkText>Замовлення</LinkText>
             </LinkWrapper>
           )}
 

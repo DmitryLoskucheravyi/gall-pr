@@ -11,9 +11,18 @@ export type OrderItem = {
   createdAt: string;
 };
 
+export type OrderUser = {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+};
+
 export type Order = {
   id: number;
   userId: number;
+  user?: OrderUser | null;
   status: OrderStatus;
   total: string;
   items: OrderItem[];

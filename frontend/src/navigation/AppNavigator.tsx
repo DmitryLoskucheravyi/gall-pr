@@ -10,6 +10,7 @@ import PaintingScreen from '../screens/PaintingScreen';
 import DictionariesScreen from '../screens/DictionariesScreen';
 import CartScreen from '../screens/CartScreen';
 import OrdersScreen from '../screens/OrdersScreen';
+import AdminOrdersScreen from '../screens/AdminOrdersScreen';
 import Menu from '../components/menu/Menu';
 import { Toast } from '../components/ui';
 import { RootStackParamList } from './types';
@@ -47,6 +48,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Dictionaries" component={DictionariesScreen} />
         <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="Orders" component={OrdersScreen} />
+        <Stack.Screen name="AdminOrders" component={AdminOrdersScreen} />
       </Stack.Navigator>
       <Menu />
       <Toast />

@@ -16,7 +16,11 @@ export const ImageWrapper = styled.View`
   overflow: hidden;
 `;
 
-export const CoverImage = styled(Animated.Image)`
+export const HeroAnimatedWrap = styled(Animated.View)`
+  flex: 1;
+`;
+
+export const CoverImage = styled.Image`
   width: 100%;
   height: 100%;
 `;
@@ -29,6 +33,36 @@ export const BackButton = styled.Pressable`
   border-radius: ${radius.pill}px;
   justify-content: center;
   align-items: center;
+`;
+
+export const FullscreenButton = styled.Pressable`
+  position: absolute;
+  right: ${spacing.lg}px;
+  width: 42px;
+  height: 42px;
+  border-radius: ${radius.pill}px;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.35);
+`;
+
+export const DotsRow = styled.View`
+  position: absolute;
+  bottom: ${spacing.lg}px;
+  left: 0;
+  right: 0;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: ${spacing.xs}px;
+`;
+
+export const Dot = styled.View<{ $active: boolean }>`
+  width: ${({ $active }) => ($active ? 18 : 6)}px;
+  height: 6px;
+  border-radius: ${radius.pill}px;
+  background-color: ${({ $active }) =>
+    $active ? '#FFFFFF' : 'rgba(255, 255, 255, 0.5)'};
 `;
 
 export const ContentCard = styled(Animated.View)`
@@ -73,14 +107,6 @@ export const SectionTitle = styled.Text`
   color: ${({ theme }) => theme.text};
 `;
 
-export const SectionHeaderStandalone = styled.Text`
-  margin-top: ${spacing.xxxl}px;
-  margin-bottom: ${spacing.lg}px;
-  font-family: ${typography.h3.fontFamily};
-  font-size: ${typography.h3.fontSize}px;
-  color: ${({ theme }) => theme.text};
-`;
-
 export const InfoRow = styled.View`
   flex-direction: row;
   justify-content: space-between;
@@ -100,14 +126,6 @@ export const InfoValue = styled.Text`
   font-family: ${typography.bodySemiBold.fontFamily};
   font-size: ${typography.body.fontSize}px;
   color: ${({ theme }) => theme.text};
-`;
-
-export const GalleryImage = styled.Image`
-  width: 300px;
-  height: 210px;
-  border-radius: ${radius.lg}px;
-  margin-right: ${spacing.md}px;
-  background-color: ${({ theme }) => theme.backgroundAlt};
 `;
 
 export const BottomBar = styled.View`

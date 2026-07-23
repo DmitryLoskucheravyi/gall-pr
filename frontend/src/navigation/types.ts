@@ -10,6 +10,7 @@ export type RootStackParamList = {
   Dictionaries: undefined;
   Cart: undefined;
   Orders: undefined;
+  AdminOrders: undefined;
 };
 
 export type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
