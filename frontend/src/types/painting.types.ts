@@ -1,3 +1,5 @@
+import { Material, Technique } from './dictionaries.types';
+
 export type Painting = {
   id: number;
 
@@ -17,8 +19,12 @@ export type Painting = {
   isFeatured: boolean;
 
   author: string | null;
-  technique: string | null;
-  material: string | null;
+
+  techniqueId: number | null;
+  technique: Technique | null;
+
+  materialId: number | null;
+  material: Material | null;
 
   width: number | null;
   height: number | null;

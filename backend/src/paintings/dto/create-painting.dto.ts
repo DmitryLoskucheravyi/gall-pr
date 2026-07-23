@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -39,12 +40,12 @@ export class CreatePaintingDto {
   author?: string;
 
   @IsOptional()
-  @IsString()
-  technique?: string;
+  @IsInt()
+  techniqueId?: number;
 
   @IsOptional()
-  @IsString()
-  material?: string;
+  @IsInt()
+  materialId?: number;
 
   @IsOptional()
   @IsNumber()

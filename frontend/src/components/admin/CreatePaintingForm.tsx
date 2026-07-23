@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import * as ImagePicker from 'expo-image-picker';
 
@@ -6,9 +6,12 @@ import { Image, Pressable, Switch } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Painting } from '../../types/painting.types';
+import { Material, Technique } from '../../types/dictionaries.types';
 import { paintingsService } from '../../api/paintings.api';
 import { uploadImage } from '../../api/uploads.api';
-import { Button, TextField } from '../ui';
+import { materialsService } from '../../api/materials.api';
+import { techniquesService } from '../../api/techniques.api';
+import { Button, TextField, Select } from '../ui';
 import { spacing } from '../../theme/spacing';
 import { radius } from '../../theme/radius';
 import { typography, fontFamily } from '../../theme/typography';
@@ -33,8 +36,14 @@ export default function CreatePaintingForm({
   const [discount, setDiscount] = useState(
     painting?.discount?.toString() ?? '',
   );
-  const [technique, setTechnique] = useState(painting?.technique ?? '');
-  const [material, setMaterial] = useState(painting?.material ?? '');
+  const [techniqueId, setTechniqueId] = useState<number | undefined>(
+    painting?.techniqueId ?? undefined,
+  );
+  const [materialId, setMaterialId] = useState<number | undefined>(
+    painting?.materialId ?? undefined,
+  );
+  const [techniques, setTechniques] = useState<Technique[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [width, setWidth] = useState(painting?.width?.toString() ?? '');
   const [height, setHeight] = useState(painting?.height?.toString() ?? '');
   const [year, setYear] = useState(painting?.year?.toString() ?? '');
@@ -44,6 +53,11 @@ export default function CreatePaintingForm({
     if (painting?.cardImage) return [painting.cardImage];
     return [];
   });
+
+  useEffect(() => {
+    materialsService.getMaterials().then(setMaterials);
+    techniquesService.getTechniques().then(setTechniques);
+  }, []);
 
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -92,8 +106,8 @@ export default function CreatePaintingForm({
         price: Number(price),
         discount: Number(discount) || 0,
         isFeatured,
-        technique,
-        material,
+        techniqueId,
+        materialId,
         width: Number(width) || 0,
         height: Number(height) || 0,
         year: Number(year) || 0,
@@ -114,8 +128,8 @@ export default function CreatePaintingForm({
       setAuthor('');
       setDescription('');
       setPrice('');
-      setTechnique('');
-      setMaterial('');
+      setTechniqueId(undefined);
+      setMaterialId(undefined);
       setWidth('');
       setHeight('');
       setYear('');
@@ -140,15 +154,17 @@ export default function CreatePaintingForm({
         value={price}
         onChangeText={setPrice}
       />
-      <TextField
+      <Select
         placeholder="Техніка"
-        value={technique}
-        onChangeText={setTechnique}
+        value={techniqueId}
+        options={techniques}
+        onChange={setTechniqueId}
       />
-      <TextField
+      <Select
         placeholder="Матеріал"
-        value={material}
-        onChangeText={setMaterial}
+        value={materialId}
+        options={materials}
+        onChange={setMaterialId}
       />
       <TextField
         placeholder="Ширина"

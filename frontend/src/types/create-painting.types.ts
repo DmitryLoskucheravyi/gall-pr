@@ -15,9 +15,9 @@ export type CreatePaintingDto = {
 
   author?: string;
 
-  technique?: string;
+  techniqueId?: number;
 
-  material?: string;
+  materialId?: number;
 
   width?: number;
 

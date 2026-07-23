@@ -26,7 +26,9 @@ export default function Menu() {
   const { isMenuOpen, closeMenu } = useMenu();
   const insets = useSafeAreaInsets();
 
-  const navTo = (route: 'Home' | 'Catalog' | 'Profile' | 'Login') => {
+  const navTo = (
+    route: 'Home' | 'Catalog' | 'Cart' | 'Dictionaries' | 'Profile' | 'Login',
+  ) => {
     closeMenu();
     setTimeout(() => navigation.navigate(route as any), 180);
   };
@@ -74,6 +76,18 @@ export default function Menu() {
             <Ionicons name="grid-outline" size={22} color={theme.text} />
             <LinkText>Каталог</LinkText>
           </LinkWrapper>
+
+          <LinkWrapper onPress={() => navTo('Cart')}>
+            <Ionicons name="cart-outline" size={22} color={theme.text} />
+            <LinkText>Кошик</LinkText>
+          </LinkWrapper>
+
+          {user?.role === 'ADMIN' && (
+            <LinkWrapper onPress={() => navTo('Dictionaries')}>
+              <Ionicons name="pricetags-outline" size={22} color={theme.text} />
+              <LinkText>Матеріали і техніки</LinkText>
+            </LinkWrapper>
+          )}
 
           {isAuthenticated ? (
             <LinkWrapper onPress={() => navTo('Profile')}>

@@ -7,7 +7,11 @@ import RegisterScreen from '../screens/RegisterScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CatalogScreen from '../screens/CatalogScreen';
 import PaintingScreen from '../screens/PaintingScreen';
+import DictionariesScreen from '../screens/DictionariesScreen';
+import CartScreen from '../screens/CartScreen';
+import OrdersScreen from '../screens/OrdersScreen';
 import Menu from '../components/menu/Menu';
+import { Toast } from '../components/ui';
 import { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,8 +44,12 @@ const AppNavigator = () => {
           component={PaintingScreen}
           options={{ animation: 'fade_from_bottom' }}
         />
+        <Stack.Screen name="Dictionaries" component={DictionariesScreen} />
+        <Stack.Screen name="Cart" component={CartScreen} />
+        <Stack.Screen name="Orders" component={OrdersScreen} />
       </Stack.Navigator>
       <Menu />
+      <Toast />
     </NavigationContainer>
   );
 };

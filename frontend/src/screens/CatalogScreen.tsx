@@ -19,6 +19,7 @@ import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import PaintingCard from '../components/layout/PaintingCard';
 import { Button, BottomSheet } from '../components/ui';
 import { useAuthStore } from '../store/authStore';
+import { useAddToCart } from '../hooks/useAddToCart';
 import AppLayout from '../components/layout/AppLayout';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
@@ -28,6 +29,7 @@ export default function CatalogScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
+  const addToCart = useAddToCart();
   const [paintings, setPaintings] = useState<Painting[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,7 +141,7 @@ export default function CatalogScreen() {
                 painting={item}
                 isAdmin={user?.role === 'ADMIN'}
                 onPress={() => navigation.navigate('Painting', { id: item.id })}
-                onBuy={() => console.log('buy', item.id)}
+                onBuy={() => addToCart(item)}
                 onEdit={() => setEditingPainting(item)}
                 onDelete={() => handleDelete(item)}
               />

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -11,18 +12,22 @@ import Animated, {
 
 import { useAppTheme } from '../hooks/useTheme';
 import { useThemeStore } from '../store/themeStore';
+import { useAuthStore } from '../store/authStore';
+import { useCartStore } from '../store/cartStore';
 import { NavigationProps } from './types';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 import { makeShadows } from '../theme/shadows';
 
 const ITEMS: {
-  name: 'Home' | 'Catalog' | 'Profile';
+  name: 'Home' | 'Catalog' | 'Cart' | 'Profile';
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
 }[] = [
   { name: 'Home', icon: 'home-outline', activeIcon: 'home' },
   { name: 'Catalog', icon: 'grid-outline', activeIcon: 'grid' },
+  { name: 'Cart', icon: 'cart-outline', activeIcon: 'cart' },
   { name: 'Profile', icon: 'person-outline', activeIcon: 'person' },
 ];
 
@@ -33,6 +38,16 @@ export default function BottomMenu() {
   const isDark = useThemeStore(({ isDark }) => isDark);
   const insets = useSafeAreaInsets();
   const shadows = makeShadows(theme);
+  const user = useAuthStore((state) => state.user);
+  const cartCount = useCartStore((state) => state.count);
+
+  useEffect(() => {
+    if (user) {
+      useCartStore.getState().refresh();
+    } else {
+      useCartStore.getState().reset();
+    }
+  }, [user]);
 
   return (
     <ShadowContainer
@@ -52,6 +67,7 @@ export default function BottomMenu() {
                 key={item.name}
                 active={active}
                 icon={active ? item.activeIcon : item.icon}
+                badge={item.name === 'Cart' ? cartCount : undefined}
                 onPress={() => navigation.navigate(item.name as any)}
               />
             );
@@ -65,10 +81,12 @@ export default function BottomMenu() {
 function Tab({
   active,
   icon,
+  badge,
   onPress,
 }: {
   active: boolean;
   icon: keyof typeof Ionicons.glyphMap;
+  badge?: number;
   onPress: () => void;
 }) {
   const theme = useAppTheme();
@@ -86,6 +104,12 @@ function Tab({
           size={22}
           color={active ? theme.onPrimary : theme.text}
         />
+
+        {!!badge && (
+          <BadgeDot>
+            <BadgeText>{badge > 9 ? '9+' : badge}</BadgeText>
+          </BadgeDot>
+        )}
       </AnimatedIconWrapper>
     </Pressable>
   );
@@ -107,6 +131,25 @@ const AnimatedIconWrapper = styled(Animated.View)`
   border-radius: ${radius.pill}px;
   justify-content: center;
   align-items: center;
+`;
+
+const BadgeDot = styled.View`
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: ${radius.pill}px;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme }) => theme.error};
+`;
+
+const BadgeText = styled.Text`
+  font-family: ${typography.overline.fontFamily};
+  font-size: 9px;
+  color: #ffffff;
 `;
 
 const ShadowContainer = styled(Animated.View)`

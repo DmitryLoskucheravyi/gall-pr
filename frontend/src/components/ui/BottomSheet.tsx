@@ -13,9 +13,19 @@ import { spacing } from '../../theme/spacing';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type Props = { visible: boolean; onClose: () => void; children: ReactNode };
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  minHeight?: number;
+};
 
-export default function BottomSheet({ visible, onClose, children }: Props) {
+export default function BottomSheet({
+  visible,
+  onClose,
+  children,
+  minHeight,
+}: Props) {
   const theme = useTheme();
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
@@ -69,7 +79,12 @@ export default function BottomSheet({ visible, onClose, children }: Props) {
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </Animated.View>
 
-        <Sheet style={sheetStyle}>
+        <Sheet
+          style={[
+            minHeight ? { minHeight: SCREEN_HEIGHT * minHeight } : null,
+            sheetStyle,
+          ]}
+        >
           <Handle />
           <CloseButton onPress={onClose} hitSlop={10}>
             <Ionicons name="close" size={22} color={theme.textSecondary} />

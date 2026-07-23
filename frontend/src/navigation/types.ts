@@ -7,6 +7,9 @@ export type RootStackParamList = {
   Login: undefined;
   Catalog: undefined;
   Painting: { id: number };
+  Dictionaries: undefined;
+  Cart: undefined;
+  Orders: undefined;
 };
 
 export type NavigationProps = NativeStackNavigationProp<RootStackParamList>;

@@ -126,6 +126,10 @@ export const PriceTag = styled.Text`
   color: ${({ theme }) => theme.primary};
 `;
 
+export const BuyButtonWrap = styled.View`
+  margin-top: ${spacing.xl}px;
+`;
+
 export const HideWrapper = styled.Pressable`
   margin-top: ${spacing.xxxl}px;
   margin-bottom: ${spacing.md}px;

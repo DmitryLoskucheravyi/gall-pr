@@ -77,6 +77,15 @@ const ProfileScreen = () => {
             </Card>
           </Animated.View>
 
+          <Animated.View entering={FadeInDown.duration(420).delay(140)}>
+            <Button
+              variant="secondary"
+              onPress={() => navigation.navigate('Orders')}
+            >
+              Мої замовлення
+            </Button>
+          </Animated.View>
+
           <Animated.View entering={FadeInDown.duration(420).delay(180)}>
             <LogoutWrap>
               <Button variant="secondary" onPress={logout}>

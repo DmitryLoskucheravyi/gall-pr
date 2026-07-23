@@ -4,7 +4,12 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+
+import { Material } from '../../materials/entities/material.entity';
+import { Technique } from '../../techniques/entities/technique.entity';
 
 @Entity('paintings')
 export class Painting {
@@ -41,11 +46,19 @@ export class Painting {
   @Column({ nullable: true })
   author: string;
 
-  @Column({ nullable: true })
-  technique: string;
+  @Column({ name: 'technique_id', nullable: true })
+  techniqueId: number | null;
 
-  @Column({ nullable: true })
-  material: string;
+  @ManyToOne(() => Technique, { nullable: true, eager: true })
+  @JoinColumn({ name: 'technique_id' })
+  technique: Technique | null;
+
+  @Column({ name: 'material_id', nullable: true })
+  materialId: number | null;
+
+  @ManyToOne(() => Material, { nullable: true, eager: true })
+  @JoinColumn({ name: 'material_id' })
+  material: Material | null;
 
   @Column({ nullable: true })
   width: number;

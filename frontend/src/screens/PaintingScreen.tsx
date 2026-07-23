@@ -18,6 +18,7 @@ import { Painting } from '../types/painting.types';
 import { useAppTheme } from '../hooks/useTheme';
 import { Button, Collapsible } from '../components/ui';
 import { NavigationProps } from '../navigation/types';
+import { useAddToCart } from '../hooks/useAddToCart';
 import { spacing } from '../theme/spacing';
 
 import {
@@ -39,6 +40,7 @@ import {
   InfoValue,
   PriceTag,
   SectionTitle,
+  BuyButtonWrap,
 } from './styled/painting.styled';
 
 const HERO_HEIGHT = 440;
@@ -49,6 +51,7 @@ export default function PaintingScreen() {
 
   const navigation = useNavigation<NavigationProps>();
   const route = useRoute<any>();
+  const addToCart = useAddToCart();
 
   const [painting, setPainting] = useState<Painting | null>(null);
   const [loading, setLoading] = useState(true);
@@ -136,6 +139,10 @@ export default function PaintingScreen() {
 
           <Price>₴ {Number(painting.price).toLocaleString()}</Price>
 
+          <BuyButtonWrap>
+            <Button onPress={() => addToCart(painting)}>Купити</Button>
+          </BuyButtonWrap>
+
           <HideWrapper onPress={() => setIsHideDesc((prev) => !prev)}>
             <SectionTitle>Опис</SectionTitle>
             <Ionicons
@@ -177,14 +184,14 @@ export default function PaintingScreen() {
               {painting.technique && (
                 <InfoRow>
                   <InfoLabel>Техніка</InfoLabel>
-                  <InfoValue>{painting.technique}</InfoValue>
+                  <InfoValue>{painting.technique.name}</InfoValue>
                 </InfoRow>
               )}
 
               {painting.material && (
                 <InfoRow>
                   <InfoLabel>Матеріал</InfoLabel>
-                  <InfoValue>{painting.material}</InfoValue>
+                  <InfoValue>{painting.material.name}</InfoValue>
                 </InfoRow>
               )}
 
@@ -221,7 +228,11 @@ export default function PaintingScreen() {
 
       <BottomBar style={{ paddingBottom: insets.bottom + spacing.md }}>
         <PriceTag>₴ {Number(painting.price).toLocaleString()}</PriceTag>
-        <Button onPress={() => {}} fullWidth={false} style={{ flex: 1 }}>
+        <Button
+          onPress={() => addToCart(painting)}
+          fullWidth={false}
+          style={{ flex: 1 }}
+        >
           Купити
         </Button>
       </BottomBar>
