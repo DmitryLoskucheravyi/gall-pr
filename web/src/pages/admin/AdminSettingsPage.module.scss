@@ -1,0 +1,36 @@
+.wrap {
+  max-width: 400px;
+}
+
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.hint {
+  margin-bottom: $spacing-sm;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.input {
+  @include input-base;
+}
+
+.saveButton {
+  @include button-primary;
+  margin-top: $spacing-lg;
+}

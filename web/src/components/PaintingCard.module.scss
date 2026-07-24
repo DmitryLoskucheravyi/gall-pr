@@ -1,0 +1,97 @@
+.card {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background-color: var(--color-background-alt);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-lg;
+}
+
+.title {
+  overflow: hidden;
+  font-family: $font-display;
+  font-size: 18px;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.author {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.size {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.price {
+  margin-top: $spacing-sm;
+  font-family: $font-display;
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+.actions {
+  margin-top: $spacing-md;
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.detailsButton {
+  @include button-secondary;
+  flex: 1;
+  padding: $spacing-sm;
+  font-size: 14px;
+}
+
+.buyButton {
+  @include button-primary;
+  flex: 1;
+  padding: $spacing-sm;
+  font-size: 14px;
+}
+
+.adminActions {
+  margin-top: $spacing-sm;
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.editButton {
+  @include button-base;
+  flex: 1;
+  padding: $spacing-sm;
+  font-size: 14px;
+  background-color: var(--color-background-alt);
+  color: var(--color-text);
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.deleteButton {
+  @include button-danger;
+  flex: 1;
+  padding: $spacing-sm;
+  font-size: 14px;
+}

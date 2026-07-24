@@ -1,0 +1,52 @@
+.header {
+  margin-bottom: $spacing-xxl;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.createButton {
+  @include button-primary;
+}
+
+.chips {
+  margin-bottom: $spacing-xxl;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.chip {
+  @include chip;
+}
+
+.chipActive {
+  @include chip;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-xxl;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}

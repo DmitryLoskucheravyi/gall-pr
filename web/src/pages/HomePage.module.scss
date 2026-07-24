@@ -1,0 +1,77 @@
+.hero {
+  margin-bottom: $spacing-huge;
+  border-radius: $radius-xxl;
+  background-color: var(--color-background-alt);
+  padding: $spacing-huge $spacing-xxxxl;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--color-accent);
+  text-transform: uppercase;
+}
+
+.title {
+  margin-top: $spacing-md;
+  font-family: $font-display;
+  font-size: 48px;
+  color: var(--color-text);
+}
+
+.rule {
+  margin: $spacing-lg auto 0;
+  height: 3px;
+  width: 40px;
+  background-color: var(--color-accent);
+}
+
+.subtitle {
+  margin: $spacing-lg auto 0;
+  max-width: 560px;
+  color: var(--color-text-secondary);
+}
+
+.ctaButton {
+  @include button-primary;
+  margin-top: $spacing-xxl;
+  display: inline-flex;
+}
+
+.sectionHeader {
+  margin-bottom: $spacing-xxl;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.sectionLink {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-xxl;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

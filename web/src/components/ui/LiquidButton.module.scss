@@ -1,0 +1,32 @@
+.liquidButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: $radius-pill;
+  background-color: transparent;
+  padding: $spacing-md $spacing-xxl;
+  font-family: $font-sans;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-on-primary);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.canvas {
+  position: absolute;
+  inset: -50px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.inner {
+  position: relative;
+  z-index: 2;
+}

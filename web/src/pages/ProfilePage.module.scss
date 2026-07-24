@@ -1,0 +1,74 @@
+.wrap {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar {
+  display: flex;
+  height: 96px;
+  width: 96px;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pill;
+  background-color: var(--color-primary);
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-on-primary);
+}
+
+.name {
+  margin-top: $spacing-lg;
+  font-family: $font-display;
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.adminBadge {
+  margin-top: $spacing-sm;
+  border-radius: $radius-pill;
+  background-color: var(--color-primary);
+  padding: $spacing-xs $spacing-lg;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-on-primary);
+}
+
+.info {
+  @include card;
+  margin-top: $spacing-xxl;
+  padding: $spacing-xxl;
+
+  > * + * {
+    margin-top: $spacing-lg;
+    border-top: 1px solid var(--color-border);
+    padding-top: $spacing-lg;
+  }
+}
+
+.infoLabel {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.infoValue {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ordersLink {
+  @include button-secondary;
+  margin-top: $spacing-xxl;
+  display: block;
+  width: 100%;
+  text-align: center;
+}

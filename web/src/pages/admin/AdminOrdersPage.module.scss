@@ -1,0 +1,86 @@
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.order {
+  @include card;
+  padding: $spacing-xl;
+}
+
+.orderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orderNumber {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.orderTotal {
+  font-family: $font-display;
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+.userLine {
+  margin-top: $spacing-xs;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.date {
+  margin-top: $spacing-xs;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.statusOptions {
+  margin-top: $spacing-lg;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.statusOption {
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background-alt);
+  padding: $spacing-xs $spacing-lg;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.statusOptionActive {
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  padding: $spacing-xs $spacing-lg;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-on-primary);
+}
+
+.deleteButton {
+  @include button-danger;
+  margin-top: $spacing-lg;
+  padding: $spacing-sm $spacing-lg;
+}

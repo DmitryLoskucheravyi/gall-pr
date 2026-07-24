@@ -1,0 +1,92 @@
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xxxxl;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: 1fr 320px;
+  }
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.item {
+  @include card;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+}
+
+.itemImage {
+  height: 80px;
+  width: 80px;
+  border-radius: $radius-md;
+  object-fit: cover;
+}
+
+.itemInfo {
+  flex: 1;
+}
+
+.itemTitle {
+  font-weight: 600;
+  color: var(--color-text);
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.itemPrice {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.removeButton {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+.summary {
+  @include card;
+  height: fit-content;
+  padding: $spacing-xxl;
+}
+
+.summaryRow {
+  margin-bottom: $spacing-lg;
+  display: flex;
+  justify-content: space-between;
+}
+
+.summaryLabel {
+  color: var(--color-text-secondary);
+}
+
+.summaryTotal {
+  font-family: $font-display;
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.checkoutButton {
+  @include button-primary;
+  width: 100%;
+}

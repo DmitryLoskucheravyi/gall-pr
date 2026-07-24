@@ -1,0 +1,83 @@
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.tabs {
+  margin-bottom: $spacing-xl;
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.chip {
+  @include chip;
+}
+
+.chipActive {
+  @include chip;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.form {
+  margin-bottom: $spacing-xxl;
+  display: flex;
+  gap: $spacing-md;
+}
+
+.input {
+  @include input-base;
+  flex: 1;
+}
+
+.submitButton {
+  @include button-primary;
+}
+
+.cancelButton {
+  @include button-secondary;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: $spacing-md $spacing-lg;
+}
+
+.itemName {
+  color: var(--color-text);
+}
+
+.itemActions {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.editButton {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.deleteButton {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-error);
+}

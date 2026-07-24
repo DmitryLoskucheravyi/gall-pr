@@ -8,5 +8,4 @@ export { default as Card } from './Card';
 export { default as Badge } from './Badge';
 export { default as Skeleton } from './Skeleton';
 export { default as BottomSheet } from './BottomSheet';
-export { default as Collapsible } from './Collapsible';
 export { default as AnimatedPressable } from './AnimatedPressable';

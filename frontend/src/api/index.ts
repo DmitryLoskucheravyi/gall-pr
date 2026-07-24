@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 function getApiUrl(): string {
   if (__DEV__) {
     const host = Constants.expoConfig?.hostUri?.split(':')[0];
-    if (host) return `http://${host}:3000`;
+    if (host) return `http://${host}:3001`;
   }
   return process.env.EXPO_PUBLIC_API_URL ?? '';
 }

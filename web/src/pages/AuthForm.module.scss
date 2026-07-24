@@ -1,0 +1,42 @@
+.wrap {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: 32px;
+  color: var(--color-text);
+}
+
+.form {
+  margin-top: $spacing-xxxl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.input {
+  @include input-base;
+}
+
+.error {
+  font-size: 14px;
+  color: var(--color-error);
+}
+
+.submitButton {
+  @include button-primary;
+  margin-top: $spacing-sm;
+}
+
+.footer {
+  margin-top: $spacing-xxl;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.footerLink {
+  font-weight: 600;
+  color: var(--color-primary);
+}

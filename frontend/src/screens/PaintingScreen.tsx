@@ -17,13 +17,15 @@ import Animated, {
   interpolate,
   Extrapolation,
   FadeIn,
+  FadeOut,
+  LinearTransition,
 } from 'react-native-reanimated';
 
 import AppLayout from '../components/layout/AppLayout';
 import { paintingsService } from '../api/paintings.api';
 import { Painting } from '../types/painting.types';
 import { useAppTheme } from '../hooks/useTheme';
-import { Button, Collapsible, ImageViewer } from '../components/ui';
+import { Button, ImageViewer } from '../components/ui';
 import PaintingCard from '../components/layout/PaintingCard';
 import { NavigationProps } from '../navigation/types';
 import { useAddToCart } from '../hooks/useAddToCart';
@@ -234,6 +236,7 @@ export default function PaintingScreen() {
 
         <ContentCard
           entering={FadeIn.duration(400)}
+          layout={LinearTransition.duration(250)}
           style={{
             paddingBottom: insets.bottom + spacing.md + 64 + spacing.md,
           }}
@@ -257,9 +260,14 @@ export default function PaintingScreen() {
             />
           </HideWrapper>
 
-          <Collapsible open={!isHideDesc}>
-            <Description>{painting.description}</Description>
-          </Collapsible>
+          {!isHideDesc && (
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+            >
+              <Description>{painting.description}</Description>
+            </Animated.View>
+          )}
 
           <HideWrapper onPress={() => setIsHideChar((prev) => !prev)}>
             <SectionTitle>Характеристики</SectionTitle>
@@ -270,8 +278,11 @@ export default function PaintingScreen() {
             />
           </HideWrapper>
 
-          <Collapsible open={!isHideChar}>
-            <>
+          {!isHideChar && (
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+            >
               {!!authorName && (
                 <InfoRow>
                   <InfoLabel>Автор</InfoLabel>
@@ -308,8 +319,8 @@ export default function PaintingScreen() {
                   </InfoValue>
                 </InfoRow>
               )}
-            </>
-          </Collapsible>
+            </Animated.View>
+          )}
 
           {related.length > 0 && (
             <>

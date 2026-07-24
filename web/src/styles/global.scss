@@ -1,0 +1,106 @@
+@use 'variables' as *;
+
+@import '@fontsource/playfair-display/500.css';
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/700.css';
+@import '@fontsource/playfair-display/600-italic.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+
+:root {
+  --color-background: #fbf7f2;
+  --color-background-alt: #f3ece3;
+  --color-surface: #ffffff;
+
+  --color-primary: #6b0f2e;
+  --color-primary-soft: #f4e4e9;
+  --color-on-primary: #ffffff;
+
+  --color-accent: #b8935b;
+  --color-accent-soft: #f1e4d0;
+  --color-on-accent: #2b1d0e;
+
+  --color-text: #241417;
+  --color-text-secondary: #8a6b72;
+  --color-text-muted: #b3a29e;
+
+  --color-border: #e8ddd3;
+  --color-border-strong: #d9c7bc;
+
+  --color-success: #2f7a4d;
+  --color-error: #c0392b;
+  --color-warning: #b8860b;
+}
+
+.dark {
+  --color-background: #14100f;
+  --color-background-alt: #1b1513;
+  --color-surface: #201a18;
+
+  --color-primary: #e7c9a9;
+  --color-primary-soft: #332723;
+  --color-on-primary: #1e1310;
+
+  --color-accent: #c9a468;
+  --color-accent-soft: #2e2620;
+  --color-on-accent: #1a140c;
+
+  --color-text: #f5ede6;
+  --color-text-secondary: #b8a79e;
+  --color-text-muted: #7e6f68;
+
+  --color-border: #332924;
+  --color-border-strong: #453830;
+
+  --color-success: #5fae7f;
+  --color-error: #e2685a;
+  --color-warning: #d9a441;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: $font-sans;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: $font-display;
+}
+
+p,
+dl,
+dd {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
