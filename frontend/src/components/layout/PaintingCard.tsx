@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Image } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 
 import { Painting } from '../../types/painting.types';
 import AnimatedPressable from '../ui/AnimatedPressable';
 import { useImageAspectRatio } from '../../hooks/useImageAspectRatio';
+import { useSettingsStore } from '../../store/settingsStore';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -16,6 +20,7 @@ type Props = {
   isAdmin?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  compact?: boolean;
 };
 
 export default function PaintingCard({
@@ -25,18 +30,16 @@ export default function PaintingCard({
   isAdmin,
   onEdit,
   onDelete,
+  compact,
 }: Props) {
   const theme = useTheme();
   const shadows = makeShadows(theme);
-  const hasDiscount = painting.discount > 0;
+  const authorName = useSettingsStore((state) => state.authorName);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
 
   const aspectRatio = useImageAspectRatio(painting.cardImage, 1);
 
   const currentPrice = Number(painting.price);
-
-  const oldPrice = hasDiscount
-    ? currentPrice / (1 - painting.discount / 100)
-    : currentPrice;
 
   return (
     <Container style={shadows.sm}>
@@ -50,69 +53,90 @@ export default function PaintingCard({
             source={{ uri: painting.cardImage }}
             $aspectRatio={aspectRatio}
           />
-
-          {hasDiscount && (
-            <DiscountBadge>
-              <DiscountText>-{painting.discount}%</DiscountText>
-            </DiscountBadge>
-          )}
-
-          {painting.isFeatured && (
-            <FeaturedBadge>
-              <FeaturedText>Featured</FeaturedText>
-            </FeaturedBadge>
-          )}
         </ImageWrapper>
+      </AnimatedPressable>
 
-        <Content>
-          <TopRow>
+      {isAdmin && !compact && (
+        <AdminMenuWrap>
+          {isAdminMenuOpen && (
+            <IconStack
+              entering={FadeInUp.duration(180)}
+              exiting={FadeOutDown.duration(150)}
+            >
+              <IconButton
+                onPress={() => {
+                  setIsAdminMenuOpen(false);
+                  onEdit?.();
+                }}
+              >
+                <Ionicons
+                  name="settings-outline"
+                  size={16}
+                  color={theme.text}
+                />
+              </IconButton>
+
+              <IconButton
+                $danger
+                onPress={() => {
+                  setIsAdminMenuOpen(false);
+                  onDelete?.();
+                }}
+              >
+                <Ionicons name="trash-outline" size={16} color="#FFFFFF" />
+              </IconButton>
+            </IconStack>
+          )}
+
+          <ToggleButton
+            onPress={() => setIsAdminMenuOpen((prev) => !prev)}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={isAdminMenuOpen ? 'chevron-down' : 'chevron-up'}
+              size={18}
+              color="#FFFFFF"
+            />
+          </ToggleButton>
+        </AdminMenuWrap>
+      )}
+
+      {compact ? (
+        <CompactContent>
+          <Title numberOfLines={1}>{painting.title}</Title>
+
+          <PriceContainer>
+            <CurrentPrice>{currentPrice.toLocaleString()} ₴</CurrentPrice>
+          </PriceContainer>
+        </CompactContent>
+      ) : (
+        <BodyRow>
+          <Content>
             <Title numberOfLines={1}>{painting.title}</Title>
+
+            {!!authorName && <Author numberOfLines={1}>{authorName}</Author>}
+
+            {painting.width && painting.height && (
+              <Size>
+                {painting.width} × {painting.height} см
+              </Size>
+            )}
 
             <PriceContainer>
               <CurrentPrice>{currentPrice.toLocaleString()} ₴</CurrentPrice>
-
-              {hasDiscount && (
-                <OldPrice>{Math.round(oldPrice).toLocaleString()} ₴</OldPrice>
-              )}
             </PriceContainer>
-          </TopRow>
+          </Content>
 
-          <BottomRow>
-            {painting.width && painting.height ? (
-              <Size numberOfLines={1}>
-                {painting.width} × {painting.height} см
-              </Size>
-            ) : (
-              <Size />
-            )}
+          <ButtonsColumn>
+            <DetailsButton onPress={onPress}>
+              <DetailsText>Детальніше</DetailsText>
+            </DetailsButton>
 
-            {!!painting.author && (
-              <Author numberOfLines={1}>{painting.author}</Author>
-            )}
-          </BottomRow>
-        </Content>
-      </AnimatedPressable>
-
-      <ButtonsRow>
-        <DetailsButton onPress={onPress}>
-          <DetailsText>Детальніше</DetailsText>
-        </DetailsButton>
-
-        <BuyButton onPress={onBuy}>
-          <BuyText>Купити</BuyText>
-        </BuyButton>
-      </ButtonsRow>
-
-      {isAdmin && (
-        <AdminButtonsRow>
-          <EditButton onPress={onEdit}>
-            <EditText>Редагувати</EditText>
-          </EditButton>
-
-          <DeleteButton onPress={onDelete}>
-            <DeleteText>Видалити</DeleteText>
-          </DeleteButton>
-        </AdminButtonsRow>
+            <BuyButton onPress={onBuy}>
+              <BuyText>Купити</BuyText>
+            </BuyButton>
+          </ButtonsColumn>
+        </BodyRow>
       )}
     </Container>
   );
@@ -137,78 +161,75 @@ const CardImage = styled(Image)<{ $aspectRatio: number }>`
   aspect-ratio: ${({ $aspectRatio }) => $aspectRatio};
 `;
 
-const DiscountBadge = styled.View`
-  position: absolute;
-  top: ${spacing.md}px;
-  left: ${spacing.md}px;
-  background-color: ${({ theme }) => theme.error};
-  padding: ${spacing.xs}px ${spacing.md}px;
-  border-radius: ${radius.pill}px;
-`;
-
-const DiscountText = styled.Text`
-  color: white;
-  font-family: ${typography.overline.fontFamily};
-  font-size: ${typography.overline.fontSize}px;
-`;
-
-const FeaturedBadge = styled.View`
+const AdminMenuWrap = styled.View`
   position: absolute;
   top: ${spacing.md}px;
   right: ${spacing.md}px;
-  background-color: ${({ theme }) => theme.accent};
-  padding: ${spacing.xs}px ${spacing.md}px;
+  align-items: center;
+  z-index: 10;
+`;
+
+const IconStack = styled(Animated.View)`
+  margin-bottom: ${spacing.sm}px;
+  gap: ${spacing.sm}px;
+  align-items: center;
+`;
+
+const IconButton = styled.Pressable<{ $danger?: boolean }>`
+  width: 32px;
+  height: 32px;
   border-radius: ${radius.pill}px;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme, $danger }) =>
+    $danger ? theme.error : theme.backgroundAlt};
 `;
 
-const FeaturedText = styled.Text`
-  color: ${({ theme }) => theme.onAccent};
-  font-family: ${typography.overline.fontFamily};
-  font-size: ${typography.overline.fontSize}px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+const ToggleButton = styled.Pressable`
+  width: 32px;
+  height: 32px;
+  border-radius: ${radius.pill}px;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.45);
 `;
 
-const Content = styled.View`
+const CompactContent = styled.View`
   padding: ${spacing.lg}px;
 `;
 
-const TopRow = styled.View`
+const BodyRow = styled.View`
   flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: ${spacing.sm}px;
+  padding: ${spacing.lg}px;
+  gap: ${spacing.md}px;
 `;
 
-const BottomRow = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  gap: ${spacing.sm}px;
-  margin-top: ${spacing.sm}px;
+const Content = styled.View`
+  flex: 1;
 `;
 
 const Title = styled.Text`
-  flex: 1;
   font-family: ${typography.h3.fontFamily};
   font-size: ${typography.h3.fontSize}px;
   color: ${({ theme }) => theme.text};
 `;
 
 const Author = styled.Text`
+  margin-top: 4px;
   font-family: ${typography.body.fontFamily};
   color: ${({ theme }) => theme.textSecondary};
   font-size: ${typography.body.fontSize}px;
 `;
 
 const Size = styled.Text`
+  margin-top: 6px;
   font-family: ${typography.caption.fontFamily};
   color: ${({ theme }) => theme.textMuted};
   font-size: ${typography.caption.fontSize}px;
 `;
 
 const PriceContainer = styled.View`
-  flex-shrink: 0;
+  margin-top: ${spacing.md}px;
   flex-direction: row;
   align-items: baseline;
   gap: ${spacing.sm}px;
@@ -220,21 +241,13 @@ const CurrentPrice = styled.Text`
   color: ${({ theme }) => theme.primary};
 `;
 
-const OldPrice = styled.Text`
-  font-family: ${typography.body.fontFamily};
-  font-size: ${typography.body.fontSize}px;
-  text-decoration-line: line-through;
-  color: ${({ theme }) => theme.textMuted};
-`;
-
-const ButtonsRow = styled.View`
-  flex-direction: row;
+const ButtonsColumn = styled.View`
+  width: 220px;
   gap: ${spacing.sm}px;
-  padding: 0 ${spacing.lg}px ${spacing.lg}px;
+  justify-content: center;
 `;
 
 const DetailsButton = styled.Pressable`
-  flex: 1;
   padding: ${spacing.md}px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.border};
@@ -243,7 +256,6 @@ const DetailsButton = styled.Pressable`
 `;
 
 const BuyButton = styled.Pressable`
-  flex: 1;
   padding: ${spacing.md}px;
   background-color: ${({ theme }) => theme.primary};
   border-radius: ${radius.md}px;
@@ -259,40 +271,6 @@ const DetailsText = styled.Text`
 
 const BuyText = styled.Text`
   color: ${({ theme }) => theme.onPrimary};
-  font-family: ${typography.bodySemiBold.fontFamily};
-  font-size: ${typography.body.fontSize}px;
-`;
-
-const AdminButtonsRow = styled.View`
-  flex-direction: row;
-  gap: ${spacing.sm}px;
-  padding: 0 ${spacing.lg}px ${spacing.lg}px;
-`;
-
-const EditButton = styled.Pressable`
-  flex: 1;
-  padding: ${spacing.md}px;
-  border-radius: ${radius.md}px;
-  background-color: ${({ theme }) => theme.backgroundAlt};
-  align-items: center;
-`;
-
-const DeleteButton = styled.Pressable`
-  flex: 1;
-  padding: ${spacing.md}px;
-  border-radius: ${radius.md}px;
-  background-color: ${({ theme }) => theme.error};
-  align-items: center;
-`;
-
-const EditText = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-family: ${typography.bodySemiBold.fontFamily};
-  font-size: ${typography.body.fontSize}px;
-`;
-
-const DeleteText = styled.Text`
-  color: white;
   font-family: ${typography.bodySemiBold.fontFamily};
   font-size: ${typography.body.fontSize}px;
 `;

@@ -11,14 +11,10 @@ export type Painting = {
 
   price: string;
 
-  discount: number;
-
   amount: number;
 
   isAvailable: boolean;
   isFeatured: boolean;
-
-  author: string | null;
 
   techniqueId: number | null;
   technique: Technique | null;

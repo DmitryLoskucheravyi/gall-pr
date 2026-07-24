@@ -128,22 +128,6 @@ export const InfoValue = styled.Text`
   color: ${({ theme }) => theme.text};
 `;
 
-export const BottomBar = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: ${spacing.lg}px;
-  padding: ${spacing.lg}px ${spacing.xxl}px;
-  border-top-width: 1px;
-  border-top-color: ${({ theme }) => theme.border};
-  background-color: ${({ theme }) => theme.background};
-`;
-
-export const PriceTag = styled.Text`
-  font-family: ${typography.h3.fontFamily};
-  font-size: 18px;
-  color: ${({ theme }) => theme.primary};
-`;
-
 export const BuyButtonWrap = styled.View`
   margin-top: ${spacing.xl}px;
 `;

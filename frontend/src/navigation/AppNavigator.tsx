@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 
@@ -11,13 +12,19 @@ import DictionariesScreen from '../screens/DictionariesScreen';
 import CartScreen from '../screens/CartScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import AdminOrdersScreen from '../screens/AdminOrdersScreen';
+import AdminSettingsScreen from '../screens/AdminSettingsScreen';
 import Menu from '../components/menu/Menu';
 import { Toast } from '../components/ui';
+import { useSettingsStore } from '../store/settingsStore';
 import { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
+  useEffect(() => {
+    useSettingsStore.getState().refresh();
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -49,6 +56,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="Orders" component={OrdersScreen} />
         <Stack.Screen name="AdminOrders" component={AdminOrdersScreen} />
+        <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
       </Stack.Navigator>
       <Menu />
       <Toast />

@@ -1,0 +1,10 @@
+CREATE TABLE app_settings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  author_name VARCHAR(255) NOT NULL DEFAULT '',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO app_settings (author_name) VALUES ('');
+
+ALTER TABLE paintings DROP COLUMN author;
+ALTER TABLE paintings DROP COLUMN discount;

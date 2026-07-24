@@ -12,7 +12,6 @@ import { Button } from '../components/ui';
 import { paintingsService } from '../api/paintings.api';
 import { Painting } from '../types/painting.types';
 import { NavigationProps } from '../navigation/types';
-import { useAddToCart } from '../hooks/useAddToCart';
 import { spacing } from '../theme/spacing';
 import { radius } from '../theme/radius';
 import { typography } from '../theme/typography';
@@ -20,7 +19,6 @@ import { typography } from '../theme/typography';
 const HomeScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProps>();
-  const addToCart = useAddToCart();
   const [paintings, setPaintings] = useState<Painting[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -101,10 +99,10 @@ const HomeScreen = () => {
                 <CarouselItem>
                   <PaintingCard
                     painting={item}
+                    compact
                     onPress={() =>
                       navigation.navigate('Painting', { id: item.id })
                     }
-                    onBuy={() => addToCart(item)}
                   />
                 </CarouselItem>
               )}

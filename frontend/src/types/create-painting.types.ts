@@ -9,11 +9,7 @@ export type CreatePaintingDto = {
 
   price: number;
 
-  discount?: number;
-
   isFeatured?: boolean;
-
-  author?: string;
 
   techniqueId?: number;
 

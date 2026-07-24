@@ -33,6 +33,7 @@ export default function Menu() {
       | 'Cart'
       | 'Dictionaries'
       | 'AdminOrders'
+      | 'AdminSettings'
       | 'Profile'
       | 'Login',
   ) => {
@@ -62,7 +63,11 @@ export default function Menu() {
       </Backdrop>
 
       <Panel style={[panelStyle, { paddingTop: insets.top + spacing.xxxl }]}>
-        <CloseButton onPress={closeMenu} hitSlop={12}>
+        <CloseButton
+          onPress={closeMenu}
+          hitSlop={12}
+          style={{ top: insets.top + spacing.lg }}
+        >
           <Ionicons name="close-outline" size={28} color={theme.text} />
         </CloseButton>
 
@@ -100,6 +105,13 @@ export default function Menu() {
             <LinkWrapper onPress={() => navTo('AdminOrders')}>
               <Ionicons name="receipt-outline" size={22} color={theme.text} />
               <LinkText>Замовлення</LinkText>
+            </LinkWrapper>
+          )}
+
+          {user?.role === 'ADMIN' && (
+            <LinkWrapper onPress={() => navTo('AdminSettings')}>
+              <Ionicons name="settings-outline" size={22} color={theme.text} />
+              <LinkText>Налаштування</LinkText>
             </LinkWrapper>
           )}
 
@@ -162,7 +174,6 @@ const Panel = styled(Animated.View)`
 
 const CloseButton = styled.Pressable`
   position: absolute;
-  top: ${spacing.xl}px;
   right: ${spacing.xl}px;
   width: 36px;
   height: 36px;

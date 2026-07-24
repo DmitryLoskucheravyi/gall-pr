@@ -26,7 +26,7 @@ import { useAppTheme } from '../hooks/useTheme';
 import { Button, Collapsible, ImageViewer } from '../components/ui';
 import { NavigationProps } from '../navigation/types';
 import { useAddToCart } from '../hooks/useAddToCart';
-import { spacing } from '../theme/spacing';
+import { useSettingsStore } from '../store/settingsStore';
 
 import {
   LoaderContainer,
@@ -42,12 +42,10 @@ import {
   Description,
   ContentCard,
   ImageWrapper,
-  BottomBar,
   InfoLabel,
   InfoRow,
   HideWrapper,
   InfoValue,
-  PriceTag,
   SectionTitle,
   BuyButtonWrap,
 } from './styled/painting.styled';
@@ -62,6 +60,7 @@ export default function PaintingScreen() {
   const navigation = useNavigation<NavigationProps>();
   const route = useRoute<any>();
   const addToCart = useAddToCart();
+  const authorName = useSettingsStore((state) => state.authorName);
 
   const [painting, setPainting] = useState<Painting | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,7 +133,7 @@ export default function PaintingScreen() {
     painting.images.length > 0 ? painting.images : [painting.cardImage];
 
   return (
-    <AppLayout>
+    <AppLayout hideHeader>
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
@@ -162,17 +161,14 @@ export default function PaintingScreen() {
 
           <BackButton
             onPress={() => navigation.goBack()}
-            style={{
-              top: insets.top + spacing.sm,
-              backgroundColor: theme.primary,
-            }}
+            style={{ top: insets.top, backgroundColor: theme.primary }}
           >
             <Ionicons name="arrow-back" size={20} color={theme.onPrimary} />
           </BackButton>
 
           <FullscreenButton
             onPress={() => setViewerIndex(heroIndex)}
-            style={{ top: insets.top + spacing.sm }}
+            style={{ top: insets.top }}
           >
             <Ionicons name="expand-outline" size={18} color="#FFFFFF" />
           </FullscreenButton>
@@ -189,7 +185,7 @@ export default function PaintingScreen() {
         <ContentCard entering={FadeIn.duration(400)}>
           <Title>{painting.title}</Title>
 
-          {painting.author && <Author>{painting.author}</Author>}
+          {!!authorName && <Author>{authorName}</Author>}
 
           <Price>₴ {Number(painting.price).toLocaleString()}</Price>
 
@@ -221,10 +217,10 @@ export default function PaintingScreen() {
 
           <Collapsible open={!isHideChar}>
             <>
-              {painting.author && (
+              {!!authorName && (
                 <InfoRow>
                   <InfoLabel>Автор</InfoLabel>
-                  <InfoValue>{painting.author}</InfoValue>
+                  <InfoValue>{authorName}</InfoValue>
                 </InfoRow>
               )}
 
@@ -261,17 +257,6 @@ export default function PaintingScreen() {
           </Collapsible>
         </ContentCard>
       </Animated.ScrollView>
-
-      <BottomBar style={{ paddingBottom: insets.bottom + spacing.md }}>
-        <PriceTag>₴ {Number(painting.price).toLocaleString()}</PriceTag>
-        <Button
-          onPress={() => addToCart(painting)}
-          fullWidth={false}
-          style={{ flex: 1 }}
-        >
-          Купити
-        </Button>
-      </BottomBar>
 
       <ImageViewer
         visible={viewerIndex !== null}

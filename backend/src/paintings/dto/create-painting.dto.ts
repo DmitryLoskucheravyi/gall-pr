@@ -27,17 +27,8 @@ export class CreatePaintingDto {
   price: number;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  discount?: number;
-
-  @IsOptional()
   @IsBoolean()
   isFeatured?: boolean;
-
-  @IsOptional()
-  @IsString()
-  author?: string;
 
   @IsOptional()
   @IsInt()

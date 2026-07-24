@@ -11,6 +11,7 @@ import { Technique } from './techniques/entities/technique.entity';
 import { CartItem } from './cart/entities/cart-item.entity';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
+import { AppSettings } from './settings/entities/app-settings.entity';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -21,6 +22,7 @@ import { MaterialsModule } from './materials/materials.module';
 import { TechniquesModule } from './techniques/techniques.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
+import { SettingsModule } from './settings/settings.module';
 
 import { ConfigModule } from '@nestjs/config';
 @Module({
@@ -42,6 +44,7 @@ import { ConfigModule } from '@nestjs/config';
         CartItem,
         Order,
         OrderItem,
+        AppSettings,
       ],
 
       synchronize: false,
@@ -61,6 +64,8 @@ import { ConfigModule } from '@nestjs/config';
     CartModule,
 
     OrdersModule,
+
+    SettingsModule,
 
     UploadsModule,
   ],

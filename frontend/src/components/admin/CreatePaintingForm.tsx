@@ -30,12 +30,8 @@ export default function CreatePaintingForm({
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState(painting?.title ?? '');
-  const [author, setAuthor] = useState(painting?.author ?? '');
   const [description, setDescription] = useState(painting?.description ?? '');
   const [price, setPrice] = useState(painting?.price?.toString() ?? '');
-  const [discount, setDiscount] = useState(
-    painting?.discount?.toString() ?? '',
-  );
   const [techniqueId, setTechniqueId] = useState<number | undefined>(
     painting?.techniqueId ?? undefined,
   );
@@ -99,12 +95,10 @@ export default function CreatePaintingForm({
 
       const payload = {
         title,
-        author,
         description,
         cardImage: uploadedUrls[0],
         images: uploadedUrls,
         price: Number(price),
-        discount: Number(discount) || 0,
         isFeatured,
         techniqueId,
         materialId,
@@ -125,7 +119,6 @@ export default function CreatePaintingForm({
       }
 
       setTitle('');
-      setAuthor('');
       setDescription('');
       setPrice('');
       setTechniqueId(undefined);
@@ -133,7 +126,6 @@ export default function CreatePaintingForm({
       setWidth('');
       setHeight('');
       setYear('');
-      setDiscount('');
       setImages([]);
     } catch (error) {
       console.log(error);
@@ -174,7 +166,6 @@ export default function CreatePaintingForm({
       </PhotosGrid>
 
       <TextField placeholder="Назва" value={title} onChangeText={setTitle} />
-      <TextField placeholder="Автор" value={author} onChangeText={setAuthor} />
       <TextField
         placeholder="Ціна"
         keyboardType="numeric"
@@ -210,12 +201,6 @@ export default function CreatePaintingForm({
         keyboardType="numeric"
         value={year}
         onChangeText={setYear}
-      />
-      <TextField
-        placeholder="Знижка"
-        keyboardType="numeric"
-        value={discount}
-        onChangeText={setDiscount}
       />
       <TextField
         multiline

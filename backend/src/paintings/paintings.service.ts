@@ -30,7 +30,6 @@ export class PaintingsService {
       ...dto,
       amount: 1,
       isAvailable: true,
-      discount: dto.discount ?? 0,
       isFeatured: dto.isFeatured ?? false,
     });
 

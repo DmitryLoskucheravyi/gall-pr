@@ -1,9 +1,12 @@
 import BottomMenu from '../../navigation/BottomMenu';
 import Header from './Header';
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+
+type Props = { children: React.ReactNode; hideHeader?: boolean };
+
+export default function AppLayout({ children, hideHeader }: Props) {
   return (
     <>
-      <Header />
+      {!hideHeader && <Header />}
       {children}
       <BottomMenu />
     </>

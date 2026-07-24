@@ -31,9 +31,6 @@ export class Painting {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column({ default: 0 })
-  discount: number;
-
   @Column({ default: 1 })
   amount: number;
 
@@ -42,9 +39,6 @@ export class Painting {
 
   @Column({ name: 'is_featured', default: false })
   isFeatured: boolean;
-
-  @Column({ nullable: true })
-  author: string;
 
   @Column({ name: 'technique_id', nullable: true })
   techniqueId: number | null;
