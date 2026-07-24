@@ -14,6 +14,7 @@ export const LoaderContainer = styled.View`
 export const ImageWrapper = styled.View`
   height: 440px;
   overflow: hidden;
+  background-color: ${({ theme }) => theme.backgroundAlt};
 `;
 
 export const HeroAnimatedWrap = styled(Animated.View)`
@@ -130,6 +131,19 @@ export const InfoValue = styled.Text`
 
 export const BuyButtonWrap = styled.View`
   margin-top: ${spacing.xl}px;
+`;
+
+export const RelatedSectionTitle = styled.Text`
+  margin-top: ${spacing.xxxl}px;
+  margin-bottom: ${spacing.lg}px;
+  font-family: ${typography.h3.fontFamily};
+  font-size: ${typography.h3.fontSize}px;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const RelatedItem = styled.View`
+  width: 200px;
+  margin-right: ${spacing.md}px;
 `;
 
 export const HideWrapper = styled.Pressable`

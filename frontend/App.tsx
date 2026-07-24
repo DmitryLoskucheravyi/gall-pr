@@ -22,6 +22,7 @@ import {
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAppTheme } from './src/hooks/useTheme';
 import { bootstrapAuth } from './src/auth/bootstrap';
+import { LoadingScreen } from './src/components/ui';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -47,14 +48,8 @@ export default function App() {
   const ready = fontsLoaded && authReady;
 
   const onLayoutRootView = useCallback(async () => {
-    if (ready) {
-      await SplashScreen.hideAsync();
-    }
-  }, [ready]);
-
-  if (!ready) {
-    return null;
-  }
+    await SplashScreen.hideAsync();
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -62,7 +57,7 @@ export default function App() {
         <ThemeProvider theme={theme}>
           <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
             <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
-            <AppNavigator />
+            {ready ? <AppNavigator /> : <LoadingScreen />}
           </View>
         </ThemeProvider>
       </SafeAreaProvider>

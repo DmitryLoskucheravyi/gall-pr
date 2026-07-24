@@ -24,9 +24,11 @@ import { paintingsService } from '../api/paintings.api';
 import { Painting } from '../types/painting.types';
 import { useAppTheme } from '../hooks/useTheme';
 import { Button, Collapsible, ImageViewer } from '../components/ui';
+import PaintingCard from '../components/layout/PaintingCard';
 import { NavigationProps } from '../navigation/types';
 import { useAddToCart } from '../hooks/useAddToCart';
 import { useSettingsStore } from '../store/settingsStore';
+import { spacing } from '../theme/spacing';
 
 import {
   LoaderContainer,
@@ -48,6 +50,8 @@ import {
   InfoValue,
   SectionTitle,
   BuyButtonWrap,
+  RelatedSectionTitle,
+  RelatedItem,
 } from './styled/painting.styled';
 
 const HERO_HEIGHT = 440;
@@ -65,10 +69,12 @@ export default function PaintingScreen() {
   const [painting, setPainting] = useState<Painting | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [isHideChar, setIsHideChar] = useState(true);
-  const [isHideDesc, setIsHideDesc] = useState(true);
+  const [isHideChar, setIsHideChar] = useState(false);
+  const [isHideDesc, setIsHideDesc] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [related, setRelated] = useState<Painting[]>([]);
+  const [isRelatedSameCategory, setIsRelatedSameCategory] = useState(true);
 
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler((event) => {
@@ -98,8 +104,50 @@ export default function PaintingScreen() {
 
   useEffect(() => {
     loadPainting();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when the viewed painting changes
+  }, [route.params.id]);
+
+  useEffect(() => {
+    if (!painting) return;
+
+    let cancelled = false;
+
+    const loadRelated = async () => {
+      try {
+        let items: Painting[] = [];
+
+        if (painting.techniqueId) {
+          const sameCategory = await paintingsService.getPaintings(
+            1,
+            8,
+            painting.techniqueId,
+          );
+          items = sameCategory.data.filter((item) => item.id !== painting.id);
+        }
+
+        const isSameCategory = items.length > 0;
+
+        if (!isSameCategory) {
+          const fallback = await paintingsService.getPaintings(1, 8);
+          items = fallback.data.filter((item) => item.id !== painting.id);
+        }
+
+        if (!cancelled) {
+          setRelated(items);
+          setIsRelatedSameCategory(isSameCategory);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    loadRelated();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the viewed painting or its technique changes
+  }, [painting?.id, painting?.techniqueId]);
 
   const handleHeroScrollEnd = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -138,6 +186,8 @@ export default function PaintingScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{ paddingTop: insets.top + spacing.md }}
       >
         <ImageWrapper>
           <HeroAnimatedWrap style={imageStyle}>
@@ -153,7 +203,7 @@ export default function PaintingScreen() {
                   onPress={() => setViewerIndex(heroIndex)}
                   style={{ width: SCREEN_WIDTH, height: '100%' }}
                 >
-                  <CoverImage source={{ uri: item }} />
+                  <CoverImage source={{ uri: item }} resizeMode="contain" />
                 </Pressable>
               )}
             />
@@ -161,14 +211,14 @@ export default function PaintingScreen() {
 
           <BackButton
             onPress={() => navigation.goBack()}
-            style={{ top: insets.top, backgroundColor: theme.primary }}
+            style={{ top: spacing.md, backgroundColor: theme.primary }}
           >
             <Ionicons name="arrow-back" size={20} color={theme.onPrimary} />
           </BackButton>
 
           <FullscreenButton
             onPress={() => setViewerIndex(heroIndex)}
-            style={{ top: insets.top }}
+            style={{ top: spacing.md }}
           >
             <Ionicons name="expand-outline" size={18} color="#FFFFFF" />
           </FullscreenButton>
@@ -182,7 +232,12 @@ export default function PaintingScreen() {
           )}
         </ImageWrapper>
 
-        <ContentCard entering={FadeIn.duration(400)}>
+        <ContentCard
+          entering={FadeIn.duration(400)}
+          style={{
+            paddingBottom: insets.bottom + spacing.md + 64 + spacing.md,
+          }}
+        >
           <Title>{painting.title}</Title>
 
           {!!authorName && <Author>{authorName}</Author>}
@@ -255,6 +310,35 @@ export default function PaintingScreen() {
               )}
             </>
           </Collapsible>
+
+          {related.length > 0 && (
+            <>
+              <RelatedSectionTitle>
+                {isRelatedSameCategory
+                  ? 'Рекомендовані картини в цій категорії'
+                  : 'Вам також може сподобатись'}
+              </RelatedSectionTitle>
+
+              <FlatList
+                horizontal
+                data={related}
+                keyExtractor={(item) => item.id.toString()}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: spacing.xxl }}
+                renderItem={({ item }) => (
+                  <RelatedItem>
+                    <PaintingCard
+                      painting={item}
+                      compact
+                      onPress={() =>
+                        navigation.push('Painting', { id: item.id })
+                      }
+                    />
+                  </RelatedItem>
+                )}
+              />
+            </>
+          )}
         </ContentCard>
       </Animated.ScrollView>
 

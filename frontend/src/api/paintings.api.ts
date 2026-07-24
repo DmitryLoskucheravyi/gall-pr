@@ -4,8 +4,14 @@ import { Painting, PaintingsResponse } from '../types/painting.types';
 import { CreatePaintingDto } from '../types/create-painting.types';
 
 class PaintingsService {
-  async getPaintings(page = 1, limit = 12): Promise<PaintingsResponse> {
-    const response = await api.get('/paintings', { params: { page, limit } });
+  async getPaintings(
+    page = 1,
+    limit = 12,
+    techniqueId?: number,
+  ): Promise<PaintingsResponse> {
+    const response = await api.get('/paintings', {
+      params: { page, limit, techniqueId },
+    });
     return response.data;
   }
 

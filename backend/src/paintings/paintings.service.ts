@@ -36,8 +36,9 @@ export class PaintingsService {
     return this.paintingsRepository.save(painting);
   }
 
-  async findAll(page = 1, limit = 12) {
+  async findAll(page = 1, limit = 12, techniqueId?: number) {
     const [paintings, total] = await this.paintingsRepository.findAndCount({
+      where: techniqueId ? { techniqueId } : {},
       skip: (page - 1) * limit,
       take: limit,
       order: { createdAt: 'DESC' },

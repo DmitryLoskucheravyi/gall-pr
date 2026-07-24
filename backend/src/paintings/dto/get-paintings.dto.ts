@@ -8,4 +8,8 @@ export class GetPaintingsDto {
   @IsOptional()
   @IsNumberString()
   limit?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  techniqueId?: string;
 }

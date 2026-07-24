@@ -5,8 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
-  withSpring,
   withTiming,
+  Easing,
 } from 'react-native-reanimated';
 
 import { useAppTheme } from '../../hooks/useTheme';
@@ -38,22 +38,22 @@ export default function Menu() {
       | 'Login',
   ) => {
     closeMenu();
-    setTimeout(() => navigation.navigate(route as any), 180);
+    setTimeout(() => navigation.navigate(route as any), 140);
   };
 
   const panelStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateX: withSpring(isMenuOpen ? 0 : 420, {
-          damping: 22,
-          stiffness: 220,
+        translateX: withTiming(isMenuOpen ? 0 : 420, {
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
         }),
       },
     ],
   }));
 
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(isMenuOpen ? 1 : 0, { duration: 220 }),
+    opacity: withTiming(isMenuOpen ? 1 : 0, { duration: 150 }),
   }));
 
   return (

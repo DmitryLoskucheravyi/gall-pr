@@ -3,6 +3,8 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
+  Pressable,
   View,
 } from 'react-native';
 import { Alert } from 'react-native';
@@ -14,13 +16,16 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { NavigationProps } from '../navigation/types';
 import { paintingsService } from '../api/paintings.api';
+import { techniquesService } from '../api/techniques.api';
 import { Painting } from '../types/painting.types';
+import { Technique } from '../types/dictionaries.types';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import PaintingCard from '../components/layout/PaintingCard';
 import { Button, BottomSheet } from '../components/ui';
 import { useAuthStore } from '../store/authStore';
 import { useAddToCart } from '../hooks/useAddToCart';
 import AppLayout from '../components/layout/AppLayout';
+import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
@@ -35,14 +40,30 @@ export default function CatalogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPainting, setEditingPainting] = useState<Painting | null>(null);
+  const [techniques, setTechniques] = useState<Technique[]>([]);
+  const [selectedTechniqueId, setSelectedTechniqueId] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    techniquesService
+      .getTechniques()
+      .then(setTechniques)
+      .catch((error) => console.log(error));
+  }, []);
 
   useEffect(() => {
     loadPaintings();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the filter changes
+  }, [selectedTechniqueId]);
 
   const loadPaintings = async () => {
     try {
-      const response = await paintingsService.getPaintings();
+      const response = await paintingsService.getPaintings(
+        1,
+        12,
+        selectedTechniqueId ?? undefined,
+      );
       setPaintings(response.data);
     } catch (error) {
       console.log(error);
@@ -80,26 +101,51 @@ export default function CatalogScreen() {
     await loadPaintings();
   };
 
-  const renderHeader = () => {
-    if (user?.role !== 'ADMIN') return null;
+  const renderHeader = () => (
+    <ListHeaderContainer>
+      {user?.role === 'ADMIN' && (
+        <CreateButtonWrap>
+          <Button
+            icon={
+              <Ionicons
+                name="add-circle-outline"
+                size={20}
+                color={theme.onPrimary}
+              />
+            }
+            onPress={() => setShowCreateForm(true)}
+          >
+            Створити картину
+          </Button>
+        </CreateButtonWrap>
+      )}
 
-    return (
-      <ListHeaderContainer>
-        <Button
-          icon={
-            <Ionicons
-              name="add-circle-outline"
-              size={20}
-              color={theme.onPrimary}
-            />
-          }
-          onPress={() => setShowCreateForm(true)}
+      <FilterRow
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: spacing.sm }}
+      >
+        <Chip
+          $active={selectedTechniqueId === null}
+          onPress={() => setSelectedTechniqueId(null)}
         >
-          Створити картину
-        </Button>
-      </ListHeaderContainer>
-    );
-  };
+          <ChipText $active={selectedTechniqueId === null}>Усі</ChipText>
+        </Chip>
+
+        {techniques.map((technique) => (
+          <Chip
+            key={technique.id}
+            $active={selectedTechniqueId === technique.id}
+            onPress={() => setSelectedTechniqueId(technique.id)}
+          >
+            <ChipText $active={selectedTechniqueId === technique.id}>
+              {technique.name}
+            </ChipText>
+          </Chip>
+        ))}
+      </FilterRow>
+    </ListHeaderContainer>
+  );
 
   if (loading) {
     return (
@@ -198,7 +244,32 @@ const Centered = styled(View)`
 `;
 
 const ListHeaderContainer = styled.View`
+  margin-bottom: ${spacing.md}px;
+`;
+
+const CreateButtonWrap = styled.View`
   margin: ${spacing.md}px ${spacing.sm}px ${spacing.xl}px;
+`;
+
+const FilterRow = styled(ScrollView)`
+  flex-grow: 0;
+`;
+
+const Chip = styled(Pressable)<{ $active: boolean }>`
+  margin-right: ${spacing.sm}px;
+  padding: ${spacing.sm}px ${spacing.lg}px;
+  border-radius: ${radius.pill}px;
+  border-width: 1px;
+  border-color: ${({ theme, $active }) =>
+    $active ? theme.primary : theme.border};
+  background-color: ${({ theme, $active }) =>
+    $active ? theme.primary : theme.surface};
+`;
+
+const ChipText = styled.Text<{ $active: boolean }>`
+  font-family: ${typography.bodySemiBold.fontFamily};
+  font-size: ${typography.body.fontSize}px;
+  color: ${({ theme, $active }) => ($active ? theme.onPrimary : theme.text)};
 `;
 
 const EmptyState = styled.View`

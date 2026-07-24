@@ -44,7 +44,11 @@ export class PaintingsController {
 
     const limit = Number(query.limit ?? 12);
 
-    return this.paintingsService.findAll(page, limit);
+    const techniqueId = query.techniqueId
+      ? Number(query.techniqueId)
+      : undefined;
+
+    return this.paintingsService.findAll(page, limit, techniqueId);
   }
 
   @Get(':id')
