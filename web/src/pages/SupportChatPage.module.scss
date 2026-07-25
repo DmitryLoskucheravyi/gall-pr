@@ -1,0 +1,69 @@
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.panel {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  height: 640px;
+  max-width: 720px;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-xl;
+}
+
+.empty {
+  margin: auto;
+  max-width: 320px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.bubbleRow {
+  display: flex;
+
+  &.own {
+    justify-content: flex-end;
+  }
+}
+
+.bubble {
+  max-width: 75%;
+  padding: $spacing-sm $spacing-md;
+  font-size: 14px;
+  line-height: 1.4;
+  background-color: var(--color-background-alt);
+  color: var(--color-text);
+}
+
+.bubbleRow.own .bubble {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.form {
+  display: flex;
+  gap: $spacing-md;
+  border-top: 1px solid var(--color-border);
+  padding: $spacing-lg;
+}
+
+.input {
+  @include input-base;
+  flex: 1;
+}
+
+.sendButton {
+  @include button-primary;
+  padding: $spacing-sm $spacing-xxl;
+}

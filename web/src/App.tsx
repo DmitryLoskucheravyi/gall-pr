@@ -10,13 +10,11 @@ import { setAuthorName } from './store/slices/settingsSlice';
 import { setCartCount } from './store/slices/cartSlice';
 import { setLikedIds } from './store/slices/likesSlice';
 import Toast from './components/ui/Toast';
-import SupportWidget from './components/support/SupportWidget';
 
 function App() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const isDark = useAppSelector((state) => state.theme.isDark);
-  const userRole = useAppSelector((state) => state.auth.user?.role);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
@@ -63,7 +61,6 @@ function App() {
     <>
       <RouterProvider router={router} />
       <Toast />
-      {isAuthenticated && userRole !== 'ADMIN' && <SupportWidget />}
     </>
   );
 }

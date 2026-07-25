@@ -12,6 +12,7 @@ import CartPage from '../pages/CartPage';
 import OrdersPage from '../pages/OrdersPage';
 import ProfilePage from '../pages/ProfilePage';
 import FavoritesPage from '../pages/FavoritesPage';
+import SupportChatPage from '../pages/SupportChatPage';
 import DictionariesPage from '../pages/admin/DictionariesPage';
 import AdminOrdersPage from '../pages/admin/AdminOrdersPage';
 import AdminSettingsPage from '../pages/admin/AdminSettingsPage';
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
           { path: 'orders', element: <OrdersPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'favorites', element: <FavoritesPage /> },
+          { path: 'support', element: <SupportChatPage /> },
         ],
       },
       {
