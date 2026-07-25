@@ -1,0 +1,60 @@
+.stack {
+  position: relative;
+  height: 460px;
+  perspective: 1400px;
+}
+
+.photo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  aspect-ratio: 3 / 4;
+  display: block;
+  overflow: hidden;
+  background-color: var(--color-background-alt);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+  transform: translate(-50%, -50%) translate(var(--offset-x), var(--offset-y))
+    rotate(var(--rotate)) rotateX(6deg) scale(var(--scale));
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translate(-50%, -50%) translateY(-56px) rotate(0deg)
+      rotateX(0deg) scale(1.18) !important;
+    z-index: 999 !important;
+    box-shadow: 0 30px 56px rgba(0, 0, 0, 0.4);
+  }
+
+  &:hover .caption {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.image {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: $spacing-md;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.75),
+    rgba(0, 0, 0, 0) 65%
+  );
+  font-family: $font-display;
+  font-size: 14px;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}

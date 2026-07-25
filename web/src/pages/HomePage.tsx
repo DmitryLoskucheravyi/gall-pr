@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 
 import { paintingsService } from '../api/paintings.api';
 import type { Painting } from '../types/painting.types';
-import PaintingCard from '../components/PaintingCard';
-import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
+import FeaturedStack, {
+  FeaturedStackSkeleton,
+} from '../components/FeaturedStack';
 import styles from './HomePage.module.scss';
 
 export default function HomePage() {
@@ -19,7 +20,7 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const featured = paintings.filter((p) => p.isFeatured).slice(0, 8);
+  const featured = paintings.filter((p) => p.isFeatured).slice(0, 7);
 
   return (
     <div>
@@ -44,17 +45,9 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className={styles.grid}>
-            {Array.from({ length: 8 }).map((_, index) => (
-              <PaintingCardSkeleton key={index} compact />
-            ))}
-          </div>
+          <FeaturedStackSkeleton />
         ) : featured.length > 0 ? (
-          <div className={styles.grid}>
-            {featured.map((painting) => (
-              <PaintingCard key={painting.id} painting={painting} compact />
-            ))}
-          </div>
+          <FeaturedStack paintings={featured} />
         ) : (
           <p className={styles.muted}>Скоро тут з'являться нові роботи</p>
         )}
