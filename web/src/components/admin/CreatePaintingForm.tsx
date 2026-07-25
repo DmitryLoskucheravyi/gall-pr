@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { paintingsService } from '../../api/paintings.api';
 import { materialsService } from '../../api/materials.api';
@@ -39,7 +39,9 @@ export default function CreatePaintingForm({
   const [height, setHeight] = useState(painting?.height?.toString() ?? '');
   const [year, setYear] = useState(painting?.year?.toString() ?? '');
   const [isFeatured, setIsFeatured] = useState(painting?.isFeatured ?? false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [newImages, setNewImages] = useState<
+    { file: File; previewUrl: string }[]
+  >([]);
   const [existingImages, setExistingImages] = useState<string[]>(
     painting?.images ?? [],
   );
@@ -49,21 +51,27 @@ export default function CreatePaintingForm({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Each preview URL is created exactly once, when its file is selected,
+  // and only ever revoked when that entry is explicitly removed or the
+  // form unmounts. Recomputing every URL on each selection change (e.g.
+  // via a useMemo keyed off the whole array) was the previous approach,
+  // and revoking/recreating already-displayed previews on every unrelated
+  // change is what made newly added photos intermittently fail to render.
+  const newImagesRef = useRef(newImages);
+  useEffect(() => {
+    newImagesRef.current = newImages;
+  }, [newImages]);
+
+  useEffect(() => {
+    return () => {
+      newImagesRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    };
+  }, []);
+
   useEffect(() => {
     techniquesService.getTechniques().then(setTechniques);
     materialsService.getMaterials().then(setMaterials);
   }, []);
-
-  const newFilePreviews = useMemo(
-    () => files.map((file) => URL.createObjectURL(file)),
-    [files],
-  );
-
-  useEffect(() => {
-    return () => {
-      newFilePreviews.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [newFilePreviews]);
 
   const techniqueOptions = [
     { value: '', label: 'Не вказано' },
@@ -76,15 +84,29 @@ export default function CreatePaintingForm({
 
   const handleFilesSelected = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
-    setFiles((prev) => [...prev, ...Array.from(fileList)]);
+
+    const selected = Array.from(fileList).map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
+    setNewImages((prev) => [...prev, ...selected]);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveNewImage = (index: number) => {
+    setNewImages((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
 
-    if (existingImages.length === 0 && files.length === 0) {
+    if (existingImages.length === 0 && newImages.length === 0) {
       setError("Додайте хоча б одне фото");
       return;
     }
@@ -92,9 +114,31 @@ export default function CreatePaintingForm({
     try {
       setSaving(true);
 
-      const uploadedUrls = await Promise.all(
-        files.map(async (file) => (await uploadImage(file)).url),
-      );
+      // Upload one at a time rather than in parallel: if a single photo
+      // hits a transient failure, we keep whatever already succeeded
+      // (folded into existingImages) instead of losing the whole batch
+      // and forcing a full re-upload of everything on retry.
+      const uploadedUrls: string[] = [];
+      const failedImages: { file: File; previewUrl: string }[] = [];
+
+      for (const item of newImages) {
+        try {
+          const { url } = await uploadImage(item.file);
+          uploadedUrls.push(url);
+          URL.revokeObjectURL(item.previewUrl);
+        } catch {
+          failedImages.push(item);
+        }
+      }
+
+      if (failedImages.length > 0) {
+        setExistingImages((prev) => [...prev, ...uploadedUrls]);
+        setNewImages(failedImages);
+        setError(
+          `Не вдалося завантажити ${failedImages.length} з ${newImages.length} фото. Решта збережені — спробуйте ще раз.`,
+        );
+        return;
+      }
 
       const images = [...existingImages, ...uploadedUrls];
 
@@ -153,7 +197,7 @@ export default function CreatePaintingForm({
             + Додати фото
           </button>
 
-          {(existingImages.length > 0 || files.length > 0) && (
+          {(existingImages.length > 0 || newImages.length > 0) && (
             <div className={styles.imagePreviews}>
               {existingImages.map((url) => (
                 <div key={url} className={styles.imagePreviewWrap}>
@@ -172,18 +216,16 @@ export default function CreatePaintingForm({
                 </div>
               ))}
 
-              {files.map((file, index) => (
-                <div key={`${file.name}-${index}`} className={styles.imagePreviewWrap}>
+              {newImages.map((item, index) => (
+                <div key={item.previewUrl} className={styles.imagePreviewWrap}>
                   <img
-                    src={newFilePreviews[index]}
+                    src={item.previewUrl}
                     alt=""
                     className={styles.imagePreview}
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setFiles((prev) => prev.filter((_, i) => i !== index))
-                    }
+                    onClick={() => handleRemoveNewImage(index)}
                     className={styles.removeImageButton}
                   >
                     ×

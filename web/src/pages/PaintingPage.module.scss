@@ -58,9 +58,15 @@
   backdrop-filter: blur(4px);
   color: #fff;
   cursor: pointer;
+  opacity: 0;
   transition:
     background-color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    opacity 0.2s ease;
+
+  .imageWrap:hover & {
+    opacity: 1;
+  }
 
   &:hover {
     background-color: var(--color-primary);

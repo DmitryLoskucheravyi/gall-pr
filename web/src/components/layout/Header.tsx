@@ -100,15 +100,6 @@ export default function Header() {
           <NavLink to="/gallery" className={navLinkClass}>
             Галерея
           </NavLink>
-          <NavLink to="/cart" className={navLinkClass}>
-            Кошик{cartCount > 0 && ` (${cartCount})`}
-          </NavLink>
-
-          {user && (
-            <NavLink to="/favorites" className={navLinkClass}>
-              Улюблені
-            </NavLink>
-          )}
 
           {user?.role === 'ADMIN' && (
             <div ref={adminMenuRef} className={styles.adminMenu}>
@@ -156,6 +147,12 @@ export default function Header() {
             </div>
           )}
 
+          {user && (
+            <NavLink to="/favorites" className={navLinkClass}>
+              Улюблені
+            </NavLink>
+          )}
+
           <button
             onClick={handleThemeToggle}
             aria-label="Перемкнути тему"
@@ -182,6 +179,29 @@ export default function Header() {
               </svg>
             )}
           </button>
+
+          <NavLink
+            to="/cart"
+            aria-label="Кошик"
+            className={({ isActive }) =>
+              `${styles.cartButton} ${isActive ? styles.active : ''}`
+            }
+          >
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M3 4h2l.4 2M7 13h10l3-8H6.4M7 13 5.4 6M7 13l-1.6 3.2A1 1 0 0 0 6.3 18H17"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="9" cy="21" r="1.4" fill="currentColor" />
+              <circle cx="17" cy="21" r="1.4" fill="currentColor" />
+            </svg>
+            {cartCount > 0 && (
+              <span className={styles.cartBadge}>{cartCount}</span>
+            )}
+          </NavLink>
 
           {user ? (
             <div className={styles.userGroup}>
