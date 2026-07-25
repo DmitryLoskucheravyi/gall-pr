@@ -15,6 +15,7 @@ import FavoritesPage from '../pages/FavoritesPage';
 import DictionariesPage from '../pages/admin/DictionariesPage';
 import AdminOrdersPage from '../pages/admin/AdminOrdersPage';
 import AdminSettingsPage from '../pages/admin/AdminSettingsPage';
+import AdminSupportPage from '../pages/admin/AdminSupportPage';
 
 export const router = createBrowserRouter([
   {
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
           { path: 'admin/dictionaries', element: <DictionariesPage /> },
           { path: 'admin/orders', element: <AdminOrdersPage /> },
           { path: 'admin/settings', element: <AdminSettingsPage /> },
+          { path: 'admin/support', element: <AdminSupportPage /> },
         ],
       },
     ],

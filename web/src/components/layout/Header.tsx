@@ -148,6 +148,9 @@ export default function Header() {
                   <NavLink to="/admin/settings" className={adminNavLinkClass}>
                     Налаштування
                   </NavLink>
+                  <NavLink to="/admin/support" className={adminNavLinkClass}>
+                    Підтримка
+                  </NavLink>
                 </div>
               )}
             </div>

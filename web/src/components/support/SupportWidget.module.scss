@@ -1,0 +1,144 @@
+.launcher {
+  position: fixed;
+  right: $spacing-xxl;
+  bottom: $spacing-xxl;
+  z-index: 40;
+  display: flex;
+  height: 56px;
+  width: 56px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.06);
+  }
+
+  svg {
+    height: 24px;
+    width: 24px;
+  }
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: flex;
+  height: 20px;
+  min-width: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--color-error);
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.panel {
+  position: fixed;
+  right: $spacing-xxl;
+  bottom: calc($spacing-xxl + 72px);
+  z-index: 40;
+  display: flex;
+  width: min(360px, calc(100vw - #{$spacing-xxl} * 2));
+  height: min(520px, calc(100vh - 160px));
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-primary);
+  padding: $spacing-lg;
+}
+
+.headerTitle {
+  font-family: $font-display;
+  font-size: 16px;
+  color: var(--color-on-primary);
+}
+
+.closeButton {
+  display: flex;
+  height: 24px;
+  width: 24px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--color-on-primary);
+  cursor: pointer;
+
+  svg {
+    height: 18px;
+    width: 18px;
+  }
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-lg;
+}
+
+.empty {
+  margin: auto;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.bubbleRow {
+  display: flex;
+
+  &.own {
+    justify-content: flex-end;
+  }
+}
+
+.bubble {
+  max-width: 80%;
+  padding: $spacing-sm $spacing-md;
+  font-size: 14px;
+  line-height: 1.4;
+  background-color: var(--color-background-alt);
+  color: var(--color-text);
+}
+
+.bubbleRow.own .bubble {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.form {
+  display: flex;
+  gap: $spacing-sm;
+  border-top: 1px solid var(--color-border);
+  padding: $spacing-md;
+}
+
+.input {
+  @include input-base;
+  flex: 1;
+}
+
+.sendButton {
+  @include button-primary;
+  padding: $spacing-sm $spacing-lg;
+}

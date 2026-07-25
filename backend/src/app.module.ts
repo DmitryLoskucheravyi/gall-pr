@@ -13,6 +13,8 @@ import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
 import { AppSettings } from './settings/entities/app-settings.entity';
 import { PaintingLike } from './likes/entities/painting-like.entity';
+import { SupportChat } from './support/entities/support-chat.entity';
+import { SupportMessage } from './support/entities/support-message.entity';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -25,6 +27,7 @@ import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { SettingsModule } from './settings/settings.module';
 import { LikesModule } from './likes/likes.module';
+import { SupportModule } from './support/support.module';
 
 import { ConfigModule } from '@nestjs/config';
 @Module({
@@ -48,6 +51,8 @@ import { ConfigModule } from '@nestjs/config';
         OrderItem,
         AppSettings,
         PaintingLike,
+        SupportChat,
+        SupportMessage,
       ],
 
       synchronize: false,
@@ -71,6 +76,8 @@ import { ConfigModule } from '@nestjs/config';
     SettingsModule,
 
     LikesModule,
+
+    SupportModule,
 
     UploadsModule,
   ],

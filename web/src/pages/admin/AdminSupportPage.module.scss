@@ -1,0 +1,206 @@
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xl;
+  height: 640px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+
+  @include respond-up($breakpoint-md) {
+    grid-template-columns: 300px 1fr;
+    gap: 0;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+}
+
+.muted {
+  padding: $spacing-xl;
+  color: var(--color-text-secondary);
+}
+
+.chatRow {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: $spacing-md;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  padding: $spacing-lg;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--color-background-alt);
+  }
+
+  &.active {
+    background-color: var(--color-primary-soft);
+  }
+}
+
+.avatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.avatar {
+  display: flex;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary);
+  font-family: $font-display;
+  font-size: 15px;
+  color: var(--color-on-primary);
+}
+
+.onlineDot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  height: 11px;
+  width: 11px;
+  border: 2px solid var(--color-surface);
+  background-color: var(--color-text-muted);
+
+  &.online {
+    background-color: var(--color-success);
+  }
+}
+
+.chatInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.chatName {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.chatPreview {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.unreadBadge {
+  display: flex;
+  height: 20px;
+  min-width: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--color-primary);
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-on-primary);
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.threadHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  border-bottom: 1px solid var(--color-border);
+  padding: $spacing-lg;
+}
+
+.threadHeaderName {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.threadHeaderStatus {
+  font-size: 12px;
+  color: var(--color-text-muted);
+
+  &.online {
+    color: var(--color-success);
+  }
+}
+
+.threadEmpty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+}
+
+.threadMessages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-lg;
+}
+
+.bubbleRow {
+  display: flex;
+
+  &.own {
+    justify-content: flex-end;
+  }
+}
+
+.bubble {
+  max-width: 70%;
+  padding: $spacing-sm $spacing-md;
+  font-size: 14px;
+  line-height: 1.4;
+  background-color: var(--color-background-alt);
+  color: var(--color-text);
+}
+
+.bubbleRow.own .bubble {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.threadForm {
+  display: flex;
+  gap: $spacing-sm;
+  border-top: 1px solid var(--color-border);
+  padding: $spacing-md;
+}
+
+.input {
+  @include input-base;
+  flex: 1;
+}
+
+.sendButton {
+  @include button-primary;
+  padding: $spacing-sm $spacing-lg;
+}
