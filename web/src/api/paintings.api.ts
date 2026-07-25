@@ -7,9 +7,10 @@ class PaintingsService {
     page = 1,
     limit = 12,
     techniqueId?: number,
+    isAvailable?: boolean,
   ): Promise<PaintingsResponse> {
     const response = await api.get('/paintings', {
-      params: { page, limit, techniqueId },
+      params: { page, limit, techniqueId, isAvailable },
     });
     return response.data;
   }

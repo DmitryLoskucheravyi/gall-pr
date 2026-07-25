@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { paintingsService } from '../api/paintings.api';
 import type { Painting } from '../types/painting.types';
 import PaintingCard from '../components/PaintingCard';
+import LikeButton from '../components/ui/LikeButton';
 import { useAddToCart } from '../hooks/useAddToCart';
 import { useAppSelector } from '../store/hooks';
 import styles from './PaintingPage.module.scss';
@@ -48,12 +49,18 @@ export default function PaintingPage() {
           1,
           8,
           painting.techniqueId,
+          true,
         );
         items = sameCategory.data.filter((item) => item.id !== painting.id);
       }
 
       if (items.length === 0) {
-        const fallback = await paintingsService.getPaintings(1, 8);
+        const fallback = await paintingsService.getPaintings(
+          1,
+          8,
+          undefined,
+          true,
+        );
         items = fallback.data.filter((item) => item.id !== painting.id);
       }
 
@@ -81,16 +88,62 @@ export default function PaintingPage() {
 
       <div className={styles.grid}>
         <div>
-          <button
-            onClick={() => setLightboxOpen(true)}
-            className={styles.mainImageButton}
-          >
-            <img
-              src={images[activeImage]}
-              alt={painting.title}
-              className={styles.mainImage}
-            />
-          </button>
+          <div className={styles.imageWrap}>
+            <button
+              onClick={() => setLightboxOpen(true)}
+              className={styles.mainImageButton}
+            >
+              <img
+                src={images[activeImage]}
+                alt={painting.title}
+                className={styles.mainImage}
+              />
+            </button>
+
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveImage(
+                      (prev) => (prev - 1 + images.length) % images.length,
+                    )
+                  }
+                  className={`${styles.navArrow} ${styles.navArrowLeft}`}
+                  aria-label="Попереднє зображення"
+                >
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="m15 6-6 6 6 6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveImage((prev) => (prev + 1) % images.length)
+                  }
+                  className={`${styles.navArrow} ${styles.navArrowRight}`}
+                  aria-label="Наступне зображення"
+                >
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="m9 6 6 6-6 6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </>
+            )}
+          </div>
 
           {images.length > 1 && (
             <div className={styles.thumbs}>
@@ -110,14 +163,24 @@ export default function PaintingPage() {
         </div>
 
         <div>
-          <h1 className={styles.title}>{painting.title}</h1>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{painting.title}</h1>
+            <LikeButton
+              paintingId={painting.id}
+              initialLikesCount={painting.likesCount}
+            />
+          </div>
 
           {!!authorName && <p className={styles.author}>{authorName}</p>}
 
           <p className={styles.price}>{price.toLocaleString()} ₴</p>
 
-          <button onClick={() => addToCart(painting)} className={styles.buyButton}>
-            Купити
+          <button
+            onClick={() => addToCart(painting)}
+            disabled={!painting.isAvailable}
+            className={styles.buyButton}
+          >
+            {painting.isAvailable ? 'Купити' : 'Продано'}
           </button>
 
           <SectionHeader

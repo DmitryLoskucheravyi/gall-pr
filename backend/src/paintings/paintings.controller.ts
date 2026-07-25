@@ -48,7 +48,17 @@ export class PaintingsController {
       ? Number(query.techniqueId)
       : undefined;
 
-    return this.paintingsService.findAll(page, limit, techniqueId);
+    const isAvailable =
+      query.isAvailable === undefined
+        ? undefined
+        : query.isAvailable === 'true';
+
+    return this.paintingsService.findAll(
+      page,
+      limit,
+      techniqueId,
+      isAvailable,
+    );
   }
 
   @Get(':id')

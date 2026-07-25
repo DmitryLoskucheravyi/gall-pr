@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { paintingsService } from '../../api/paintings.api';
 import { materialsService } from '../../api/materials.api';
@@ -6,6 +6,7 @@ import { techniquesService } from '../../api/techniques.api';
 import { uploadImage } from '../../api/uploads.api';
 import type { Painting } from '../../types/painting.types';
 import type { Material, Technique } from '../../types/dictionaries.types';
+import Select from '../ui/Select';
 import styles from './CreatePaintingForm.module.scss';
 
 type Props = {
@@ -13,6 +14,12 @@ type Props = {
   onSaved: () => void;
   onClose: () => void;
 };
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1899 }, (_, i) => {
+  const year = CURRENT_YEAR - i;
+  return { value: String(year), label: String(year) };
+});
 
 export default function CreatePaintingForm({
   painting,
@@ -40,11 +47,38 @@ export default function CreatePaintingForm({
   const [materials, setMaterials] = useState<Material[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     techniquesService.getTechniques().then(setTechniques);
     materialsService.getMaterials().then(setMaterials);
   }, []);
+
+  const newFilePreviews = useMemo(
+    () => files.map((file) => URL.createObjectURL(file)),
+    [files],
+  );
+
+  useEffect(() => {
+    return () => {
+      newFilePreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [newFilePreviews]);
+
+  const techniqueOptions = [
+    { value: '', label: 'Не вказано' },
+    ...techniques.map((t) => ({ value: String(t.id), label: t.name })),
+  ];
+  const materialOptions = [
+    { value: '', label: 'Не вказано' },
+    ...materials.map((m) => ({ value: String(m.id), label: m.name })),
+  ];
+
+  const handleFilesSelected = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    setFiles((prev) => [...prev, ...Array.from(fileList)]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -100,18 +134,26 @@ export default function CreatePaintingForm({
         </h2>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <label className={styles.fileLabel}>
-            Фото
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-              className={styles.fileInput}
-            />
-          </label>
+          <span className={styles.fileLabel}>Фото</span>
 
-          {existingImages.length > 0 && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => handleFilesSelected(e.target.files)}
+            className={styles.hiddenFileInput}
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className={styles.filePickerButton}
+          >
+            + Додати фото
+          </button>
+
+          {(existingImages.length > 0 || files.length > 0) && (
             <div className={styles.imagePreviews}>
               {existingImages.map((url) => (
                 <div key={url} className={styles.imagePreviewWrap}>
@@ -122,6 +164,25 @@ export default function CreatePaintingForm({
                       setExistingImages((prev) =>
                         prev.filter((item) => item !== url),
                       )
+                    }
+                    className={styles.removeImageButton}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {files.map((file, index) => (
+                <div key={`${file.name}-${index}`} className={styles.imagePreviewWrap}>
+                  <img
+                    src={newFilePreviews[index]}
+                    alt=""
+                    className={styles.imagePreview}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFiles((prev) => prev.filter((_, i) => i !== index))
                     }
                     className={styles.removeImageButton}
                   >
@@ -149,31 +210,19 @@ export default function CreatePaintingForm({
             className={styles.input}
           />
 
-          <select
+          <Select
             value={techniqueId}
-            onChange={(e) => setTechniqueId(e.target.value)}
-            className={styles.select}
-          >
-            <option value="">Техніка</option>
-            {techniques.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+            onChange={setTechniqueId}
+            options={techniqueOptions}
+            placeholder="Техніка"
+          />
 
-          <select
+          <Select
             value={materialId}
-            onChange={(e) => setMaterialId(e.target.value)}
-            className={styles.select}
-          >
-            <option value="">Матеріал</option>
-            {materials.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+            onChange={setMaterialId}
+            options={materialOptions}
+            placeholder="Матеріал"
+          />
 
           <div className={styles.row3}>
             <input
@@ -190,12 +239,11 @@ export default function CreatePaintingForm({
               onChange={(e) => setHeight(e.target.value)}
               className={styles.input}
             />
-            <input
-              type="number"
-              placeholder="Рік"
+            <Select
               value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className={styles.input}
+              onChange={setYear}
+              options={YEAR_OPTIONS}
+              placeholder="Рік"
             />
           </div>
 

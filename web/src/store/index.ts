@@ -5,6 +5,7 @@ import cartReducer from './slices/cartSlice';
 import settingsReducer from './slices/settingsSlice';
 import toastReducer from './slices/toastSlice';
 import themeReducer, { THEME_STORAGE_KEY } from './slices/themeSlice';
+import likesReducer from './slices/likesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     settings: settingsReducer,
     toast: toastReducer,
     theme: themeReducer,
+    likes: likesReducer,
   },
 });
 

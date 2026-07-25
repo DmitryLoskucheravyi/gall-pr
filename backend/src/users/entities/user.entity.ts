@@ -4,7 +4,10 @@ import {
   Column,
   UpdateDateColumn,
   CreateDateColumn,
+  OneToMany,
 } from 'typeorm';
+
+import { PaintingLike } from '../../likes/entities/painting-like.entity';
 
 export enum UserRole {
   USER = 'USER',
@@ -51,4 +54,7 @@ export class User {
 
   @Column({ name: 'refresh_token', nullable: true, type: 'text' })
   refreshToken: string | null;
+
+  @OneToMany(() => PaintingLike, (like) => like.user)
+  likes: PaintingLike[];
 }

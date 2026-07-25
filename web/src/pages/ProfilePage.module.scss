@@ -1,36 +1,65 @@
 .wrap {
-  max-width: 400px;
-  margin: 0 auto;
+  max-width: 1500px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xxxxl;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: 1fr 640px;
+    align-items: start;
+  }
+}
+
+.main {
+  min-width: 0;
 }
 
 .header {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: $spacing-xxl;
 }
 
 .avatar {
   display: flex;
-  height: 96px;
-  width: 96px;
+  height: 88px;
+  width: 88px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: $radius-pill;
   background-color: var(--color-primary);
   font-family: $font-display;
-  font-size: 30px;
+  font-size: 28px;
   color: var(--color-on-primary);
 }
 
+.headerInfo {
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-md;
+}
+
 .name {
-  margin-top: $spacing-lg;
   font-family: $font-display;
-  font-size: 24px;
+  font-size: 28px;
   color: var(--color-text);
 }
 
+.email {
+  margin-top: $spacing-xs;
+  color: var(--color-text-secondary);
+}
+
 .adminBadge {
-  margin-top: $spacing-sm;
   border-radius: $radius-pill;
   background-color: var(--color-primary);
   padding: $spacing-xs $spacing-lg;
@@ -41,15 +70,41 @@
   color: var(--color-on-primary);
 }
 
-.info {
-  @include card;
-  margin-top: $spacing-xxl;
-  padding: $spacing-xxl;
+.statsGrid {
+  margin-top: $spacing-xxxl;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
 
-  > * + * {
-    margin-top: $spacing-lg;
-    border-top: 1px solid var(--color-border);
-    padding-top: $spacing-lg;
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.statCard {
+  @include card;
+  padding: $spacing-lg $spacing-xl;
+}
+
+.statCardLink {
+  @include card;
+  display: block;
+  padding: $spacing-lg $spacing-xl;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+
+  @include respond-up($breakpoint-sm) {
+    grid-column: span 2;
+  }
+
+  &:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+  }
+
+  .infoValue {
+    color: var(--color-primary);
   }
 }
 
@@ -61,14 +116,43 @@
 }
 
 .infoValue {
+  margin-top: $spacing-xs;
   font-weight: 600;
   color: var(--color-text);
 }
 
-.ordersLink {
-  @include button-secondary;
-  margin-top: $spacing-xxl;
-  display: block;
-  width: 100%;
-  text-align: center;
+.favoritesSection {
+  @include respond-up($breakpoint-lg) {
+    position: sticky;
+    top: $spacing-xxl;
+  }
+}
+
+.favoritesHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: $spacing-lg;
+}
+
+.favoritesTitle {
+  font-family: $font-display;
+  font-size: 26px;
+  color: var(--color-text);
+}
+
+.favoritesLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.favoritesEmpty {
+  color: var(--color-text-secondary);
+}
+
+.favoritesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-xl;
 }

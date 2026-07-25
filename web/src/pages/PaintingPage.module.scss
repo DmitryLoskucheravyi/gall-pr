@@ -23,6 +23,10 @@
   }
 }
 
+.imageWrap {
+  position: relative;
+}
+
 .mainImageButton {
   display: block;
   width: 100%;
@@ -35,6 +39,50 @@
   aspect-ratio: 1 / 1;
   width: 100%;
   object-fit: contain;
+}
+
+.navArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  height: 40px;
+  width: 40px;
+  margin-top: -20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pill;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-primary);
+    transform: scale(1.08);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
+}
+
+.navArrowLeft {
+  left: $spacing-lg;
+}
+
+.navArrowRight {
+  right: $spacing-lg;
 }
 
 .thumbs {
@@ -59,6 +107,13 @@
   height: 100%;
   width: 100%;
   object-fit: cover;
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
 }
 
 .title {

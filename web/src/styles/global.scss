@@ -1,5 +1,6 @@
 @use 'variables' as *;
 
+@import '@fontsource/playfair-display/400.css';
 @import '@fontsource/playfair-display/500.css';
 @import '@fontsource/playfair-display/600.css';
 @import '@fontsource/playfair-display/700.css';
@@ -103,4 +104,42 @@ button {
 img {
   display: block;
   max-width: 100%;
+}
+
+// Theme toggle: expanding-circle reveal from the toggle button, driven by
+// the View Transition API. Coordinates are set on :root right before the
+// transition starts (see Header.tsx). Browsers without support just cut
+// straight to the new theme, no animation.
+::view-transition-group(root) {
+  animation-duration: 0.6s;
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: theme-reveal 0.6s ease-in-out;
+  clip-path: circle(0 at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%));
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(
+      0 at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%)
+    );
+  }
+  to {
+    clip-path: circle(
+      var(--theme-toggle-r, 150%) at var(--theme-toggle-x, 50%)
+        var(--theme-toggle-y, 50%)
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }

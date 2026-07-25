@@ -40,6 +40,9 @@ export class Painting {
   @Column({ name: 'is_featured', default: false })
   isFeatured: boolean;
 
+  @Column({ name: 'likes_count', default: 0 })
+  likesCount: number;
+
   @Column({ name: 'technique_id', nullable: true })
   techniqueId: number | null;
 

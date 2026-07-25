@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -20,6 +21,35 @@ export default function Header() {
     navigate('/');
   };
 
+  const handleThemeToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    if (!document.startViewTransition || prefersReducedMotion) {
+      dispatch(toggleTheme());
+      return;
+    }
+
+    const x = event.clientX;
+    const y = event.clientY;
+    const radius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    );
+
+    const root = document.documentElement;
+    root.style.setProperty('--theme-toggle-x', `${x}px`);
+    root.style.setProperty('--theme-toggle-y', `${y}px`);
+    root.style.setProperty('--theme-toggle-r', `${radius}px`);
+
+    document.startViewTransition(() => {
+      flushSync(() => {
+        dispatch(toggleTheme());
+      });
+    });
+  };
+
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
@@ -35,9 +65,18 @@ export default function Header() {
           <NavLink to="/catalog" className={navLinkClass}>
             Каталог
           </NavLink>
+          <NavLink to="/gallery" className={navLinkClass}>
+            Галерея
+          </NavLink>
           <NavLink to="/cart" className={navLinkClass}>
             Кошик{cartCount > 0 && ` (${cartCount})`}
           </NavLink>
+
+          {user && (
+            <NavLink to="/favorites" className={navLinkClass}>
+              Улюблені
+            </NavLink>
+          )}
 
           {user?.role === 'ADMIN' && (
             <>
@@ -54,7 +93,7 @@ export default function Header() {
           )}
 
           <button
-            onClick={() => dispatch(toggleTheme())}
+            onClick={handleThemeToggle}
             aria-label="Перемкнути тему"
             className={styles.themeButton}
           >

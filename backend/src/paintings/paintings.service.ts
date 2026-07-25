@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { FindOptionsWhere, QueryFailedError, Repository } from 'typeorm';
 
 import { Painting } from './entities/painting.entity';
 import { CreatePaintingDto } from './dto/create-painting.dto';
@@ -36,9 +36,18 @@ export class PaintingsService {
     return this.paintingsRepository.save(painting);
   }
 
-  async findAll(page = 1, limit = 12, techniqueId?: number) {
+  async findAll(
+    page = 1,
+    limit = 12,
+    techniqueId?: number,
+    isAvailable?: boolean,
+  ) {
+    const where: FindOptionsWhere<Painting> = {};
+    if (techniqueId) where.techniqueId = techniqueId;
+    if (isAvailable !== undefined) where.isAvailable = isAvailable;
+
     const [paintings, total] = await this.paintingsRepository.findAndCount({
-      where: techniqueId ? { techniqueId } : {},
+      where,
       skip: (page - 1) * limit,
       take: limit,
       order: { createdAt: 'DESC' },

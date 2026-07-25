@@ -4,12 +4,14 @@ import Layout from '../components/layout/Layout';
 import ProtectedRoute from './ProtectedRoute';
 import HomePage from '../pages/HomePage';
 import CatalogPage from '../pages/CatalogPage';
+import GalleryPage from '../pages/GalleryPage';
 import PaintingPage from '../pages/PaintingPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import CartPage from '../pages/CartPage';
 import OrdersPage from '../pages/OrdersPage';
 import ProfilePage from '../pages/ProfilePage';
+import FavoritesPage from '../pages/FavoritesPage';
 import DictionariesPage from '../pages/admin/DictionariesPage';
 import AdminOrdersPage from '../pages/admin/AdminOrdersPage';
 import AdminSettingsPage from '../pages/admin/AdminSettingsPage';
@@ -21,6 +23,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'catalog', element: <CatalogPage /> },
+      { path: 'gallery', element: <GalleryPage /> },
       { path: 'painting/:id', element: <PaintingPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
@@ -30,6 +33,7 @@ export const router = createBrowserRouter([
           { path: 'cart', element: <CartPage /> },
           { path: 'orders', element: <OrdersPage /> },
           { path: 'profile', element: <ProfilePage /> },
+          { path: 'favorites', element: <FavoritesPage /> },
         ],
       },
       {

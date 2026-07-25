@@ -12,7 +12,7 @@ export default function HomePage() {
 
   useEffect(() => {
     paintingsService
-      .getPaintings(1, 20)
+      .getPaintings(1, 20, undefined, true)
       .then((response) => setPaintings(response.data))
       .catch(() => setPaintings([]))
       .finally(() => setLoading(false));

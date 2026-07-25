@@ -4,9 +4,11 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './routes/router';
 import { settingsService } from './api/settings.api';
 import { cartService } from './api/cart.api';
+import { likesService } from './api/likes.api';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { setAuthorName } from './store/slices/settingsSlice';
 import { setCartCount } from './store/slices/cartSlice';
+import { setLikedIds } from './store/slices/likesSlice';
 import Toast from './components/ui/Toast';
 
 function App() {
@@ -40,6 +42,18 @@ function App() {
           ),
         ),
       )
+      .catch(() => {});
+  }, [isAuthenticated, dispatch]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      dispatch(setLikedIds([]));
+      return;
+    }
+
+    likesService
+      .getMyLikedIds()
+      .then((ids) => dispatch(setLikedIds(ids)))
       .catch(() => {});
   }, [isAuthenticated, dispatch]);
 

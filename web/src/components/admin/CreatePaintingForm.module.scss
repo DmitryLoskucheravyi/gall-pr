@@ -34,13 +34,25 @@
 
 .fileLabel {
   font-size: 14px;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  color: var(--color-text);
 }
 
-.fileInput {
-  display: block;
-  width: 100%;
-  margin-top: $spacing-xs;
+.hiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.filePickerButton {
+  @include button-secondary;
+  align-self: flex-start;
+  padding: $spacing-sm $spacing-lg;
   font-size: 14px;
 }
 
@@ -77,7 +89,6 @@
 }
 
 .input,
-.select,
 .textarea {
   @include input-base;
 }

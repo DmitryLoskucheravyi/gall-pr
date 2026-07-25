@@ -1,8 +1,5 @@
 .header {
   margin-bottom: $spacing-xxl;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .title {
@@ -11,8 +8,9 @@
   color: var(--color-text);
 }
 
-.createButton {
-  @include button-primary;
+.subtitle {
+  margin-top: $spacing-xs;
+  color: var(--color-text-secondary);
 }
 
 .chips {
@@ -40,10 +38,10 @@
   gap: $spacing-xxl;
 
   @include respond-up($breakpoint-sm) {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 
   @include respond-up($breakpoint-lg) {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }

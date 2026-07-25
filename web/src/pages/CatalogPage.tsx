@@ -16,16 +16,23 @@ export default function CatalogPage() {
   const addToCart = useAddToCart();
   const dispatch = useAppDispatch();
 
+  const likedIds = useAppSelector((state) => state.likes.likedIds);
+
   const [paintings, setPaintings] = useState<Painting[]>([]);
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<
     number | null
   >(null);
+  const [showLikedOnly, setShowLikedOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPainting, setEditingPainting] = useState<Painting | null>(
     null,
   );
+
+  const visiblePaintings = showLikedOnly
+    ? paintings.filter((painting) => likedIds.includes(painting.id))
+    : paintings;
 
   useEffect(() => {
     techniquesService.getTechniques().then(setTechniques);
@@ -42,6 +49,7 @@ export default function CatalogPage() {
         1,
         24,
         selectedTechniqueId ?? undefined,
+        true,
       );
       setPaintings(response.data);
     } catch (error) {
@@ -107,15 +115,28 @@ export default function CatalogPage() {
             {technique.name}
           </button>
         ))}
+
+        {user && (
+          <button
+            onClick={() => setShowLikedOnly((prev) => !prev)}
+            className={showLikedOnly ? styles.chipActive : styles.chip}
+          >
+            ♥ Уподобані
+          </button>
+        )}
       </div>
 
       {loading ? (
         <p className={styles.muted}>Завантаження…</p>
-      ) : paintings.length === 0 ? (
-        <p className={styles.muted}>Картин поки немає</p>
+      ) : visiblePaintings.length === 0 ? (
+        <p className={styles.muted}>
+          {showLikedOnly
+            ? 'Ви ще нічого не вподобали'
+            : 'Картин поки немає'}
+        </p>
       ) : (
         <div className={styles.grid}>
-          {paintings.map((painting) => (
+          {visiblePaintings.map((painting) => (
             <PaintingCard
               key={painting.id}
               painting={painting}

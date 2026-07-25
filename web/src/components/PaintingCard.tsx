@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 import type { Painting } from '../types/painting.types';
 import { useAppSelector } from '../store/hooks';
+import LikeButton from './ui/LikeButton';
 import styles from './PaintingCard.module.scss';
 
 type Props = {
@@ -26,13 +27,24 @@ export default function PaintingCard({
 
   return (
     <div className={styles.card}>
-      <Link to={`/painting/${painting.id}`}>
-        <img
-          src={painting.cardImage}
-          alt={painting.title}
-          className={styles.image}
+      <div className={styles.imageWrap}>
+        <Link to={`/painting/${painting.id}`} className={styles.imageLink}>
+          <img
+            src={painting.cardImage}
+            alt={painting.title}
+            className={styles.image}
+          />
+          {!painting.isAvailable && (
+            <span className={styles.soldBadge}>Продано</span>
+          )}
+        </Link>
+
+        <LikeButton
+          paintingId={painting.id}
+          initialLikesCount={painting.likesCount}
+          variant="overlay"
         />
-      </Link>
+      </div>
 
       <div className={styles.body}>
         <Link to={`/painting/${painting.id}`} className={styles.title}>
@@ -54,8 +66,12 @@ export default function PaintingCard({
             <Link to={`/painting/${painting.id}`} className={styles.detailsButton}>
               Детальніше
             </Link>
-            <button onClick={onBuy} className={styles.buyButton}>
-              Купити
+            <button
+              onClick={onBuy}
+              disabled={!painting.isAvailable}
+              className={styles.buyButton}
+            >
+              {painting.isAvailable ? 'Купити' : 'Продано'}
             </button>
           </div>
         )}

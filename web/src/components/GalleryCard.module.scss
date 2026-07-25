@@ -1,0 +1,68 @@
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: $radius-sm;
+  background-color: var(--color-background-alt);
+}
+
+.linkArea {
+  display: block;
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.card:hover .image {
+  transform: scale(1.06);
+}
+
+.soldBadge {
+  position: absolute;
+  top: $spacing-md;
+  left: $spacing-md;
+  z-index: 1;
+  border-radius: $radius-sm;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  padding: $spacing-xs $spacing-md;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: $spacing-lg;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.7),
+    rgba(0, 0, 0, 0) 55%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover .overlay {
+  opacity: 1;
+}
+
+.titleText {
+  font-family: $font-display;
+  font-size: 17px;
+  color: #fff;
+  transform: translateY(8px);
+  transition: transform 0.3s ease;
+}
+
+.card:hover .titleText {
+  transform: translateY(0);
+}

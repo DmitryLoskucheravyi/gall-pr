@@ -1,4 +1,4 @@
-import { IsNumberString, IsOptional } from 'class-validator';
+import { IsBooleanString, IsNumberString, IsOptional } from 'class-validator';
 
 export class GetPaintingsDto {
   @IsOptional()
@@ -12,4 +12,8 @@ export class GetPaintingsDto {
   @IsOptional()
   @IsNumberString()
   techniqueId?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  isAvailable?: string;
 }

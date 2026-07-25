@@ -15,6 +15,7 @@ export type Painting = {
 
   isAvailable: boolean;
   isFeatured: boolean;
+  likesCount: number;
 
   techniqueId: number | null;
   technique: Technique | null;
