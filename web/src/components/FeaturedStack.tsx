@@ -7,7 +7,7 @@ import Skeleton from './ui/Skeleton';
 import styles from './FeaturedStack.module.scss';
 
 const BASE_ROTATE = -22;
-const SPREAD_X = 46;
+const SPREAD_X = 58;
 
 function photoStyle(
   index: number,
@@ -70,6 +70,7 @@ export default function FeaturedStack({ paintings }: Props) {
             paintingId={painting.id}
             initialLikesCount={painting.likesCount}
             variant="overlay"
+            hoverReveal
           />
         </div>
       ))}

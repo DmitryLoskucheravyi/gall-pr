@@ -20,16 +20,20 @@
   z-index: 2;
   display: flex;
   height: 34px;
-  width: 34px;
+  min-width: 34px;
   align-items: center;
   justify-content: center;
+  gap: $spacing-xs;
+  padding: 0 $spacing-sm;
   border-radius: $radius-pill;
   background-color: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
   color: #fff;
+  opacity: 1;
   transition:
     background-color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    opacity 0.2s ease;
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.6);
@@ -40,6 +44,15 @@
   &.liked {
     color: var(--color-error);
   }
+
+  &.hoverReveal {
+    opacity: var(--like-opacity, 0);
+  }
+}
+
+.overlayCount {
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .icon {

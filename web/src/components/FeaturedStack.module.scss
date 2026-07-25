@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  height: 460px;
+  height: 560px;
   padding-inline: $spacing-xxxxl;
   perspective: 1600px;
 }
@@ -10,7 +10,7 @@
 .photo {
   position: relative;
   flex-shrink: 0;
-  width: 230px;
+  width: 290px;
   aspect-ratio: 3 / 4;
   overflow: hidden;
   background-color: var(--color-background-alt);
@@ -18,9 +18,14 @@
   transform-origin: left center;
   transform-style: preserve-3d;
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  --like-opacity: 0;
 
   &:not(:first-child) {
-    margin-left: -128px;
+    margin-left: -162px;
+  }
+
+  &.active {
+    --like-opacity: 1;
   }
 }
 

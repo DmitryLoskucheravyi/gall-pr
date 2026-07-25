@@ -12,6 +12,7 @@ type Props = {
   initialLikesCount: number;
   variant?: 'overlay' | 'inline';
   showCount?: boolean;
+  hoverReveal?: boolean;
 };
 
 export default function LikeButton({
@@ -19,6 +20,7 @@ export default function LikeButton({
   initialLikesCount,
   variant = 'inline',
   showCount = true,
+  hoverReveal = false,
 }: Props) {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -80,9 +82,12 @@ export default function LikeButton({
         type="button"
         onClick={handleClick}
         aria-label={isLiked ? 'Прибрати лайк' : 'Лайкнути'}
-        className={`${styles.overlay} ${isLiked ? styles.liked : ''}`}
+        className={`${styles.overlay} ${isLiked ? styles.liked : ''} ${
+          hoverReveal ? styles.hoverReveal : ''
+        }`}
       >
         {heart}
+        {showCount && <span className={styles.overlayCount}>{likesCount}</span>}
       </button>
     );
   }
