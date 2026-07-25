@@ -182,11 +182,50 @@ export default function Header() {
 
           {user ? (
             <div className={styles.userGroup}>
-              <NavLink to="/profile" className={navLinkClass}>
-                {user.firstName}
+              <NavLink
+                to="/profile"
+                aria-label="Профіль"
+                className={({ isActive }) =>
+                  `${styles.profileButton} ${isActive ? styles.active : ''}`
+                }
+              >
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="12"
+                    cy="8"
+                    r="3.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M4.5 19.5c1.4-3.1 4.3-5 7.5-5s6.1 1.9 7.5 5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </NavLink>
-              <button onClick={handleLogout} className={styles.logoutButton}>
-                Вийти
+              <button
+                onClick={handleLogout}
+                aria-label="Вийти"
+                className={styles.logoutButton}
+              >
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M15 17v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 12h12m0 0-3.5-3.5M21 12l-3.5 3.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
           ) : (

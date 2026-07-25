@@ -144,14 +144,46 @@
   gap: $spacing-lg;
 }
 
+.profileButton {
+  display: flex;
+  height: 34px;
+  width: 34px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
+
+  &:hover {
+    color: var(--color-primary);
+  }
+
+  &.active {
+    color: var(--color-primary);
+  }
+}
+
 .logoutButton {
-  font-size: 14px;
-  font-weight: 500;
+  display: flex;
+  height: 34px;
+  width: 34px;
+  align-items: center;
+  justify-content: center;
   color: var(--color-error);
   cursor: pointer;
   transition:
     color 0.2s ease,
+    background-color 0.2s ease,
     transform 0.2s ease;
+
+  svg {
+    height: 19px;
+    width: 19px;
+  }
 
   &:hover {
     color: var(--color-error);
