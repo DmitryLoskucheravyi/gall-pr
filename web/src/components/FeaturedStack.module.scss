@@ -1,8 +1,8 @@
 .stack {
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 380px;
+  justify-content: flex-start;
+  height: 460px;
   padding-inline: $spacing-xxxxl;
   perspective: 1600px;
 }
@@ -10,20 +10,25 @@
 .photo {
   position: relative;
   flex-shrink: 0;
-  width: 190px;
+  width: 230px;
   aspect-ratio: 3 / 4;
-  display: block;
   overflow: hidden;
   background-color: var(--color-background-alt);
   box-shadow: -6px 10px 22px rgba(0, 0, 0, 0.3);
   transform-origin: left center;
   transform-style: preserve-3d;
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  cursor: pointer;
 
   &:not(:first-child) {
-    margin-left: -104px;
+    margin-left: -128px;
   }
+}
+
+.imageLink {
+  display: block;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
 }
 
 .image {

@@ -2,17 +2,24 @@ import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Painting } from '../types/painting.types';
+import LikeButton from './ui/LikeButton';
 import Skeleton from './ui/Skeleton';
 import styles from './FeaturedStack.module.scss';
 
 const BASE_ROTATE = -22;
 const SPREAD_X = 46;
 
-function photoStyle(index: number, hoveredIndex: number | null): CSSProperties {
+function photoStyle(
+  index: number,
+  hoveredIndex: number | null,
+  total: number,
+): CSSProperties {
+  const baseZ = total - index;
+
   if (hoveredIndex === null) {
     return {
       transform: `rotateY(${BASE_ROTATE}deg)`,
-      zIndex: index,
+      zIndex: baseZ,
     };
   }
 
@@ -27,7 +34,7 @@ function photoStyle(index: number, hoveredIndex: number | null): CSSProperties {
 
   return {
     transform: `translateX(${away}px) rotateY(${BASE_ROTATE}deg)`,
-    zIndex: index,
+    zIndex: baseZ,
   };
 }
 
@@ -41,23 +48,30 @@ export default function FeaturedStack({ paintings }: Props) {
   return (
     <div className={styles.stack}>
       {paintings.map((painting, index) => (
-        <Link
+        <div
           key={painting.id}
-          to={`/painting/${painting.id}`}
           className={`${styles.photo} ${
             hoveredIndex === index ? styles.active : ''
           }`}
-          style={photoStyle(index, hoveredIndex)}
+          style={photoStyle(index, hoveredIndex, paintings.length)}
           onMouseEnter={() => setHoveredIndex(index)}
           onMouseLeave={() => setHoveredIndex(null)}
         >
-          <img
-            src={painting.cardImage}
-            alt={painting.title}
-            className={styles.image}
+          <Link to={`/painting/${painting.id}`} className={styles.imageLink}>
+            <img
+              src={painting.cardImage}
+              alt={painting.title}
+              className={styles.image}
+            />
+            <span className={styles.caption}>{painting.title}</span>
+          </Link>
+
+          <LikeButton
+            paintingId={painting.id}
+            initialLikesCount={painting.likesCount}
+            variant="overlay"
           />
-          <span className={styles.caption}>{painting.title}</span>
-        </Link>
+        </div>
       ))}
     </div>
   );
@@ -70,7 +84,10 @@ export function FeaturedStackSkeleton({ count = 7 }: { count?: number }) {
         <Skeleton
           key={index}
           className={styles.photo}
-          style={{ transform: `rotateY(${BASE_ROTATE}deg)`, zIndex: index }}
+          style={{
+            transform: `rotateY(${BASE_ROTATE}deg)`,
+            zIndex: count - index,
+          }}
         />
       ))}
     </div>
