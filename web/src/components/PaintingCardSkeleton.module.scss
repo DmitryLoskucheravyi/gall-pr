@@ -1,0 +1,45 @@
+.card {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-lg;
+}
+
+.title {
+  height: 18px;
+  width: 70%;
+}
+
+.author {
+  height: 12px;
+  width: 45%;
+}
+
+.price {
+  margin-top: $spacing-xs;
+  height: 20px;
+  width: 35%;
+}
+
+.actions {
+  margin-top: $spacing-md;
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.button {
+  flex: 1;
+  height: 36px;
+}

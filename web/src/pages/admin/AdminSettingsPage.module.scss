@@ -30,6 +30,11 @@
   @include input-base;
 }
 
+.skeletonInput {
+  height: 46px;
+  width: 100%;
+}
+
 .saveButton {
   @include button-primary;
   margin-top: $spacing-lg;

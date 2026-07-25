@@ -72,6 +72,27 @@
   object-fit: cover;
 }
 
+.skeletonNumber {
+  height: 16px;
+  width: 120px;
+}
+
+.skeletonStatus {
+  height: 22px;
+  width: 90px;
+}
+
+.skeletonDate {
+  margin-top: $spacing-xs;
+  height: 12px;
+  width: 100px;
+}
+
+.skeletonThumb {
+  height: 56px;
+  width: 56px;
+}
+
 .footer {
   margin-top: $spacing-lg;
   display: flex;

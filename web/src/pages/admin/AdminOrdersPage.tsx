@@ -4,6 +4,7 @@ import { ordersService } from '../../api/orders.api';
 import type { Order, OrderStatus } from '../../types/order.types';
 import { useAppDispatch } from '../../store/hooks';
 import { showToast } from '../../store/slices/toastSlice';
+import Skeleton from '../../components/ui/Skeleton';
 import styles from './AdminOrdersPage.module.scss';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -77,7 +78,33 @@ export default function AdminOrdersPage() {
     }
   };
 
-  if (loading) return <p className={styles.muted}>Завантаження…</p>;
+  if (loading) {
+    return (
+      <div>
+        <h1 className={styles.title}>Замовлення</h1>
+        <div className={styles.list}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className={styles.order}>
+              <div className={styles.orderHeader}>
+                <Skeleton className={styles.skeletonNumber} />
+                <Skeleton className={styles.skeletonTotal} />
+              </div>
+              <Skeleton className={styles.skeletonUserLine} />
+              <Skeleton className={styles.skeletonDate} />
+              <div className={styles.statusOptions}>
+                {Array.from({ length: 4 }).map((__, statusIndex) => (
+                  <Skeleton
+                    key={statusIndex}
+                    className={styles.skeletonStatusOption}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

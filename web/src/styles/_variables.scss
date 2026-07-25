@@ -9,13 +9,13 @@ $spacing-xxxl: 32px;
 $spacing-xxxxl: 40px;
 $spacing-huge: 48px;
 
-// Radius scale
-$radius-sm: 8px;
-$radius-md: 12px;
-$radius-lg: 16px;
-$radius-xl: 20px;
-$radius-xxl: 28px;
-$radius-pill: 999px;
+// Radius scale — flat, square design (all corners sharp)
+$radius-sm: 0;
+$radius-md: 0;
+$radius-lg: 0;
+$radius-xl: 0;
+$radius-xxl: 0;
+$radius-pill: 0;
 
 // Layout
 $container-max-width: 1600px;

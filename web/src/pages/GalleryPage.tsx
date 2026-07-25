@@ -5,6 +5,7 @@ import { techniquesService } from '../api/techniques.api';
 import type { Painting } from '../types/painting.types';
 import type { Technique } from '../types/dictionaries.types';
 import GalleryCard from '../components/GalleryCard';
+import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import { useAppSelector } from '../store/hooks';
 import styles from './GalleryPage.module.scss';
 
@@ -82,7 +83,11 @@ export default function GalleryPage() {
       </div>
 
       {loading ? (
-        <p className={styles.muted}>Завантаження…</p>
+        <div className={styles.grid}>
+          {Array.from({ length: 12 }).map((_, index) => (
+            <GalleryCardSkeleton key={index} />
+          ))}
+        </div>
       ) : visiblePaintings.length === 0 ? (
         <p className={styles.muted}>
           {showLikedOnly

@@ -5,6 +5,7 @@ import { paintingsService } from '../api/paintings.api';
 import type { Painting } from '../types/painting.types';
 import PaintingCard from '../components/PaintingCard';
 import LikeButton from '../components/ui/LikeButton';
+import Skeleton from '../components/ui/Skeleton';
 import { useAddToCart } from '../hooks/useAddToCart';
 import { useAppSelector } from '../store/hooks';
 import styles from './PaintingPage.module.scss';
@@ -74,7 +75,30 @@ export default function PaintingPage() {
     };
   }, [painting]);
 
-  if (loading) return <p className={styles.muted}>Завантаження…</p>;
+  if (loading) {
+    return (
+      <div>
+        <button onClick={() => navigate(-1)} className={styles.backButton}>
+          ← Назад
+        </button>
+
+        <div className={styles.grid}>
+          <div>
+            <Skeleton className={styles.skeletonImage} />
+          </div>
+
+          <div>
+            <Skeleton className={styles.skeletonTitle} />
+            <Skeleton className={styles.skeletonAuthor} />
+            <Skeleton className={styles.skeletonPrice} />
+            <Skeleton className={styles.skeletonButton} />
+            <Skeleton className={styles.skeletonDescription} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!painting) return <p className={styles.muted}>Картину не знайдено</p>;
 
   const images = painting.images.length > 0 ? painting.images : [painting.cardImage];

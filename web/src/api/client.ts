@@ -20,13 +20,42 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Concurrent 401s must share a single refresh call: the backend rotates
+// the refresh token on every use, so two independent refresh requests
+// racing on the same old token would leave one of them rejected as
+// "invalid" and force a logout right after a perfectly good refresh.
+let refreshPromise: Promise<string> | null = null;
+
+function refreshAccessToken(refreshToken: string): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_URL}/auth/refresh`, { refreshToken })
+      .then((response) => {
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        store.dispatch(refreshAuth({ accessToken, refreshToken: newRefreshToken }));
+        return accessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
 api.interceptors.response.use(
   (response) => response,
 
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isAuthRefreshCall = originalRequest?.url?.includes('/auth/refresh');
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthRefreshCall
+    ) {
       originalRequest._retry = true;
 
       const refreshToken = store.getState().auth.refreshToken;
@@ -37,15 +66,7 @@ api.interceptors.response.use(
       }
 
       try {
-        const response = await axios.post(`${API_URL}/auth/refresh`, {
-          refreshToken,
-        });
-
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-        store.dispatch(
-          refreshAuth({ accessToken, refreshToken: newRefreshToken }),
-        );
+        const accessToken = await refreshAccessToken(refreshToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 

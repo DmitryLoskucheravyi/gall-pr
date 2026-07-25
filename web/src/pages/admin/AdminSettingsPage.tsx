@@ -4,6 +4,7 @@ import { settingsService } from '../../api/settings.api';
 import { useAppDispatch } from '../../store/hooks';
 import { setAuthorName } from '../../store/slices/settingsSlice';
 import { showToast } from '../../store/slices/toastSlice';
+import Skeleton from '../../components/ui/Skeleton';
 import styles from './AdminSettingsPage.module.scss';
 
 export default function AdminSettingsPage() {
@@ -41,7 +42,20 @@ export default function AdminSettingsPage() {
     }
   };
 
-  if (loading) return <p className={styles.hint}>Завантаження…</p>;
+  if (loading) {
+    return (
+      <div className={styles.wrap}>
+        <h1 className={styles.title}>Налаштування</h1>
+        <div className={styles.form}>
+          <label className={styles.label}>Поточний автор</label>
+          <p className={styles.hint}>
+            Цей автор відображатиметься на всіх картинах у каталозі
+          </p>
+          <Skeleton className={styles.skeletonInput} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrap}>

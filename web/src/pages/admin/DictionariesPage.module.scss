@@ -58,6 +58,16 @@
   padding: $spacing-md $spacing-lg;
 }
 
+.skeletonName {
+  height: 16px;
+  width: 40%;
+}
+
+.skeletonActions {
+  height: 16px;
+  width: 60px;
+}
+
 .itemName {
   color: var(--color-text);
 }

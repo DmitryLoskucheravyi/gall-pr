@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { likesService } from '../api/likes.api';
 import type { Painting } from '../types/painting.types';
 import PaintingCard from '../components/PaintingCard';
+import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import { useAddToCart } from '../hooks/useAddToCart';
 import styles from './FavoritesPage.module.scss';
 
@@ -24,7 +25,11 @@ export default function FavoritesPage() {
       <h1 className={styles.title}>Улюблені</h1>
 
       {loading ? (
-        <p className={styles.muted}>Завантаження…</p>
+        <div className={styles.grid}>
+          {Array.from({ length: 8 }).map((_, index) => (
+            <PaintingCardSkeleton key={index} />
+          ))}
+        </div>
       ) : paintings.length === 0 ? (
         <p className={styles.muted}>
           Ви ще не вподобали жодної картини

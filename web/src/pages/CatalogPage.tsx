@@ -5,6 +5,7 @@ import { techniquesService } from '../api/techniques.api';
 import type { Painting } from '../types/painting.types';
 import type { Technique } from '../types/dictionaries.types';
 import PaintingCard from '../components/PaintingCard';
+import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import { useAddToCart } from '../hooks/useAddToCart';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -127,7 +128,11 @@ export default function CatalogPage() {
       </div>
 
       {loading ? (
-        <p className={styles.muted}>Завантаження…</p>
+        <div className={styles.grid}>
+          {Array.from({ length: 8 }).map((_, index) => (
+            <PaintingCardSkeleton key={index} />
+          ))}
+        </div>
       ) : visiblePaintings.length === 0 ? (
         <p className={styles.muted}>
           {showLikedOnly

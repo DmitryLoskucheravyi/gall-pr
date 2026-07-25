@@ -7,6 +7,7 @@ import type { CartItem } from '../types/cart.types';
 import { useAppDispatch } from '../store/hooks';
 import { setCartCount } from '../store/slices/cartSlice';
 import { showToast } from '../store/slices/toastSlice';
+import Skeleton from '../components/ui/Skeleton';
 import styles from './CartPage.module.scss';
 
 export default function CartPage() {
@@ -67,7 +68,24 @@ export default function CartPage() {
     }
   };
 
-  if (loading) return <p className={styles.muted}>Завантаження…</p>;
+  if (loading) {
+    return (
+      <div>
+        <h1 className={styles.title}>Кошик</h1>
+        <div className={styles.items}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className={styles.item}>
+              <Skeleton className={styles.itemImage} />
+              <div className={styles.itemInfoSkeleton}>
+                <Skeleton className={styles.skeletonTitle} />
+                <Skeleton className={styles.skeletonPrice} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

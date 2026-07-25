@@ -4,6 +4,7 @@ import { ordersService } from '../api/orders.api';
 import type { Order, OrderStatus } from '../types/order.types';
 import { useAppDispatch } from '../store/hooks';
 import { showToast } from '../store/slices/toastSlice';
+import Skeleton from '../components/ui/Skeleton';
 import styles from './OrdersPage.module.scss';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -52,7 +53,28 @@ export default function OrdersPage() {
     }
   };
 
-  if (loading) return <p className={styles.muted}>Завантаження…</p>;
+  if (loading) {
+    return (
+      <div>
+        <h1 className={styles.title}>Мої замовлення</h1>
+        <div className={styles.list}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className={styles.order}>
+              <div className={styles.orderHeader}>
+                <Skeleton className={styles.skeletonNumber} />
+                <Skeleton className={styles.skeletonStatus} />
+              </div>
+              <Skeleton className={styles.skeletonDate} />
+              <div className={styles.thumbs}>
+                <Skeleton className={styles.skeletonThumb} />
+                <Skeleton className={styles.skeletonThumb} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

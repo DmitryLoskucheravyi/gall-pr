@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { likesService } from '../api/likes.api';
 import type { Painting } from '../types/painting.types';
 import GalleryCard from '../components/GalleryCard';
+import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import { useAppSelector } from '../store/hooks';
 import styles from './ProfilePage.module.scss';
 
@@ -77,7 +78,11 @@ export default function ProfilePage() {
           </div>
 
           {likedLoading ? (
-            <p className={styles.infoValue}>Завантаження…</p>
+            <div className={styles.favoritesGrid}>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <GalleryCardSkeleton key={index} />
+              ))}
+            </div>
           ) : likedPaintings.length === 0 ? (
             <p className={styles.favoritesEmpty}>
               Ви ще не вподобали жодної картини

@@ -109,6 +109,44 @@
   object-fit: cover;
 }
 
+.skeletonImage {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+}
+
+.skeletonTitle {
+  height: 36px;
+  width: 80%;
+}
+
+.skeletonAuthor {
+  margin-top: $spacing-sm;
+  height: 18px;
+  width: 40%;
+}
+
+.skeletonPrice {
+  margin-top: $spacing-lg;
+  height: 30px;
+  width: 30%;
+}
+
+.skeletonButton {
+  margin-top: $spacing-xxl;
+  height: 48px;
+  width: 100%;
+
+  @include respond-up($breakpoint-md) {
+    width: 220px;
+  }
+}
+
+.skeletonDescription {
+  margin-top: $spacing-xl;
+  height: 90px;
+  width: 100%;
+}
+
 .titleRow {
   display: flex;
   align-items: flex-start;

@@ -52,6 +52,33 @@
   color: var(--color-text-muted);
 }
 
+.skeletonNumber {
+  height: 16px;
+  width: 120px;
+}
+
+.skeletonTotal {
+  height: 20px;
+  width: 80px;
+}
+
+.skeletonUserLine {
+  margin-top: $spacing-xs;
+  height: 14px;
+  width: 55%;
+}
+
+.skeletonDate {
+  margin-top: $spacing-xs;
+  height: 12px;
+  width: 90px;
+}
+
+.skeletonStatusOption {
+  height: 26px;
+  width: 90px;
+}
+
 .statusOptions {
   margin-top: $spacing-lg;
   display: flex;

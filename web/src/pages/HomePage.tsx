@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { paintingsService } from '../api/paintings.api';
 import type { Painting } from '../types/painting.types';
 import PaintingCard from '../components/PaintingCard';
+import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import styles from './HomePage.module.scss';
 
 export default function HomePage() {
@@ -43,7 +44,11 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <p className={styles.muted}>Завантаження…</p>
+          <div className={styles.grid}>
+            {Array.from({ length: 8 }).map((_, index) => (
+              <PaintingCardSkeleton key={index} compact />
+            ))}
+          </div>
         ) : featured.length > 0 ? (
           <div className={styles.grid}>
             {featured.map((painting) => (

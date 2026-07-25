@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
@@ -9,12 +10,43 @@ import styles from './Header.module.scss';
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `${styles.navLink} ${isActive ? styles.active : ''}`;
 
+const adminNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `${styles.adminMenuLink} ${isActive ? styles.active : ''}`;
+
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const cartCount = useAppSelector((state) => state.cart.count);
   const isDark = useAppSelector((state) => state.theme.isDark);
+
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const adminMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsAdminMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isAdminMenuOpen) return;
+
+    const handleOutside = (event: MouseEvent) => {
+      if (!adminMenuRef.current?.contains(event.target as Node)) {
+        setIsAdminMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsAdminMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isAdminMenuOpen]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -79,17 +111,46 @@ export default function Header() {
           )}
 
           {user?.role === 'ADMIN' && (
-            <>
-              <NavLink to="/admin/dictionaries" className={navLinkClass}>
-                Матеріали і техніки
-              </NavLink>
-              <NavLink to="/admin/orders" className={navLinkClass}>
-                Замовлення
-              </NavLink>
-              <NavLink to="/admin/settings" className={navLinkClass}>
-                Налаштування
-              </NavLink>
-            </>
+            <div ref={adminMenuRef} className={styles.adminMenu}>
+              <button
+                type="button"
+                onClick={() => setIsAdminMenuOpen((prev) => !prev)}
+                className={`${styles.navLink} ${styles.adminMenuTrigger} ${
+                  isAdminMenuOpen ? styles.active : ''
+                }`}
+              >
+                Адмін
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className={`${styles.adminMenuChevron} ${
+                    isAdminMenuOpen ? styles.open : ''
+                  }`}
+                >
+                  <path
+                    d="m6 9 6 6 6-6"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              {isAdminMenuOpen && (
+                <div className={styles.adminMenuPanel}>
+                  <NavLink to="/admin/dictionaries" className={adminNavLinkClass}>
+                    Матеріали і техніки
+                  </NavLink>
+                  <NavLink to="/admin/orders" className={adminNavLinkClass}>
+                    Замовлення
+                  </NavLink>
+                  <NavLink to="/admin/settings" className={adminNavLinkClass}>
+                    Налаштування
+                  </NavLink>
+                </div>
+              )}
+            </div>
           )}
 
           <button

@@ -5,6 +5,7 @@ import { techniquesService } from '../../api/techniques.api';
 import type { Material, Technique } from '../../types/dictionaries.types';
 import { useAppDispatch } from '../../store/hooks';
 import { showToast } from '../../store/slices/toastSlice';
+import Skeleton from '../../components/ui/Skeleton';
 import styles from './DictionariesPage.module.scss';
 
 type Tab = 'materials' | 'techniques';
@@ -142,7 +143,14 @@ export default function DictionariesPage() {
       </form>
 
       {loading ? (
-        <p className={styles.muted}>Завантаження…</p>
+        <div className={styles.list}>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className={styles.item}>
+              <Skeleton className={styles.skeletonName} />
+              <Skeleton className={styles.skeletonActions} />
+            </div>
+          ))}
+        </div>
       ) : items.length === 0 ? (
         <p className={styles.muted}>Записів поки немає</p>
       ) : (
