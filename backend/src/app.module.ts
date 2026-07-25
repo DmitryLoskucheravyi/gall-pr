@@ -15,6 +15,8 @@ import { AppSettings } from './settings/entities/app-settings.entity';
 import { PaintingLike } from './likes/entities/painting-like.entity';
 import { SupportChat } from './support/entities/support-chat.entity';
 import { SupportMessage } from './support/entities/support-message.entity';
+import { Giveaway } from './giveaways/entities/giveaway.entity';
+import { GiveawayParticipant } from './giveaways/entities/giveaway-participant.entity';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -28,6 +30,7 @@ import { OrdersModule } from './orders/orders.module';
 import { SettingsModule } from './settings/settings.module';
 import { LikesModule } from './likes/likes.module';
 import { SupportModule } from './support/support.module';
+import { GiveawaysModule } from './giveaways/giveaways.module';
 
 import { ConfigModule } from '@nestjs/config';
 @Module({
@@ -53,6 +56,8 @@ import { ConfigModule } from '@nestjs/config';
         PaintingLike,
         SupportChat,
         SupportMessage,
+        Giveaway,
+        GiveawayParticipant,
       ],
 
       synchronize: false,
@@ -78,6 +83,8 @@ import { ConfigModule } from '@nestjs/config';
     LikesModule,
 
     SupportModule,
+
+    GiveawaysModule,
 
     UploadsModule,
   ],

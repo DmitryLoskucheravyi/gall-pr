@@ -1,0 +1,131 @@
+.banner {
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  border-radius: $radius-xxl;
+  background-color: var(--color-background-alt);
+  transition: box-shadow 0.2s ease;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: minmax(0, 380px) 1fr;
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.imageWrap {
+  position: relative;
+  height: 280px;
+  width: 100%;
+
+  @include respond-up($breakpoint-lg) {
+    height: 100%;
+  }
+}
+
+.image {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.daysBadge {
+  position: absolute;
+  top: $spacing-lg;
+  left: $spacing-lg;
+  border-radius: $radius-pill;
+  background-color: var(--color-surface);
+  padding: $spacing-xs $spacing-md;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: $spacing-xl;
+  padding: $spacing-xl $spacing-xxl;
+
+  @include respond-up($breakpoint-lg) {
+    padding: $spacing-xxxxl;
+  }
+}
+
+.top {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  min-height: 0;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: 32px;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.prize {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.description {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1px solid var(--color-border);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xl;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.statIcon {
+  height: 18px;
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.ctaButton {
+  @include button-primary;
+}
+
+.skeleton {
+  height: 280px;
+  border-radius: $radius-xxl;
+  background-color: var(--color-background-alt);
+
+  @include respond-up($breakpoint-lg) {
+    height: 340px;
+  }
+}

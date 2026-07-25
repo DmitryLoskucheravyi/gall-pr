@@ -5,6 +5,8 @@ import ProtectedRoute from './ProtectedRoute';
 import HomePage from '../pages/HomePage';
 import CatalogPage from '../pages/CatalogPage';
 import GalleryPage from '../pages/GalleryPage';
+import GiveawaysPage from '../pages/GiveawaysPage';
+import GiveawayDetailPage from '../pages/GiveawayDetailPage';
 import PaintingPage from '../pages/PaintingPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
@@ -17,6 +19,7 @@ import DictionariesPage from '../pages/admin/DictionariesPage';
 import AdminOrdersPage from '../pages/admin/AdminOrdersPage';
 import AdminSettingsPage from '../pages/admin/AdminSettingsPage';
 import AdminSupportPage from '../pages/admin/AdminSupportPage';
+import AdminGiveawaysPage from '../pages/admin/AdminGiveawaysPage';
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +29,8 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'gallery', element: <GalleryPage /> },
+      { path: 'giveaways', element: <GiveawaysPage /> },
+      { path: 'giveaways/:id', element: <GiveawayDetailPage /> },
       { path: 'painting/:id', element: <PaintingPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
@@ -46,6 +51,7 @@ export const router = createBrowserRouter([
           { path: 'admin/orders', element: <AdminOrdersPage /> },
           { path: 'admin/settings', element: <AdminSettingsPage /> },
           { path: 'admin/support', element: <AdminSupportPage /> },
+          { path: 'admin/giveaways', element: <AdminGiveawaysPage /> },
         ],
       },
     ],

@@ -1,0 +1,132 @@
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.backButton {
+  margin-bottom: $spacing-xl;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 32px;
+  color: var(--color-text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xxxxl;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background-color: var(--color-background-alt);
+}
+
+.paintingTitle {
+  font-family: $font-display;
+  font-size: 26px;
+  color: var(--color-text);
+}
+
+.paintingDescription {
+  margin-top: $spacing-sm;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.deadlineBox {
+  @include card;
+  margin-top: $spacing-xxl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-lg;
+}
+
+.deadlineLabel {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.deadlineValue {
+  font-family: $font-display;
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+.participants {
+  margin-top: $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.personIcon {
+  height: 16px;
+  width: 16px;
+  color: var(--color-text-secondary);
+}
+
+.description {
+  margin-top: $spacing-lg;
+  line-height: 1.7;
+  color: var(--color-text);
+}
+
+.joinButton {
+  @include button-primary;
+  margin-top: $spacing-xxl;
+  width: 100%;
+}
+
+.joinedButton {
+  @include button-secondary;
+  margin-top: $spacing-xxl;
+  width: 100%;
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.conditionsBox {
+  @include card;
+  margin-top: $spacing-xxl;
+  padding: $spacing-lg;
+}
+
+.conditionsTitle {
+  font-family: $font-display;
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.conditionsText {
+  margin-top: $spacing-sm;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--color-text-secondary);
+}
+
+.finishedNote {
+  margin-top: $spacing-xxl;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}

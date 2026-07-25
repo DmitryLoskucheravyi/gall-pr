@@ -1,0 +1,109 @@
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 30px;
+  color: var(--color-text);
+}
+
+.form {
+  @include card;
+  margin-bottom: $spacing-xxl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-xl;
+}
+
+.input,
+.textarea {
+  @include input-base;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+}
+
+.submitButton {
+  @include button-primary;
+}
+
+.cancelButton {
+  @include button-secondary;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.item {
+  @include card;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-md $spacing-lg;
+}
+
+.itemImage {
+  height: 56px;
+  width: 56px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.itemInfo {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.itemTitle {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.itemMeta {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.itemActions {
+  display: flex;
+  flex-shrink: 0;
+  gap: $spacing-md;
+}
+
+.editButton {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.deleteButton {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-error);
+
+  &:hover {
+    opacity: 0.8;
+  }
+}

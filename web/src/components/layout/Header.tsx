@@ -100,6 +100,9 @@ export default function Header() {
           <NavLink to="/gallery" className={navLinkClass}>
             Галерея
           </NavLink>
+          <NavLink to="/giveaways" className={navLinkClass}>
+            Розіграші
+          </NavLink>
 
           {user?.role === 'ADMIN' && (
             <div ref={adminMenuRef} className={styles.adminMenu}>
@@ -141,6 +144,9 @@ export default function Header() {
                   </NavLink>
                   <NavLink to="/admin/support" className={adminNavLinkClass}>
                     Підтримка
+                  </NavLink>
+                  <NavLink to="/admin/giveaways" className={adminNavLinkClass}>
+                    Розіграші
                   </NavLink>
                 </div>
               )}
