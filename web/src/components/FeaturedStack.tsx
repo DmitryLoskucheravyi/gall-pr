@@ -1,20 +1,34 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Painting } from '../types/painting.types';
 import Skeleton from './ui/Skeleton';
 import styles from './FeaturedStack.module.scss';
 
-function fanStyle(index: number, center: number): CSSProperties {
-  const delta = index - center;
+const BASE_ROTATE = -22;
+const SPREAD_X = 46;
+
+function photoStyle(index: number, hoveredIndex: number | null): CSSProperties {
+  if (hoveredIndex === null) {
+    return {
+      transform: `rotateY(${BASE_ROTATE}deg)`,
+      zIndex: index,
+    };
+  }
+
+  if (index === hoveredIndex) {
+    return {
+      transform: 'rotateY(0deg) translateY(-16px) scale(1.16)',
+      zIndex: 999,
+    };
+  }
+
+  const away = index < hoveredIndex ? -SPREAD_X : SPREAD_X;
 
   return {
-    '--offset-x': `${delta * 46}px`,
-    '--offset-y': `${Math.abs(delta) * 16}px`,
-    '--rotate': `${delta * 7}deg`,
-    '--scale': `${1 - Math.abs(delta) * 0.04}`,
-    zIndex: Math.round(100 - Math.abs(delta) * 5),
-  } as CSSProperties;
+    transform: `translateX(${away}px) rotateY(${BASE_ROTATE}deg)`,
+    zIndex: index,
+  };
 }
 
 type Props = {
@@ -22,7 +36,7 @@ type Props = {
 };
 
 export default function FeaturedStack({ paintings }: Props) {
-  const center = (paintings.length - 1) / 2;
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
     <div className={styles.stack}>
@@ -30,8 +44,12 @@ export default function FeaturedStack({ paintings }: Props) {
         <Link
           key={painting.id}
           to={`/painting/${painting.id}`}
-          className={styles.photo}
-          style={fanStyle(index, center)}
+          className={`${styles.photo} ${
+            hoveredIndex === index ? styles.active : ''
+          }`}
+          style={photoStyle(index, hoveredIndex)}
+          onMouseEnter={() => setHoveredIndex(index)}
+          onMouseLeave={() => setHoveredIndex(null)}
         >
           <img
             src={painting.cardImage}
@@ -46,15 +64,13 @@ export default function FeaturedStack({ paintings }: Props) {
 }
 
 export function FeaturedStackSkeleton({ count = 7 }: { count?: number }) {
-  const center = (count - 1) / 2;
-
   return (
     <div className={styles.stack}>
       {Array.from({ length: count }).map((_, index) => (
         <Skeleton
           key={index}
           className={styles.photo}
-          style={fanStyle(index, center)}
+          style={{ transform: `rotateY(${BASE_ROTATE}deg)`, zIndex: index }}
         />
       ))}
     </div>

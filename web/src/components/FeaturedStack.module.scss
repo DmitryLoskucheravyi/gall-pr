@@ -1,36 +1,28 @@
 .stack {
-  position: relative;
-  height: 460px;
-  perspective: 1400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 380px;
+  padding-inline: $spacing-xxxxl;
+  perspective: 1600px;
 }
 
 .photo {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 220px;
+  position: relative;
+  flex-shrink: 0;
+  width: 190px;
   aspect-ratio: 3 / 4;
   display: block;
   overflow: hidden;
   background-color: var(--color-background-alt);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
-  transform: translate(-50%, -50%) translate(var(--offset-x), var(--offset-y))
-    rotate(var(--rotate)) rotateX(6deg) scale(var(--scale));
-  transition:
-    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.5s ease;
+  box-shadow: -6px 10px 22px rgba(0, 0, 0, 0.3);
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   cursor: pointer;
 
-  &:hover {
-    transform: translate(-50%, -50%) translateY(-56px) rotate(0deg)
-      rotateX(0deg) scale(1.18) !important;
-    z-index: 999 !important;
-    box-shadow: 0 30px 56px rgba(0, 0, 0, 0.4);
-  }
-
-  &:hover .caption {
-    opacity: 1;
-    transform: translateY(0);
+  &:not(:first-child) {
+    margin-left: -104px;
   }
 }
 
@@ -57,4 +49,9 @@
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
+}
+
+.photo.active .caption {
+  opacity: 1;
+  transform: translateY(0);
 }
