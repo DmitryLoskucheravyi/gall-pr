@@ -53,12 +53,24 @@ export class PaintingsController {
         ? undefined
         : query.isAvailable === 'true';
 
+    const minPrice =
+      query.minPrice !== undefined ? Number(query.minPrice) : undefined;
+    const maxPrice =
+      query.maxPrice !== undefined ? Number(query.maxPrice) : undefined;
+
     return this.paintingsService.findAll(
       page,
       limit,
       techniqueId,
       isAvailable,
+      minPrice,
+      maxPrice,
     );
+  }
+
+  @Get('price-range')
+  getPriceRange() {
+    return this.paintingsService.getPriceRange();
   }
 
   @Get(':id')

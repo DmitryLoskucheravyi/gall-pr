@@ -33,9 +33,23 @@
 }
 
 .fileLabel {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.soonBadge {
+  border-radius: $radius-pill;
+  background-color: var(--color-accent-soft);
+  padding: 1px $spacing-sm;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-on-accent);
 }
 
 .hiddenFileInput {

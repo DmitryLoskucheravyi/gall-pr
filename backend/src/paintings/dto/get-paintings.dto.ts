@@ -16,4 +16,12 @@ export class GetPaintingsDto {
   @IsOptional()
   @IsBooleanString()
   isAvailable?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  minPrice?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  maxPrice?: string;
 }

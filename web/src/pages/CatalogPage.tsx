@@ -7,10 +7,13 @@ import type { Technique } from '../types/dictionaries.types';
 import PaintingCard from '../components/PaintingCard';
 import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
+import CatalogFilters from '../components/CatalogFilters';
 import { useAddToCart } from '../hooks/useAddToCart';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { showToast } from '../store/slices/toastSlice';
 import styles from './CatalogPage.module.scss';
+
+type PriceRange = { min: number; max: number };
 
 export default function CatalogPage() {
   const user = useAppSelector((state) => state.auth.user);
@@ -31,18 +34,25 @@ export default function CatalogPage() {
     null,
   );
 
+  const [priceBounds, setPriceBounds] = useState<PriceRange | null>(null);
+  const [priceFilter, setPriceFilter] = useState<PriceRange | null>(null);
+
   const visiblePaintings = showLikedOnly
     ? paintings.filter((painting) => likedIds.includes(painting.id))
     : paintings;
 
   useEffect(() => {
     techniquesService.getTechniques().then(setTechniques);
+    paintingsService.getPriceRange().then((range) => {
+      setPriceBounds(range);
+      setPriceFilter(range);
+    });
   }, []);
 
   useEffect(() => {
     loadPaintings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTechniqueId]);
+  }, [selectedTechniqueId, priceFilter]);
 
   const loadPaintings = async () => {
     try {
@@ -51,6 +61,8 @@ export default function CatalogPage() {
         24,
         selectedTechniqueId ?? undefined,
         true,
+        priceFilter?.min,
+        priceFilter?.max,
       );
       setPaintings(response.data);
     } catch (error) {
@@ -94,36 +106,35 @@ export default function CatalogPage() {
       </div>
 
       <div className={styles.chips}>
-        <button
-          onClick={() => setSelectedTechniqueId(null)}
-          className={
-            selectedTechniqueId === null ? styles.chipActive : styles.chip
-          }
-        >
-          Усі
-        </button>
-
-        {techniques.map((technique) => (
-          <button
-            key={technique.id}
-            onClick={() => setSelectedTechniqueId(technique.id)}
-            className={
-              selectedTechniqueId === technique.id
-                ? styles.chipActive
-                : styles.chip
-            }
-          >
-            {technique.name}
-          </button>
-        ))}
-
         {user && (
           <button
             onClick={() => setShowLikedOnly((prev) => !prev)}
-            className={showLikedOnly ? styles.chipActive : styles.chip}
+            aria-label="Показати лише вподобані"
+            className={
+              showLikedOnly ? styles.likedButtonActive : styles.likedButton
+            }
           >
-            ♥ Уподобані
+            <svg viewBox="0 0 24 24" fill={showLikedOnly ? 'currentColor' : 'none'}>
+              <path
+                d="M12 20.25c-.19 0-.38-.05-.55-.16-.66-.42-1.62-1.04-2.67-1.83C5.02 15.6 2.25 12.7 2.25 9.15 2.25 6.3 4.53 4 7.35 4c1.85 0 3.47.98 4.65 2.53C13.18 4.98 14.8 4 16.65 4c2.82 0 5.1 2.3 5.1 5.15 0 3.55-2.77 6.45-6.53 9.11-1.05.79-2.01 1.41-2.67 1.83-.17.11-.36.16-.55.16Z"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </svg>
           </button>
+        )}
+
+        {priceBounds && (priceBounds.min > 0 || priceBounds.max > 0) && (
+          <CatalogFilters
+            techniques={techniques}
+            selectedTechniqueId={selectedTechniqueId}
+            onSelectTechnique={setSelectedTechniqueId}
+            priceBounds={priceBounds}
+            priceValue={priceFilter ?? priceBounds}
+            onApplyPrice={setPriceFilter}
+          />
         )}
       </div>
 

@@ -8,10 +8,17 @@ class PaintingsService {
     limit = 12,
     techniqueId?: number,
     isAvailable?: boolean,
+    minPrice?: number,
+    maxPrice?: number,
   ): Promise<PaintingsResponse> {
     const response = await api.get('/paintings', {
-      params: { page, limit, techniqueId, isAvailable },
+      params: { page, limit, techniqueId, isAvailable, minPrice, maxPrice },
     });
+    return response.data;
+  }
+
+  async getPriceRange(): Promise<{ min: number; max: number }> {
+    const response = await api.get('/paintings/price-range');
     return response.data;
   }
 

@@ -4,9 +4,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { paintingsService } from '../api/paintings.api';
 import type { Painting } from '../types/painting.types';
 import PaintingCard from '../components/PaintingCard';
+import Painting3DViewer from '../components/Painting3DViewer';
 import LikeButton from '../components/ui/LikeButton';
 import Skeleton from '../components/ui/Skeleton';
 import { useAddToCart } from '../hooks/useAddToCart';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useAppSelector } from '../store/hooks';
 import styles from './PaintingPage.module.scss';
 
@@ -21,8 +23,12 @@ export default function PaintingPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [show3DModal, setShow3DModal] = useState(false);
   const [isDescOpen, setIsDescOpen] = useState(true);
   const [isCharOpen, setIsCharOpen] = useState(true);
+
+  useEscapeKey(() => setLightboxOpen(false), lightboxOpen);
+  useEscapeKey(() => setShow3DModal(false), show3DModal);
 
   useEffect(() => {
     if (!id) return;
@@ -245,6 +251,55 @@ export default function PaintingPage() {
           )}
         </div>
       </div>
+
+      {painting.animation3dImage && (
+        <section className={styles.animation3d}>
+          <h2 className={styles.animation3dTitle}>3D перегляд</h2>
+          <div className={styles.animation3dPreview}>
+            <img
+              src={painting.animation3dImage}
+              alt=""
+              className={styles.animation3dImage}
+            />
+            <button
+              type="button"
+              onClick={() => setShow3DModal(true)}
+              className={styles.animation3dLabel}
+            >
+              Покрутити в 3D
+            </button>
+          </div>
+        </section>
+      )}
+
+      {show3DModal && painting.animation3dImage && (
+        <div
+          onClick={() => setShow3DModal(false)}
+          className={styles.modal3dOverlay}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className={styles.modal3dContent}
+          >
+            <button
+              type="button"
+              onClick={() => setShow3DModal(false)}
+              className={styles.modal3dClose}
+              aria-label="Закрити"
+            >
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="m6 6 12 12M18 6 6 18"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+            <Painting3DViewer imageUrl={painting.animation3dImage} />
+          </div>
+        </div>
+      )}
 
       {related.length > 0 && (
         <section className={styles.related}>

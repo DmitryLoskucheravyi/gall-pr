@@ -26,7 +26,7 @@ export default function HomePage() {
 
   useEffect(() => {
     paintingsService
-      .getPaintings(1, 20, undefined, true)
+      .getPaintings(1, 200, undefined, true)
       .then((response) => setPaintings(response.data))
       .catch(() => setPaintings([]))
       .finally(() => setLoading(false));
@@ -52,7 +52,7 @@ export default function HomePage() {
       .finally(() => setNewsLoading(false));
   }, []);
 
-  const featured = paintings.filter((p) => p.isFeatured).slice(0, 7);
+  const featured = paintings.filter((p) => p.isFeatured);
 
   return (
     <div>

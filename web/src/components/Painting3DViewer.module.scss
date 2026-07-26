@@ -1,0 +1,111 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-xxxxl 0;
+  perspective: 1400px;
+}
+
+.card {
+  position: relative;
+  width: 640px;
+  max-width: 80vw;
+  transform-style: preserve-3d;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.face,
+.faceBack {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: $radius-md;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+}
+
+.image {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.faceBack {
+  transform: rotateY(180deg);
+}
+
+.frame {
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  background: linear-gradient(155deg, #d8c3a0, #a9835a 45%, #7a5636 100%);
+}
+
+.canvasBack {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 255, 255, 0.06) 2px,
+      transparent 2px,
+      transparent 6px
+    ),
+    #c7a877;
+}
+
+.strutH {
+  position: absolute;
+  top: 50%;
+  left: 6%;
+  right: 6%;
+  height: 6px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.strutV {
+  position: absolute;
+  top: 6%;
+  bottom: 6%;
+  left: 50%;
+  width: 6px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.shadow {
+  margin-top: $spacing-xl;
+  height: 22px;
+  width: 220px;
+  max-width: 60%;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0) 72%
+  );
+}
+
+.hint {
+  margin-top: $spacing-lg;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}

@@ -4,7 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, QueryFailedError, Repository } from 'typeorm';
+import {
+  Between,
+  FindOptionsWhere,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  QueryFailedError,
+  Repository,
+} from 'typeorm';
 
 import { Painting } from './entities/painting.entity';
 import { CreatePaintingDto } from './dto/create-painting.dto';
@@ -41,10 +48,20 @@ export class PaintingsService {
     limit = 12,
     techniqueId?: number,
     isAvailable?: boolean,
+    minPrice?: number,
+    maxPrice?: number,
   ) {
     const where: FindOptionsWhere<Painting> = {};
     if (techniqueId) where.techniqueId = techniqueId;
     if (isAvailable !== undefined) where.isAvailable = isAvailable;
+
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      where.price = Between(minPrice, maxPrice);
+    } else if (minPrice !== undefined) {
+      where.price = MoreThanOrEqual(minPrice);
+    } else if (maxPrice !== undefined) {
+      where.price = LessThanOrEqual(maxPrice);
+    }
 
     const [paintings, total] = await this.paintingsRepository.findAndCount({
       where,
@@ -61,6 +78,19 @@ export class PaintingsService {
       totalPages: Math.ceil(total / limit),
     };
   }
+  async getPriceRange(): Promise<{ min: number; max: number }> {
+    const result = await this.paintingsRepository
+      .createQueryBuilder('painting')
+      .select('MIN(painting.price)', 'min')
+      .addSelect('MAX(painting.price)', 'max')
+      .getRawOne<{ min: string | null; max: string | null }>();
+
+    return {
+      min: result?.min ? Number(result.min) : 0,
+      max: result?.max ? Number(result.max) : 0,
+    };
+  }
+
   async findOne(id: number): Promise<Painting> {
     const painting = await this.paintingsRepository.findOne({ where: { id } });
 

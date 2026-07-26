@@ -7,6 +7,8 @@ export type CreatePaintingDto = {
 
   images: string[];
 
+  animation3dImage?: string;
+
   price: number;
 
   isFeatured?: boolean;

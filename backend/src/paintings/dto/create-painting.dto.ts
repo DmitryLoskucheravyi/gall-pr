@@ -22,6 +22,10 @@ export class CreatePaintingDto {
   @IsArray()
   images: string[];
 
+  @IsOptional()
+  @IsString()
+  animation3dImage?: string;
+
   @IsNumber()
   @Min(0)
   price: number;

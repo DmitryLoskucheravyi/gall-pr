@@ -28,6 +28,11 @@ export class Painting {
   @Column('simple-json')
   images: string[];
 
+  // Reserved for a future 3D-animation feature; intentionally not exposed
+  // anywhere in the public UI yet, just persisted as the admin sets it.
+  @Column({ name: 'animation_3d_image', type: 'varchar', length: 500, nullable: true })
+  animation3dImage: string | null;
+
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 

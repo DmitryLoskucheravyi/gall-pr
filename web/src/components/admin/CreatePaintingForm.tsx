@@ -6,6 +6,7 @@ import { techniquesService } from '../../api/techniques.api';
 import { uploadImage } from '../../api/uploads.api';
 import type { Painting } from '../../types/painting.types';
 import type { Material, Technique } from '../../types/dictionaries.types';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import Select from '../ui/Select';
 import styles from './CreatePaintingForm.module.scss';
 
@@ -14,6 +15,8 @@ type Props = {
   onSaved: () => void;
   onClose: () => void;
 };
+
+type PendingImage = { file: File; previewUrl: string };
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1899 }, (_, i) => {
@@ -26,6 +29,8 @@ export default function CreatePaintingForm({
   onSaved,
   onClose,
 }: Props) {
+  useEscapeKey(onClose, true);
+
   const [title, setTitle] = useState(painting?.title ?? '');
   const [description, setDescription] = useState(painting?.description ?? '');
   const [price, setPrice] = useState(painting?.price?.toString() ?? '');
@@ -39,17 +44,32 @@ export default function CreatePaintingForm({
   const [height, setHeight] = useState(painting?.height?.toString() ?? '');
   const [year, setYear] = useState(painting?.year?.toString() ?? '');
   const [isFeatured, setIsFeatured] = useState(painting?.isFeatured ?? false);
-  const [newImages, setNewImages] = useState<
-    { file: File; previewUrl: string }[]
-  >([]);
-  const [existingImages, setExistingImages] = useState<string[]>(
-    painting?.images ?? [],
+
+  const [existingCover, setExistingCover] = useState<string | null>(
+    painting?.cardImage ?? null,
   );
+  const [coverImage, setCoverImage] = useState<PendingImage | null>(null);
+
+  const [existingGalleryImages, setExistingGalleryImages] = useState<
+    string[]
+  >((painting?.images ?? []).filter((url) => url !== painting?.cardImage));
+  const [galleryImages, setGalleryImages] = useState<PendingImage[]>([]);
+
+  const [existingAnimationImage, setExistingAnimationImage] = useState<
+    string | null
+  >(painting?.animation3dImage ?? null);
+  const [animationImage, setAnimationImage] = useState<PendingImage | null>(
+    null,
+  );
+
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  const animationFileInputRef = useRef<HTMLInputElement>(null);
 
   // Each preview URL is created exactly once, when its file is selected,
   // and only ever revoked when that entry is explicitly removed or the
@@ -57,14 +77,30 @@ export default function CreatePaintingForm({
   // via a useMemo keyed off the whole array) was the previous approach,
   // and revoking/recreating already-displayed previews on every unrelated
   // change is what made newly added photos intermittently fail to render.
-  const newImagesRef = useRef(newImages);
+  const coverImageRef = useRef(coverImage);
+  const galleryImagesRef = useRef(galleryImages);
+  const animationImageRef = useRef(animationImage);
   useEffect(() => {
-    newImagesRef.current = newImages;
-  }, [newImages]);
+    coverImageRef.current = coverImage;
+  }, [coverImage]);
+  useEffect(() => {
+    galleryImagesRef.current = galleryImages;
+  }, [galleryImages]);
+  useEffect(() => {
+    animationImageRef.current = animationImage;
+  }, [animationImage]);
 
   useEffect(() => {
     return () => {
-      newImagesRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      if (coverImageRef.current) {
+        URL.revokeObjectURL(coverImageRef.current.previewUrl);
+      }
+      if (animationImageRef.current) {
+        URL.revokeObjectURL(animationImageRef.current.previewUrl);
+      }
+      galleryImagesRef.current.forEach((item) =>
+        URL.revokeObjectURL(item.previewUrl),
+      );
     };
   }, []);
 
@@ -82,7 +118,23 @@ export default function CreatePaintingForm({
     ...materials.map((m) => ({ value: String(m.id), label: m.name })),
   ];
 
-  const handleFilesSelected = (fileList: FileList | null) => {
+  const handleCoverSelected = (fileList: FileList | null) => {
+    const file = fileList?.[0];
+    if (!file) return;
+
+    if (coverImage) URL.revokeObjectURL(coverImage.previewUrl);
+    setCoverImage({ file, previewUrl: URL.createObjectURL(file) });
+    setExistingCover(null);
+    if (coverFileInputRef.current) coverFileInputRef.current.value = '';
+  };
+
+  const handleRemoveCover = () => {
+    if (coverImage) URL.revokeObjectURL(coverImage.previewUrl);
+    setCoverImage(null);
+    setExistingCover(null);
+  };
+
+  const handleGalleryFilesSelected = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
 
     const selected = Array.from(fileList).map((file) => ({
@@ -90,63 +142,94 @@ export default function CreatePaintingForm({
       previewUrl: URL.createObjectURL(file),
     }));
 
-    setNewImages((prev) => [...prev, ...selected]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setGalleryImages((prev) => [...prev, ...selected]);
+    if (galleryFileInputRef.current) galleryFileInputRef.current.value = '';
   };
 
-  const handleRemoveNewImage = (index: number) => {
-    setNewImages((prev) => {
+  const handleRemoveGalleryImage = (index: number) => {
+    setGalleryImages((prev) => {
       const target = prev[index];
       if (target) URL.revokeObjectURL(target.previewUrl);
       return prev.filter((_, i) => i !== index);
     });
   };
 
+  const handleAnimationImageSelected = (fileList: FileList | null) => {
+    const file = fileList?.[0];
+    if (!file) return;
+
+    if (animationImage) URL.revokeObjectURL(animationImage.previewUrl);
+    setAnimationImage({ file, previewUrl: URL.createObjectURL(file) });
+    setExistingAnimationImage(null);
+    if (animationFileInputRef.current) animationFileInputRef.current.value = '';
+  };
+
+  const handleRemoveAnimationImage = () => {
+    if (animationImage) URL.revokeObjectURL(animationImage.previewUrl);
+    setAnimationImage(null);
+    setExistingAnimationImage(null);
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
 
-    if (existingImages.length === 0 && newImages.length === 0) {
-      setError("Додайте хоча б одне фото");
+    if (!existingCover && !coverImage) {
+      setError('Додайте фото обкладинки');
       return;
     }
 
     try {
       setSaving(true);
 
+      let coverUrl = existingCover;
+      if (coverImage) {
+        const { url } = await uploadImage(coverImage.file);
+        coverUrl = url;
+        URL.revokeObjectURL(coverImage.previewUrl);
+      }
+
       // Upload one at a time rather than in parallel: if a single photo
       // hits a transient failure, we keep whatever already succeeded
-      // (folded into existingImages) instead of losing the whole batch
-      // and forcing a full re-upload of everything on retry.
-      const uploadedUrls: string[] = [];
-      const failedImages: { file: File; previewUrl: string }[] = [];
+      // (folded into existingGalleryImages) instead of losing the whole
+      // batch and forcing a full re-upload of everything on retry.
+      const uploadedGalleryUrls: string[] = [];
+      const failedGalleryImages: PendingImage[] = [];
 
-      for (const item of newImages) {
+      for (const item of galleryImages) {
         try {
           const { url } = await uploadImage(item.file);
-          uploadedUrls.push(url);
+          uploadedGalleryUrls.push(url);
           URL.revokeObjectURL(item.previewUrl);
         } catch {
-          failedImages.push(item);
+          failedGalleryImages.push(item);
         }
       }
 
-      if (failedImages.length > 0) {
-        setExistingImages((prev) => [...prev, ...uploadedUrls]);
-        setNewImages(failedImages);
+      if (failedGalleryImages.length > 0) {
+        setExistingGalleryImages((prev) => [...prev, ...uploadedGalleryUrls]);
+        setGalleryImages(failedGalleryImages);
         setError(
-          `Не вдалося завантажити ${failedImages.length} з ${newImages.length} фото. Решта збережені — спробуйте ще раз.`,
+          `Не вдалося завантажити ${failedGalleryImages.length} з ${galleryImages.length} фото. Решта збережені — спробуйте ще раз.`,
         );
         return;
       }
 
-      const images = [...existingImages, ...uploadedUrls];
+      let animationImageUrl = existingAnimationImage;
+      if (animationImage) {
+        const { url } = await uploadImage(animationImage.file);
+        animationImageUrl = url;
+        URL.revokeObjectURL(animationImage.previewUrl);
+      }
+
+      const gallery = [...existingGalleryImages, ...uploadedGalleryUrls];
 
       const payload = {
         title,
         description,
-        cardImage: images[0],
-        images,
+        cardImage: coverUrl!,
+        images: [coverUrl!, ...gallery],
+        animation3dImage: animationImageUrl ?? undefined,
         price: Number(price),
         isFeatured,
         techniqueId: techniqueId ? Number(techniqueId) : undefined,
@@ -170,42 +253,83 @@ export default function CreatePaintingForm({
     }
   };
 
+  const coverPreviewUrl = coverImage?.previewUrl ?? existingCover;
+  const animationPreviewUrl =
+    animationImage?.previewUrl ?? existingAnimationImage;
+
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
         <h2 className={styles.title}>
           {painting ? 'Редагування картини' : 'Створення картини'}
         </h2>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <span className={styles.fileLabel}>Фото</span>
+          <span className={styles.fileLabel}>Обкладинка</span>
 
           <input
-            ref={fileInputRef}
+            ref={coverFileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleCoverSelected(e.target.files)}
+            className={styles.hiddenFileInput}
+          />
+
+          {coverPreviewUrl ? (
+            <div className={styles.imagePreviews}>
+              <div className={styles.imagePreviewWrap}>
+                <img
+                  src={coverPreviewUrl}
+                  alt=""
+                  className={styles.imagePreview}
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveCover}
+                  className={styles.removeImageButton}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => coverFileInputRef.current?.click()}
+              className={styles.filePickerButton}
+            >
+              + Додати обкладинку
+            </button>
+          )}
+
+          <span className={styles.fileLabel}>Інші фото</span>
+
+          <input
+            ref={galleryFileInputRef}
             type="file"
             multiple
             accept="image/*"
-            onChange={(e) => handleFilesSelected(e.target.files)}
+            onChange={(e) => handleGalleryFilesSelected(e.target.files)}
             className={styles.hiddenFileInput}
           />
 
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => galleryFileInputRef.current?.click()}
             className={styles.filePickerButton}
           >
             + Додати фото
           </button>
 
-          {(existingImages.length > 0 || newImages.length > 0) && (
+          {(existingGalleryImages.length > 0 || galleryImages.length > 0) && (
             <div className={styles.imagePreviews}>
-              {existingImages.map((url) => (
+              {existingGalleryImages.map((url) => (
                 <div key={url} className={styles.imagePreviewWrap}>
                   <img src={url} alt="" className={styles.imagePreview} />
                   <button
                     type="button"
                     onClick={() =>
-                      setExistingImages((prev) =>
+                      setExistingGalleryImages((prev) =>
                         prev.filter((item) => item !== url),
                       )
                     }
@@ -216,7 +340,7 @@ export default function CreatePaintingForm({
                 </div>
               ))}
 
-              {newImages.map((item, index) => (
+              {galleryImages.map((item, index) => (
                 <div key={item.previewUrl} className={styles.imagePreviewWrap}>
                   <img
                     src={item.previewUrl}
@@ -225,7 +349,7 @@ export default function CreatePaintingForm({
                   />
                   <button
                     type="button"
-                    onClick={() => handleRemoveNewImage(index)}
+                    onClick={() => handleRemoveGalleryImage(index)}
                     className={styles.removeImageButton}
                   >
                     ×
@@ -233,6 +357,45 @@ export default function CreatePaintingForm({
                 </div>
               ))}
             </div>
+          )}
+
+          <span className={styles.fileLabel}>
+            Фото для 3D-анімації <span className={styles.soonBadge}>скоро</span>
+          </span>
+
+          <input
+            ref={animationFileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleAnimationImageSelected(e.target.files)}
+            className={styles.hiddenFileInput}
+          />
+
+          {animationPreviewUrl ? (
+            <div className={styles.imagePreviews}>
+              <div className={styles.imagePreviewWrap}>
+                <img
+                  src={animationPreviewUrl}
+                  alt=""
+                  className={styles.imagePreview}
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveAnimationImage}
+                  className={styles.removeImageButton}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => animationFileInputRef.current?.click()}
+              className={styles.filePickerButton}
+            >
+              + Додати фото
+            </button>
           )}
 
           <input

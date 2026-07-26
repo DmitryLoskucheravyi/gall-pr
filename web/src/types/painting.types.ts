@@ -8,6 +8,7 @@ export type Painting = {
 
   cardImage: string;
   images: string[];
+  animation3dImage: string | null;
 
   price: string;
 
