@@ -1,0 +1,36 @@
+.wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+
+  :global(.dark) & {
+    stroke: var(--color-accent);
+  }
+}
+
+.droplet {
+  fill: var(--color-primary);
+  transition:
+    opacity 0.25s ease,
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  :global(.dark) & {
+    fill: var(--color-accent);
+  }
+}

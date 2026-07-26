@@ -14,6 +14,7 @@ import GiveawayHighlight, {
   GiveawayHighlightSkeleton,
 } from '../components/GiveawayHighlight';
 import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
+import ScrollBrushArt from '../components/ScrollBrushArt';
 import styles from './HomePage.module.scss';
 
 export default function HomePage() {
@@ -56,6 +57,8 @@ export default function HomePage() {
 
   return (
     <div>
+      <ScrollBrushArt />
+
       <section className={styles.hero}>
         <span className={styles.eyebrow}>Галерея сучасного мистецтва</span>
         <h1 className={styles.title}>Мистецтво, що говорить</h1>
@@ -88,11 +91,25 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <section>
+      <div className={styles.fillerSection} />
+
+      <section className={styles.featuredSection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Featured</h2>
-          <Link to="/catalog" className={styles.sectionLink}>
-            Всі роботи →
+          <Link
+            to="/catalog"
+            aria-label="Всі роботи"
+            className={styles.sectionLink}
+          >
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M5 12h13M13 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
         </div>
 
@@ -104,6 +121,8 @@ export default function HomePage() {
           <p className={styles.muted}>Скоро тут з'являться нові роботи</p>
         )}
       </section>
+
+      <div className={styles.fillerSection} />
     </div>
   );
 }

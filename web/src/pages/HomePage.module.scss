@@ -1,4 +1,6 @@
 .hero {
+  position: relative;
+  z-index: 1;
   margin-bottom: $spacing-huge;
   border-radius: $radius-xxl;
   background-color: var(--color-background-alt);
@@ -43,7 +45,7 @@
 .sectionHeader {
   margin-bottom: $spacing-xxl;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
 }
 
@@ -54,8 +56,41 @@
 }
 
 .sectionLink {
-  font-weight: 600;
-  color: var(--color-primary);
+  display: flex;
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  svg {
+    height: 18px;
+    width: 18px;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover {
+    transform: translateX(4px);
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+
+    svg {
+      transform: translateX(2px);
+    }
+  }
+
+  &:active {
+    transform: translateX(2px) scale(0.94);
+  }
 }
 
 .muted {
@@ -63,5 +98,16 @@
 }
 
 .giveawaySection {
+  position: relative;
+  z-index: 1;
   margin-bottom: $spacing-huge;
+}
+
+.featuredSection {
+  position: relative;
+  z-index: 1;
+}
+
+.fillerSection {
+  min-height: 60vh;
 }

@@ -1,4 +1,6 @@
 .footer {
+  position: relative;
+  z-index: 1;
   margin-top: $spacing-huge;
   border-top: 1px solid var(--color-border);
   background-color: var(--color-surface);
