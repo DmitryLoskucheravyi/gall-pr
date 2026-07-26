@@ -28,11 +28,6 @@ function App() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      dispatch(setCartCount(0));
-      return;
-    }
-
     cartService
       .getCart()
       .then((cart) =>

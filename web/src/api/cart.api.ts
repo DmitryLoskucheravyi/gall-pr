@@ -21,6 +21,11 @@ class CartService {
     const response = await api.delete('/cart');
     return response.data;
   }
+
+  async mergeGuestCart(guestToken: string) {
+    const response = await api.post('/cart/merge', { guestToken });
+    return response.data;
+  }
 }
 
 export const cartService = new CartService();

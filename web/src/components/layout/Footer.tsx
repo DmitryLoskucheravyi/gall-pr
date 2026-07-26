@@ -80,14 +80,14 @@ export default function Footer() {
           <button
             type="button"
             onClick={scrollToTop}
+            aria-label="Нагору"
             className={styles.topButton}
           >
-            Нагору
             <svg viewBox="0 0 24 24" fill="none">
               <path
-                d="M12 19V5m0 0-6 6m6-6 6 6"
+                d="M6 15.5 12 9l6 6.5"
                 stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />

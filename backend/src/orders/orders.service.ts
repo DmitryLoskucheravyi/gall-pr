@@ -10,6 +10,14 @@ import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Painting } from '../paintings/entities/painting.entity';
+import { CheckoutDto } from './dto/checkout.dto';
+import { Identity } from '../common/identity.util';
+
+function identityCartWhere(identity: Identity) {
+  return 'userId' in identity
+    ? { userId: identity.userId }
+    : { guestToken: identity.guestToken };
+}
 
 @Injectable()
 export class OrdersService {
@@ -24,8 +32,20 @@ export class OrdersService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async checkout(userId: number): Promise<Order> {
-    const cartItems = await this.cartRepository.find({ where: { userId } });
+  async checkout(identity: Identity, dto: CheckoutDto): Promise<Order> {
+    const isGuest = !('userId' in identity);
+
+    if (
+      isGuest &&
+      (!dto.guestName?.trim() || !dto.guestPhone?.trim() || !dto.guestAddress?.trim())
+    ) {
+      throw new BadRequestException(
+        "Вкажіть ім'я, телефон і адресу для оформлення замовлення",
+      );
+    }
+
+    const cartWhere = identityCartWhere(identity);
+    const cartItems = await this.cartRepository.find({ where: cartWhere });
 
     if (cartItems.length === 0) {
       throw new BadRequestException('Cart is empty');
@@ -70,7 +90,13 @@ export class OrdersService {
       }
 
       const order = manager.create(Order, {
-        userId,
+        userId: isGuest ? null : (identity as { userId: number }).userId,
+        guestToken: isGuest ? (identity as { guestToken: string }).guestToken : null,
+        guestName: isGuest ? dto.guestName : null,
+        guestEmail: isGuest ? dto.guestEmail : null,
+        guestPhone: isGuest ? dto.guestPhone : null,
+        guestAddress: isGuest ? dto.guestAddress : null,
+        comment: dto.comment?.trim() || null,
         status: OrderStatus.PENDING,
         total,
         items: orderItems,
@@ -78,7 +104,7 @@ export class OrdersService {
 
       const savedOrder = await manager.save(order);
 
-      await manager.delete(CartItem, { userId });
+      await manager.delete(CartItem, cartWhere);
 
       return savedOrder;
     });

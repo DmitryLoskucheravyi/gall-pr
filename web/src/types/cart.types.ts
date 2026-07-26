@@ -2,7 +2,7 @@ import type { Painting } from './painting.types';
 
 export type CartItem = {
   id: number;
-  userId: number;
+  userId: number | null;
   paintingId: number;
   painting: Painting;
   quantity: number;

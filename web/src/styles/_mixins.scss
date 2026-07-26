@@ -61,6 +61,25 @@
   color: #fff;
 }
 
+// Chrome/Firefox paint autofilled inputs with an opaque native background
+// (usually white or pale yellow) that ignores our own background-color and
+// breaks dark mode. Forcing a giant inset box-shadow in the surface color
+// is the standard workaround — a huge blur radius makes it fill the input
+// regardless of size, and the absurdly long transition delays the browser's
+// own background-color paint long enough that it never becomes visible.
+@mixin autofill-fix($bg: var(--color-surface)) {
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--color-text);
+    -webkit-box-shadow: 0 0 0px 1000px #{$bg} inset;
+    box-shadow: 0 0 0px 1000px #{$bg} inset;
+    caret-color: var(--color-text);
+    transition: background-color 5000s ease-in-out 0s;
+  }
+}
+
 @mixin input-base {
   width: 100%;
   padding: $spacing-md $spacing-lg;
@@ -70,6 +89,8 @@
   color: var(--color-text);
   font-family: $font-sans;
   font-size: 15px;
+
+  @include autofill-fix;
 
   &::placeholder {
     color: var(--color-text-muted);

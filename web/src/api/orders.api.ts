@@ -1,9 +1,9 @@
 import { api } from './client';
-import type { Order, OrderStatus } from '../types/order.types';
+import type { CheckoutDto, Order, OrderStatus } from '../types/order.types';
 
 class OrdersService {
-  async checkout(): Promise<Order> {
-    const response = await api.post('/orders/checkout');
+  async checkout(dto?: CheckoutDto): Promise<Order> {
+    const response = await api.post('/orders/checkout', dto ?? {});
     return response.data;
   }
 

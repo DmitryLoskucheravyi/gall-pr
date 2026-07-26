@@ -24,12 +24,30 @@ export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'user_id' })
-  userId: number;
+  @Column({ name: 'user_id', type: 'int', nullable: true })
+  userId: number | null;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user: User | null;
+
+  @Column({ name: 'guest_token', type: 'varchar', length: 64, nullable: true })
+  guestToken: string | null;
+
+  @Column({ name: 'guest_name', type: 'varchar', nullable: true })
+  guestName: string | null;
+
+  @Column({ name: 'guest_email', type: 'varchar', nullable: true })
+  guestEmail: string | null;
+
+  @Column({ name: 'guest_phone', type: 'varchar', nullable: true })
+  guestPhone: string | null;
+
+  @Column({ name: 'guest_address', type: 'varchar', length: 500, nullable: true })
+  guestAddress: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  comment: string | null;
 
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;

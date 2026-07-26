@@ -15,7 +15,7 @@
   gap: $spacing-xxxxl;
 
   @include respond-up($breakpoint-lg) {
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 480px minmax(0, 1fr);
   }
 }
 
@@ -99,6 +99,79 @@
   @include card;
   height: fit-content;
   padding: $spacing-xxl;
+}
+
+.guestForm {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-xl;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.guestFormLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.floatField {
+  position: relative;
+}
+
+.floatInput {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  padding: $spacing-md 0 $spacing-sm;
+  font-family: $font-sans;
+  font-size: 15px;
+  color: var(--color-text);
+  transition: border-color 0.2s ease;
+
+  @include autofill-fix;
+
+  &:focus {
+    outline: none;
+    border-bottom-color: var(--color-primary);
+  }
+}
+
+textarea.floatInput {
+  resize: vertical;
+  padding-top: $spacing-lg;
+}
+
+.floatLabel {
+  position: absolute;
+  left: 0;
+  top: $spacing-md;
+  font-size: 15px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+  transition:
+    top 0.2s ease,
+    font-size 0.2s ease,
+    color 0.2s ease;
+}
+
+.floatInput:focus + .floatLabel,
+.floatInput:not(:placeholder-shown) + .floatLabel {
+  top: -6px;
+  font-size: 12px;
+  color: var(--color-primary);
+}
+
+.commentField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-xl;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .summaryRow {

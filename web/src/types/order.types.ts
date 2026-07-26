@@ -21,11 +21,24 @@ export type OrderUser = {
 
 export type Order = {
   id: number;
-  userId: number;
+  userId: number | null;
   user?: OrderUser | null;
+  guestName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+  guestAddress?: string | null;
+  comment?: string | null;
   status: OrderStatus;
   total: string;
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type CheckoutDto = {
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  guestAddress?: string;
+  comment?: string;
 };

@@ -4,20 +4,73 @@ import { Link, useNavigate } from 'react-router-dom';
 import { cartService } from '../api/cart.api';
 import { ordersService } from '../api/orders.api';
 import type { CartItem } from '../types/cart.types';
-import { useAppDispatch } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setCartCount } from '../store/slices/cartSlice';
 import { showToast } from '../store/slices/toastSlice';
 import Skeleton from '../components/ui/Skeleton';
 import styles from './CartPage.module.scss';
 
+function FloatField({
+  id,
+  label,
+  value,
+  onChange,
+  type = 'text',
+  required = false,
+  multiline = false,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  multiline?: boolean;
+}) {
+  return (
+    <div className={styles.floatField}>
+      {multiline ? (
+        <textarea
+          id={id}
+          rows={3}
+          placeholder=" "
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={styles.floatInput}
+        />
+      ) : (
+        <input
+          id={id}
+          type={type}
+          required={required}
+          placeholder=" "
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={styles.floatInput}
+        />
+      )}
+      <label htmlFor={id} className={styles.floatLabel}>
+        {label}
+      </label>
+    </div>
+  );
+}
+
 export default function CartPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   const [items, setItems] = useState<CartItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
+
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestAddress, setGuestAddress] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [comment, setComment] = useState('');
 
   useEffect(() => {
     loadCart();
@@ -46,13 +99,48 @@ export default function CartPage() {
   const handleCheckout = async () => {
     if (checkingOut || items.length === 0) return;
 
+    if (
+      !isAuthenticated &&
+      (!guestName.trim() || !guestPhone.trim() || !guestAddress.trim())
+    ) {
+      dispatch(
+        showToast({
+          message: "Вкажіть ім'я, телефон і адресу для оформлення замовлення",
+          variant: 'error',
+        }),
+      );
+      return;
+    }
+
     try {
       setCheckingOut(true);
-      const order = await ordersService.checkout();
-      dispatch(
-        showToast({ message: `Замовлення №${order.id} прийнято в обробку` }),
+      const order = await ordersService.checkout(
+        isAuthenticated
+          ? { comment: comment.trim() || undefined }
+          : {
+              guestName: guestName.trim(),
+              guestPhone: guestPhone.trim(),
+              guestAddress: guestAddress.trim(),
+              guestEmail: guestEmail.trim() || undefined,
+              comment: comment.trim() || undefined,
+            },
       );
-      navigate('/orders');
+
+      dispatch(setCartCount(0));
+
+      if (isAuthenticated) {
+        dispatch(
+          showToast({ message: `Замовлення №${order.id} прийнято в обробку` }),
+        );
+        navigate('/orders');
+      } else {
+        dispatch(
+          showToast({
+            message: `Замовлення №${order.id} прийнято! Ми зв'яжемось з вами за вказаним телефоном.`,
+          }),
+        );
+        navigate('/');
+      }
     } catch (error: any) {
       dispatch(
         showToast({
@@ -95,6 +183,67 @@ export default function CartPage() {
         <p className={styles.muted}>Кошик порожній</p>
       ) : (
         <div className={styles.layout}>
+          <div className={styles.summary}>
+            {!isAuthenticated && (
+              <div className={styles.guestForm}>
+                <p className={styles.guestFormLabel}>Ваші контактні дані</p>
+                <FloatField
+                  id="guest-name"
+                  label="Ім'я та прізвище"
+                  required
+                  value={guestName}
+                  onChange={setGuestName}
+                />
+                <FloatField
+                  id="guest-phone"
+                  label="Телефон"
+                  required
+                  value={guestPhone}
+                  onChange={setGuestPhone}
+                />
+                <FloatField
+                  id="guest-address"
+                  label="Адреса доставки"
+                  required
+                  value={guestAddress}
+                  onChange={setGuestAddress}
+                />
+                <FloatField
+                  id="guest-email"
+                  label="Email (необов'язково)"
+                  type="email"
+                  value={guestEmail}
+                  onChange={setGuestEmail}
+                />
+              </div>
+            )}
+
+            <div className={styles.commentField}>
+              <FloatField
+                id="order-comment"
+                label="Коментар до замовлення (необов'язково)"
+                value={comment}
+                onChange={setComment}
+                multiline
+              />
+            </div>
+
+            <div className={styles.summaryRow}>
+              <span className={styles.summaryLabel}>Разом</span>
+              <span className={styles.summaryTotal}>
+                {total.toLocaleString()} ₴
+              </span>
+            </div>
+
+            <button
+              onClick={handleCheckout}
+              disabled={checkingOut}
+              className={styles.checkoutButton}
+            >
+              {checkingOut ? 'Оформлюємо…' : 'Оформити замовлення'}
+            </button>
+          </div>
+
           <div className={styles.items}>
             {items.map((item) => (
               <div key={item.id} className={styles.item}>
@@ -124,23 +273,6 @@ export default function CartPage() {
                 </button>
               </div>
             ))}
-          </div>
-
-          <div className={styles.summary}>
-            <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Разом</span>
-              <span className={styles.summaryTotal}>
-                {total.toLocaleString()} ₴
-              </span>
-            </div>
-
-            <button
-              onClick={handleCheckout}
-              disabled={checkingOut}
-              className={styles.checkoutButton}
-            >
-              {checkingOut ? 'Оформлюємо…' : 'Оформити замовлення'}
-            </button>
           </div>
         </div>
       )}

@@ -1,22 +1,13 @@
-import { useNavigate } from 'react-router-dom';
-
 import type { Painting } from '../types/painting.types';
 import { cartService } from '../api/cart.api';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useAppDispatch } from '../store/hooks';
 import { setCartCount } from '../store/slices/cartSlice';
 import { showToast } from '../store/slices/toastSlice';
 
 export function useAddToCart() {
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.auth.user);
 
   return async (painting: Painting) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
     try {
       await cartService.addItem(painting.id);
       const cart = await cartService.getCart();

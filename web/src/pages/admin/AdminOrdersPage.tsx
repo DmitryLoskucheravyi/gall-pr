@@ -125,16 +125,38 @@ export default function AdminOrdersPage() {
                 </span>
               </div>
 
-              {order.user && (
+              {order.user ? (
                 <p className={styles.userLine}>
                   {order.user.firstName} {order.user.lastName} ·{' '}
                   {order.user.email}
                 </p>
+              ) : (
+                order.guestName && (
+                  <p className={styles.guestLine}>
+                    {order.guestName} · {order.guestPhone}
+                    {order.guestEmail ? ` · ${order.guestEmail}` : ''}
+                    {' · '}
+                    <span className={styles.guestBadge}>Гість</span>
+                    {order.guestAddress && (
+                      <>
+                        <br />
+                        {order.guestAddress}
+                      </>
+                    )}
+                  </p>
+                )
               )}
 
               <p className={styles.date}>
                 {new Date(order.createdAt).toLocaleDateString('uk-UA')}
               </p>
+
+              {order.comment && (
+                <p className={styles.comment}>
+                  <span className={styles.commentLabel}>Коментар:</span>{' '}
+                  {order.comment}
+                </p>
+              )}
 
               <div className={styles.statusOptions}>
                 {STATUS_OPTIONS.map((status) => (

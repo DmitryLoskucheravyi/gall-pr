@@ -32,10 +32,10 @@ export const router = createBrowserRouter([
       { path: 'painting/:id', element: <PaintingPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
+      { path: 'cart', element: <CartPage /> },
       {
         element: <ProtectedRoute />,
         children: [
-          { path: 'cart', element: <CartPage /> },
           { path: 'orders', element: <OrdersPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'favorites', element: <FavoritesPage /> },

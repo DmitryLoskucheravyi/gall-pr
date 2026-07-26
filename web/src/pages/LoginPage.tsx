@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { authService } from '../api/auth.api';
+import { cartService } from '../api/cart.api';
 import { useAppDispatch } from '../store/hooks';
 import { setAuth } from '../store/slices/authSlice';
+import { clearGuestToken, peekGuestToken } from '../utils/guestToken';
 import styles from './AuthForm.module.scss';
 
 export default function LoginPage() {
@@ -23,6 +25,13 @@ export default function LoginPage() {
       setLoading(true);
       const auth = await authService.login({ email, password });
       dispatch(setAuth(auth));
+
+      const guestToken = peekGuestToken();
+      if (guestToken) {
+        await cartService.mergeGuestCart(guestToken).catch(() => {});
+        clearGuestToken();
+      }
+
       navigate('/');
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Не вдалося увійти');
