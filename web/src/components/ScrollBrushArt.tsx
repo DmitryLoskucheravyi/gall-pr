@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import styles from './ScrollBrushArt.module.scss';
 
-type Segment = {
-  d: string;
-  startY: number;
-  endY: number;
-  width: number;
-  filterId: 'brushTornA' | 'brushTornB';
-};
+type Point = { x: number; y: number };
 
 type Droplet = {
   cx: number;
@@ -22,65 +16,82 @@ function clamp(value: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, value));
 }
 
-// Deterministic pseudo-random, keyed by index, so segment widths/gaps
-// stay stable across re-renders instead of reshuffling every scroll tick.
+// Deterministic pseudo-random, keyed by index, so widths/splatters stay
+// stable across re-renders instead of reshuffling every scroll tick.
 function rand(seed: number) {
   const x = Math.sin(seed * 999.7) * 10000;
   return x - Math.floor(x);
 }
 
-function buildWavePoints(width: number, height: number) {
-  const count = 16;
-  const points: { x: number; y: number }[] = [];
+// A flowing wave from the very top of the document to the very bottom.
+// Two overlaid sine waves (a wide slow one plus a faster, sharper one)
+// mean it drifts gently most of the time but occasionally swings hard
+// and quickly from side to side where the two happen to line up.
+function buildCenterline(width: number, height: number): Point[] {
+  const samples = 90;
+  const points: Point[] = [];
 
-  for (let i = 0; i <= count; i++) {
-    const y = (height * i) / count;
+  for (let i = 0; i <= samples; i++) {
+    const y = (height * i) / samples;
     const wave =
       0.5 +
-      Math.sin(i * 0.9) * 0.42 +
-      Math.sin(i * 2.6 + 1.3) * 0.22;
+      Math.sin(i * 0.19) * 0.42 +
+      Math.sin(i * 0.55 + 1.3) * 0.22;
     points.push({ x: width * clamp(wave, -0.15, 1.15), y });
   }
 
   return points;
 }
 
-// A flowing wave from the very top of the document to the very bottom,
-// split into short pieces so each can get its own brush-like width. Two
-// overlaid sine waves (a wide slow one plus a faster, sharper one) mean
-// it drifts gently most of the time but occasionally swings hard and
-// quickly from side to side where the two happen to line up.
-function buildSegments(points: { x: number; y: number }[]): Segment[] {
-  const segments: Segment[] = [];
+// Smooth width envelope, so neighboring points never jump width
+// abruptly the way independent random segments used to.
+function widthAt(i: number) {
+  return clamp(
+    115 + Math.sin(i * 0.11) * 55 + Math.sin(i * 0.37 + 2) * 35,
+    55,
+    210,
+  );
+}
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i];
-    const p1 = points[i + 1];
-    const midY = (p0.y + p1.y) / 2;
-    const d = `M ${p0.x} ${p0.y} C ${p0.x} ${midY}, ${p1.x} ${midY}, ${p1.x} ${p1.y}`;
+// Offsets the centerline left/right by half its local width to build a
+// single filled ribbon — one continuous shape, so there's no seam where
+// two independently-stroked pieces used to meet.
+function buildRibbon(points: Point[]): string {
+  const left: Point[] = [];
+  const right: Point[] = [];
 
-    segments.push({
-      d,
-      startY: p0.y,
-      endY: p1.y,
-      width: 65 + rand(i + 1) * 140,
-      filterId: i % 2 === 0 ? 'brushTornA' : 'brushTornB',
-    });
+  for (let i = 0; i < points.length; i++) {
+    const prev = points[Math.max(0, i - 1)];
+    const next = points[Math.min(points.length - 1, i + 1)];
+    const dx = next.x - prev.x;
+    const dy = next.y - prev.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const half = widthAt(i) / 2;
+
+    left.push({ x: points[i].x + nx * half, y: points[i].y + ny * half });
+    right.push({ x: points[i].x - nx * half, y: points[i].y - ny * half });
   }
 
-  return segments;
+  let d = `M ${left[0].x} ${left[0].y}`;
+  for (let i = 1; i < left.length; i++) d += ` L ${left[i].x} ${left[i].y}`;
+  for (let i = right.length - 1; i >= 0; i--) {
+    d += ` L ${right[i].x} ${right[i].y}`;
+  }
+  d += ' Z';
+
+  return d;
 }
 
 // A handful of paint droplets flung off near some of the wave's turning
 // points — they pop in permanently once the line has been drawn past
 // that point, like real splatter left behind by the brush.
-function buildDroplets(
-  points: { x: number; y: number }[],
-  width: number,
-): Droplet[] {
+function buildDroplets(points: Point[], width: number): Droplet[] {
   const droplets: Droplet[] = [];
 
   points.forEach((point, i) => {
+    if (i % 6 !== 0) return;
     if (rand(i + 500) > 0.55) return;
 
     const clusterSize = 1 + Math.floor(rand(i + 600) * 3);
@@ -102,18 +113,44 @@ function buildDroplets(
 }
 
 export default function ScrollBrushArt() {
-  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const frontierRef = useRef(0);
   const targetRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const clipRectRef = useRef<SVGRectElement | null>(null);
+  const dropletRefs = useRef<(SVGCircleElement | null)[]>([]);
+  const dropletsRef = useRef<Droplet[]>([]);
 
   const [dims, setDims] = useState({ width: 0, height: 0 });
-  const [segments, setSegments] = useState<Segment[]>([]);
+  const [ribbonD, setRibbonD] = useState('');
   const [droplets, setDroplets] = useState<Droplet[]>([]);
-  const [lengths, setLengths] = useState<number[]>([]);
-  const [frontierY, setFrontierY] = useState(0);
+
+  // Per-frame position updates go straight to the DOM instead of through
+  // React state — a scroll-driven value changing every animation frame
+  // would otherwise force a full component re-render (re-diffing every
+  // droplet) on each tick, which is exactly what was causing the jank.
+  const applyFrontier = () => {
+    const y = Math.max(0, frontierRef.current);
+    clipRectRef.current?.setAttribute('height', String(y));
+
+    const list = dropletsRef.current;
+    for (let i = 0; i < list.length; i++) {
+      const el = dropletRefs.current[i];
+      if (!el) continue;
+      const revealed = frontierRef.current >= list[i].unlockY;
+      el.style.opacity = revealed ? '1' : '0';
+      el.style.transform = revealed ? 'scale(1)' : 'scale(0.3)';
+    }
+  };
 
   useEffect(() => {
+    dropletsRef.current = droplets;
+    applyFrontier();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [droplets]);
+
+  useEffect(() => {
+    let timeout: number | undefined;
+
     const measure = () => {
       const width = window.innerWidth;
       const height = document.documentElement.scrollHeight;
@@ -124,50 +161,43 @@ export default function ScrollBrushArt() {
       );
     };
 
-    measure();
-    window.addEventListener('resize', measure);
+    const scheduleMeasure = () => {
+      if (timeout) window.clearTimeout(timeout);
+      timeout = window.setTimeout(measure, 150);
+    };
 
-    const observer = new ResizeObserver(measure);
+    measure();
+    window.addEventListener('resize', scheduleMeasure);
+
+    const observer = new ResizeObserver(scheduleMeasure);
     observer.observe(document.body);
 
     return () => {
-      window.removeEventListener('resize', measure);
+      if (timeout) window.clearTimeout(timeout);
+      window.removeEventListener('resize', scheduleMeasure);
       observer.disconnect();
     };
   }, []);
 
   useEffect(() => {
     if (dims.width === 0 || dims.height === 0) return;
-    const points = buildWavePoints(dims.width, dims.height);
-    setLengths([]);
-    setSegments(buildSegments(points));
+    const points = buildCenterline(dims.width, dims.height);
+    setRibbonD(buildRibbon(points));
     setDroplets(buildDroplets(points, dims.width));
   }, [dims]);
-
-  useEffect(() => {
-    if (segments.length === 0) return;
-
-    const id = requestAnimationFrame(() => {
-      setLengths(
-        pathRefs.current.map((path) => path?.getTotalLength() ?? 0),
-      );
-    });
-
-    return () => cancelAnimationFrame(id);
-  }, [segments]);
 
   useEffect(() => {
     const animate = () => {
       const diff = targetRef.current - frontierRef.current;
       if (Math.abs(diff) < 0.5) {
         frontierRef.current = targetRef.current;
-        setFrontierY(frontierRef.current);
+        applyFrontier();
         rafRef.current = null;
         return;
       }
 
       frontierRef.current += diff * 0.08;
-      setFrontierY(frontierRef.current);
+      applyFrontier();
       rafRef.current = requestAnimationFrame(animate);
     };
 
@@ -193,9 +223,8 @@ export default function ScrollBrushArt() {
         rafRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dims.height]);
-
-  const measured = lengths.length === segments.length && segments.length > 0;
 
   return (
     <div
@@ -209,7 +238,7 @@ export default function ScrollBrushArt() {
             <feTurbulence
               type="fractalNoise"
               baseFrequency="0.01 0.035"
-              numOctaves="3"
+              numOctaves="2"
               seed="4"
               result="noise"
             />
@@ -225,7 +254,7 @@ export default function ScrollBrushArt() {
             <feTurbulence
               type="fractalNoise"
               baseFrequency="0.018 0.05"
-              numOctaves="3"
+              numOctaves="2"
               seed="17"
               result="noise"
             />
@@ -237,53 +266,35 @@ export default function ScrollBrushArt() {
               yChannelSelector="G"
             />
           </filter>
+          <clipPath id="revealClip" clipPathUnits="userSpaceOnUse">
+            <rect ref={clipRectRef} x={-2000} y={0} width={dims.width + 4000} height={0} />
+          </clipPath>
         </defs>
 
-        {segments.map((segment, index) => {
-          const length = lengths[index] ?? 0;
-          const local = clamp(
-            (frontierY - segment.startY) / (segment.endY - segment.startY),
-            0,
-            1,
-          );
-          const offset = length * (1 - local);
+        <g clipPath="url(#revealClip)">
+          <g filter="url(#brushTornA)">
+            <path d={ribbonD} className={styles.line} />
+          </g>
+        </g>
 
-          return (
-            <path
-              key={index}
-              ref={(el) => {
-                pathRefs.current[index] = el;
-              }}
-              d={segment.d}
-              filter={`url(#${segment.filterId})`}
-              className={styles.line}
-              style={{
-                opacity: measured ? 1 : 0,
-                strokeWidth: segment.width,
-                strokeDasharray: length,
-                strokeDashoffset: measured ? offset : length,
-              }}
-            />
-          );
-        })}
-
-        {measured &&
-          droplets.map((droplet, index) => (
-            <circle
-              key={index}
-              cx={droplet.cx}
-              cy={droplet.cy}
-              r={droplet.r}
-              filter={`url(#${droplet.filterId})`}
-              className={styles.droplet}
-              style={{
-                opacity: frontierY >= droplet.unlockY ? 1 : 0,
-                transform:
-                  frontierY >= droplet.unlockY ? 'scale(1)' : 'scale(0.3)',
-                transformOrigin: `${droplet.cx}px ${droplet.cy}px`,
-              }}
-            />
-          ))}
+        {droplets.map((droplet, index) => (
+          <circle
+            key={index}
+            ref={(el) => {
+              dropletRefs.current[index] = el;
+            }}
+            cx={droplet.cx}
+            cy={droplet.cy}
+            r={droplet.r}
+            filter={`url(#${droplet.filterId})`}
+            className={styles.droplet}
+            style={{
+              opacity: 0,
+              transform: 'scale(0.3)',
+              transformOrigin: `${droplet.cx}px ${droplet.cy}px`,
+            }}
+          />
+        ))}
       </svg>
     </div>
   );

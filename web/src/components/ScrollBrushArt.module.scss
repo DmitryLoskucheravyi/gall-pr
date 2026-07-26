@@ -12,15 +12,19 @@
   position: absolute;
   top: 0;
   left: 0;
+  // Promotes this into its own compositing layer so repaints elsewhere
+  // on the page (loading images, hover states, scroll of unrelated
+  // content) don't force the browser to re-run the expensive
+  // feTurbulence/feDisplacementMap filters underneath.
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .line {
-  fill: none;
-  stroke: var(--color-primary);
-  stroke-linecap: round;
+  fill: var(--color-primary);
 
   :global(.dark) & {
-    stroke: var(--color-accent);
+    fill: var(--color-accent);
   }
 }
 
