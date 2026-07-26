@@ -17,6 +17,7 @@ import { SupportChat } from './support/entities/support-chat.entity';
 import { SupportMessage } from './support/entities/support-message.entity';
 import { Giveaway } from './giveaways/entities/giveaway.entity';
 import { GiveawayParticipant } from './giveaways/entities/giveaway-participant.entity';
+import { News } from './news/entities/news.entity';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -31,6 +32,7 @@ import { SettingsModule } from './settings/settings.module';
 import { LikesModule } from './likes/likes.module';
 import { SupportModule } from './support/support.module';
 import { GiveawaysModule } from './giveaways/giveaways.module';
+import { NewsModule } from './news/news.module';
 
 import { ConfigModule } from '@nestjs/config';
 @Module({
@@ -58,6 +60,7 @@ import { ConfigModule } from '@nestjs/config';
         SupportMessage,
         Giveaway,
         GiveawayParticipant,
+        News,
       ],
 
       synchronize: false,
@@ -85,6 +88,8 @@ import { ConfigModule } from '@nestjs/config';
     SupportModule,
 
     GiveawaysModule,
+
+    NewsModule,
 
     UploadsModule,
   ],

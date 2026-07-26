@@ -7,7 +7,7 @@
   transition: box-shadow 0.2s ease;
 
   @include respond-up($breakpoint-lg) {
-    grid-template-columns: minmax(0, 380px) 1fr;
+    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
   }
 
   &:hover {
@@ -46,6 +46,7 @@
 
 .body {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   justify-content: space-between;
   gap: $spacing-xl;
@@ -79,9 +80,11 @@
 }
 
 .description {
+  width: 100%;
   color: var(--color-text-secondary);
   line-height: 1.6;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 
 .bottom {

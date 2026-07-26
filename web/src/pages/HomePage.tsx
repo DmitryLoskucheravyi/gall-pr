@@ -3,14 +3,17 @@ import { Link } from 'react-router-dom';
 
 import { paintingsService } from '../api/paintings.api';
 import { giveawaysService } from '../api/giveaways.api';
+import { newsService } from '../api/news.api';
 import type { Painting } from '../types/painting.types';
 import type { Giveaway } from '../types/giveaway.types';
+import type { News } from '../types/news.types';
 import FeaturedStack, {
   FeaturedStackSkeleton,
 } from '../components/FeaturedStack';
 import GiveawayHighlight, {
   GiveawayHighlightSkeleton,
 } from '../components/GiveawayHighlight';
+import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
 import styles from './HomePage.module.scss';
 
 export default function HomePage() {
@@ -18,6 +21,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [giveaway, setGiveaway] = useState<Giveaway | null>(null);
   const [giveawayLoading, setGiveawayLoading] = useState(true);
+  const [latestNews, setLatestNews] = useState<News | null>(null);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   useEffect(() => {
     paintingsService
@@ -39,6 +44,12 @@ export default function HomePage() {
       })
       .catch(() => setGiveaway(null))
       .finally(() => setGiveawayLoading(false));
+
+    newsService
+      .getNews()
+      .then((data) => setLatestNews(data[0] ?? null))
+      .catch(() => setLatestNews(null))
+      .finally(() => setNewsLoading(false));
   }, []);
 
   const featured = paintings.filter((p) => p.isFeatured).slice(0, 7);
@@ -56,6 +67,16 @@ export default function HomePage() {
           Переглянути каталог
         </Link>
       </section>
+
+      {newsLoading ? (
+        <section className={styles.giveawaySection}>
+          <NewsBannerSkeleton />
+        </section>
+      ) : latestNews ? (
+        <section className={styles.giveawaySection}>
+          <NewsBanner news={latestNews} />
+        </section>
+      ) : null}
 
       {giveawayLoading ? (
         <section className={styles.giveawaySection}>

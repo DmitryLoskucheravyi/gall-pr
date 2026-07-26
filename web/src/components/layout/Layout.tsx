@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
 import Header from './Header';
+import Footer from './Footer';
 import SupportWidget from '../support/SupportWidget';
 import { useAppSelector } from '../../store/hooks';
 import styles from './Layout.module.scss';
@@ -15,6 +16,7 @@ export default function Layout() {
       <main className={styles.main}>
         <Outlet />
       </main>
+      <Footer />
       {isAuthenticated && userRole !== 'ADMIN' && <SupportWidget />}
     </div>
   );

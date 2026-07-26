@@ -5,7 +5,6 @@ import ProtectedRoute from './ProtectedRoute';
 import HomePage from '../pages/HomePage';
 import CatalogPage from '../pages/CatalogPage';
 import GalleryPage from '../pages/GalleryPage';
-import GiveawaysPage from '../pages/GiveawaysPage';
 import GiveawayDetailPage from '../pages/GiveawayDetailPage';
 import PaintingPage from '../pages/PaintingPage';
 import LoginPage from '../pages/LoginPage';
@@ -29,7 +28,6 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'gallery', element: <GalleryPage /> },
-      { path: 'giveaways', element: <GiveawaysPage /> },
       { path: 'giveaways/:id', element: <GiveawayDetailPage /> },
       { path: 'painting/:id', element: <PaintingPage /> },
       { path: 'login', element: <LoginPage /> },

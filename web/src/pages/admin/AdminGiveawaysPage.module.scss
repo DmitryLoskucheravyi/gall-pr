@@ -5,6 +5,83 @@
   color: var(--color-text);
 }
 
+.tabs {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xl;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabButton {
+  border-bottom: 2px solid transparent;
+  padding: $spacing-sm $spacing-lg;
+  font-family: $font-display;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.tabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.fileLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.hiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.filePickerButton {
+  @include button-secondary;
+  align-self: flex-start;
+  padding: $spacing-sm $spacing-lg;
+  font-size: 14px;
+}
+
+.newsImagePreviewWrap {
+  position: relative;
+  align-self: flex-start;
+}
+
+.newsImagePreview {
+  height: 120px;
+  width: 200px;
+  border-radius: $radius-md;
+  object-fit: cover;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  height: 22px;
+  width: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pill;
+  background-color: rgba(0, 0, 0, 0.6);
+  font-size: 13px;
+  color: #fff;
+}
+
 .form {
   @include card;
   margin-bottom: $spacing-xxl;
