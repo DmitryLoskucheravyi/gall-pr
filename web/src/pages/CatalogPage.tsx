@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { paintingsService } from '../api/paintings.api';
 import { techniquesService } from '../api/techniques.api';
@@ -8,6 +8,7 @@ import PaintingCard from '../components/PaintingCard';
 import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import CatalogFilters from '../components/CatalogFilters';
+import CatalogWalker from '../components/CatalogWalker';
 import { useAddToCart } from '../hooks/useAddToCart';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { showToast } from '../store/slices/toastSlice';
@@ -36,6 +37,8 @@ export default function CatalogPage() {
 
   const [priceBounds, setPriceBounds] = useState<PriceRange | null>(null);
   const [priceFilter, setPriceFilter] = useState<PriceRange | null>(null);
+
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const visiblePaintings = showLikedOnly
     ? paintings.filter((painting) => likedIds.includes(painting.id))
@@ -151,7 +154,7 @@ export default function CatalogPage() {
             : 'Картин поки немає'}
         </p>
       ) : (
-        <div className={styles.grid}>
+        <div className={styles.grid} ref={gridRef}>
           {visiblePaintings.map((painting) => (
             <PaintingCard
               key={painting.id}
@@ -162,6 +165,7 @@ export default function CatalogPage() {
               onDelete={() => handleDelete(painting)}
             />
           ))}
+          <CatalogWalker gridRef={gridRef} count={visiblePaintings.length} />
         </div>
       )}
 

@@ -1,0 +1,131 @@
+.walker {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  transition:
+    left linear,
+    top linear,
+    transform 0.2s ease;
+}
+
+.figure {
+  height: 28px;
+  width: 20px;
+  display: block;
+}
+
+.stroke {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.eye {
+  fill: var(--color-primary);
+}
+
+.rest {
+  transform: translateY(0);
+}
+
+.arc {
+  animation: jumpArc 0.38s ease-out;
+}
+
+@keyframes jumpArc {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+
+  20% {
+    transform: translateY(0) scale(1.1, 0.85);
+  }
+
+  50% {
+    transform: translateY(-20px) scale(0.95, 1.05);
+  }
+
+  85% {
+    transform: translateY(0) scale(1, 1);
+  }
+
+  92% {
+    transform: translateY(0) scale(1.08, 0.9);
+  }
+
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+// Running stride: each limb swings continuously while `.paused` isn't
+// applied (i.e. only during the "run across a card" phase).
+.armA,
+.legB {
+  transform-box: fill-box;
+  transform-origin: 0% 0%;
+  animation: swingA 0.28s linear infinite;
+}
+
+.armB,
+.legA {
+  transform-box: fill-box;
+  transform-origin: 0% 0%;
+  animation: swingB 0.28s linear infinite;
+}
+
+.paused {
+  animation-play-state: paused;
+}
+
+@keyframes swingA {
+  0% {
+    transform: rotate(-28deg);
+  }
+
+  50% {
+    transform: rotate(28deg);
+  }
+
+  100% {
+    transform: rotate(-28deg);
+  }
+}
+
+@keyframes swingB {
+  0% {
+    transform: rotate(28deg);
+  }
+
+  50% {
+    transform: rotate(-28deg);
+  }
+
+  100% {
+    transform: rotate(28deg);
+  }
+}
+
+// Head look states: down at the painting, up toward the viewer, or a
+// neutral forward tilt while running/jumping.
+.lookForward,
+.lookDown,
+.lookViewer {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform 0.3s ease;
+}
+
+.lookForward {
+  transform: rotate(0deg);
+}
+
+.lookDown {
+  transform: rotate(24deg);
+}
+
+.lookViewer {
+  transform: rotate(-10deg);
+}
