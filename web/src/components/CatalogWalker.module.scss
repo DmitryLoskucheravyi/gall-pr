@@ -1,11 +1,12 @@
 .walker {
   position: absolute;
   z-index: 5;
-  pointer-events: none;
+  cursor: pointer;
+  pointer-events: auto;
   transition:
-    left linear,
-    top linear,
-    transform 0.2s ease;
+    left ease-in-out,
+    top ease-in-out,
+    transform 0.25s ease-in-out;
 }
 
 .figure {
@@ -30,8 +31,91 @@
   transform: translateY(0);
 }
 
+// A subtle up-down bounce synced to the stride, like a real running gait.
+// Duration comes from --stride-duration (set inline, scaled to the actual
+// movement speed) so the bounce always matches how fast he's really moving.
+.bobbing {
+  animation-name: bob;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-duration: var(--stride-duration, 0.28s);
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
 .arc {
   animation: jumpArc 0.38s ease-out;
+}
+
+// A quick lean/pivot so stopping-and-turning at the row's edge reads as
+// a deliberate beat instead of a freeze-frame.
+.turning {
+  animation: turnLean 0.32s ease-in-out;
+}
+
+@keyframes turnLean {
+  0% {
+    transform: rotate(0deg) scale(1, 1);
+  }
+
+  35% {
+    transform: rotate(-6deg) scale(0.94, 1.04);
+  }
+
+  70% {
+    transform: rotate(4deg) scale(1.02, 0.98);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1, 1);
+  }
+}
+
+// Two small failed hop attempts, reaching for the paintings he fell from.
+.tryJumpHop {
+  animation: tryHop 0.45s ease-in-out 2;
+}
+
+@keyframes tryHop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  35% {
+    transform: translateY(-11px);
+  }
+
+  55% {
+    transform: translateY(-11px);
+  }
+}
+
+// A trembling, desperate reach upward — the arm that isn't reaching
+// stays put via the normal `.paused` swing freeze.
+.reachUp {
+  transform-box: fill-box;
+  transform-origin: 0% 0%;
+  animation: reach 0.12s ease-in-out infinite alternate;
+}
+
+@keyframes reach {
+  0% {
+    transform: rotate(-5deg);
+  }
+
+  100% {
+    transform: rotate(5deg);
+  }
 }
 
 @keyframes jumpArc {
@@ -61,19 +145,27 @@
 }
 
 // Running stride: each limb swings continuously while `.paused` isn't
-// applied (i.e. only during the "run across a card" phase).
+// applied (i.e. only during the "run"/"footer walk" phases). Duration
+// comes from --stride-duration so a slow shuffle swings slowly and a
+// panicked flee swings fast, instead of every pace looking identical.
 .armA,
 .legB {
   transform-box: fill-box;
   transform-origin: 0% 0%;
-  animation: swingA 0.28s linear infinite;
+  animation-name: swingA;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-duration: var(--stride-duration, 0.28s);
 }
 
 .armB,
 .legA {
   transform-box: fill-box;
   transform-origin: 0% 0%;
-  animation: swingB 0.28s linear infinite;
+  animation-name: swingB;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-duration: var(--stride-duration, 0.28s);
 }
 
 .paused {
@@ -108,11 +200,35 @@
   }
 }
 
-// Head look states: down at the painting, up toward the viewer, or a
-// neutral forward tilt while running/jumping.
+// Raised, static arms while fleeing after a click.
+.armsUp {
+  animation: none !important;
+  transform: rotate(-95deg) !important;
+}
+
+// A single arm waving side to side on hover.
+.wavingArm {
+  transform-box: fill-box;
+  transform-origin: 0% 0%;
+  animation: wave 0.5s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: rotate(-12deg);
+  }
+
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+// Head look states.
 .lookForward,
 .lookDown,
-.lookViewer {
+.lookViewer,
+.lookUp {
   transform-box: fill-box;
   transform-origin: 50% 100%;
   transition: transform 0.3s ease;
@@ -128,4 +244,8 @@
 
 .lookViewer {
   transform: rotate(-10deg);
+}
+
+.lookUp {
+  transform: rotate(-38deg);
 }
