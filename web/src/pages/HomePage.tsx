@@ -95,7 +95,7 @@ export default function HomePage() {
 
       <section className={styles.featuredSection}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Featured</h2>
+          <h2 className={styles.sectionTitle}>Рекомендовані</h2>
           <Link
             to="/catalog"
             aria-label="Всі роботи"

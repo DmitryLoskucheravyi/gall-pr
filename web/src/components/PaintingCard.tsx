@@ -43,6 +43,7 @@ export default function PaintingCard({
           paintingId={painting.id}
           initialLikesCount={painting.likesCount}
           variant="overlay"
+          showCount={false}
         />
       </div>
 
