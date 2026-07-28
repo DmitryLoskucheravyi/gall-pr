@@ -1,24 +1,26 @@
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 
 import Layout from '../components/layout/Layout';
 import ProtectedRoute from './ProtectedRoute';
-import HomePage from '../pages/HomePage';
-import CatalogPage from '../pages/CatalogPage';
-import GalleryPage from '../pages/GalleryPage';
-import GiveawayDetailPage from '../pages/GiveawayDetailPage';
-import PaintingPage from '../pages/PaintingPage';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import CartPage from '../pages/CartPage';
-import OrdersPage from '../pages/OrdersPage';
-import ProfilePage from '../pages/ProfilePage';
-import FavoritesPage from '../pages/FavoritesPage';
-import SupportChatPage from '../pages/SupportChatPage';
-import DictionariesPage from '../pages/admin/DictionariesPage';
-import AdminOrdersPage from '../pages/admin/AdminOrdersPage';
-import AdminSettingsPage from '../pages/admin/AdminSettingsPage';
-import AdminSupportPage from '../pages/admin/AdminSupportPage';
-import AdminGiveawaysPage from '../pages/admin/AdminGiveawaysPage';
+
+const HomePage = lazy(() => import('../pages/HomePage'));
+const CatalogPage = lazy(() => import('../pages/CatalogPage'));
+const GalleryPage = lazy(() => import('../pages/GalleryPage'));
+const GiveawayDetailPage = lazy(() => import('../pages/GiveawayDetailPage'));
+const PaintingPage = lazy(() => import('../pages/PaintingPage'));
+const LoginPage = lazy(() => import('../pages/LoginPage'));
+const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const CartPage = lazy(() => import('../pages/CartPage'));
+const OrdersPage = lazy(() => import('../pages/OrdersPage'));
+const ProfilePage = lazy(() => import('../pages/ProfilePage'));
+const FavoritesPage = lazy(() => import('../pages/FavoritesPage'));
+const SupportChatPage = lazy(() => import('../pages/SupportChatPage'));
+const DictionariesPage = lazy(() => import('../pages/admin/DictionariesPage'));
+const AdminOrdersPage = lazy(() => import('../pages/admin/AdminOrdersPage'));
+const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
+const AdminSupportPage = lazy(() => import('../pages/admin/AdminSupportPage'));
+const AdminGiveawaysPage = lazy(() => import('../pages/admin/AdminGiveawaysPage'));
 
 export const router = createBrowserRouter([
   {

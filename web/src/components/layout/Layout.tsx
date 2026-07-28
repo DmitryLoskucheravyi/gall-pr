@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import Header from './Header';
@@ -14,7 +15,9 @@ export default function Layout() {
     <div className={styles.page}>
       <Header />
       <main className={styles.main}>
-        <Outlet />
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
       </main>
       <Footer />
       {isAuthenticated && userRole !== 'ADMIN' && <SupportWidget />}
