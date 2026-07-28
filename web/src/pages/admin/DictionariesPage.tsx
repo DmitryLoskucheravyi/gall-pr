@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { materialsService } from '../../api/materials.api';
-import { techniquesService } from '../../api/techniques.api';
 import type { Material, Technique } from '../../types/dictionaries.types';
-import { useAppDispatch } from '../../store/hooks';
-import { showToast } from '../../store/slices/toastSlice';
+import { useMaterials } from '../../hooks/queries/useMaterials';
+import { useTechniques } from '../../hooks/queries/useTechniques';
+import {
+  useMaterialMutations,
+  useTechniqueMutations,
+} from '../../hooks/mutations/useDictionaryMutations';
 import Skeleton from '../../components/ui/Skeleton';
 import styles from './DictionariesPage.module.scss';
 
@@ -12,83 +14,38 @@ type Tab = 'materials' | 'techniques';
 type Item = Material | Technique;
 
 export default function DictionariesPage() {
-  const dispatch = useAppDispatch();
   const [tab, setTab] = useState<Tab>('materials');
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
 
-  useEffect(() => {
-    loadItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  const { data: materials = [], isLoading: materialsLoading } = useMaterials();
+  const { data: techniques = [], isLoading: techniquesLoading } = useTechniques();
+  const materialMutations = useMaterialMutations();
+  const techniqueMutations = useTechniqueMutations();
 
-  const loadItems = async () => {
-    try {
-      setLoading(true);
-      const data =
-        tab === 'materials'
-          ? await materialsService.getMaterials()
-          : await techniquesService.getTechniques();
-      setItems(data);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const items = tab === 'materials' ? materials : techniques;
+  const loading = tab === 'materials' ? materialsLoading : techniquesLoading;
+  const mutations = tab === 'materials' ? materialMutations : techniqueMutations;
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return;
 
-    try {
-      if (editingItem) {
-        if (tab === 'materials') {
-          await materialsService.updateMaterial(editingItem.id, name.trim());
-        } else {
-          await techniquesService.updateTechnique(editingItem.id, name.trim());
-        }
-      } else {
-        if (tab === 'materials') {
-          await materialsService.createMaterial(name.trim());
-        } else {
-          await techniquesService.createTechnique(name.trim());
-        }
-      }
-
+    const onSuccess = () => {
       setName('');
       setEditingItem(null);
-      loadItems();
-      dispatch(showToast({ message: 'Збережено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося зберегти',
-          variant: 'error',
-        }),
-      );
+    };
+
+    if (editingItem) {
+      mutations.update.mutate({ id: editingItem.id, name: name.trim() }, { onSuccess });
+    } else {
+      mutations.create.mutate(name.trim(), { onSuccess });
     }
   };
 
-  const handleDelete = async (item: Item) => {
+  const handleDelete = (item: Item) => {
     if (!window.confirm(`Видалити "${item.name}"?`)) return;
-
-    try {
-      if (tab === 'materials') {
-        await materialsService.deleteMaterial(item.id);
-      } else {
-        await techniquesService.deleteTechnique(item.id);
-      }
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
-      dispatch(showToast({ message: 'Видалено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося видалити',
-          variant: 'error',
-        }),
-      );
-    }
+    mutations.remove.mutate(item.id);
   };
 
   return (

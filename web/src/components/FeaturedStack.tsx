@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Painting } from '../types/painting.types';
+import { useCoarsePointer } from '../hooks/useCoarsePointer';
 import LikeButton from './ui/LikeButton';
 import Skeleton from './ui/Skeleton';
 import styles from './FeaturedStack.module.scss';
@@ -44,6 +45,11 @@ type Props = {
 
 export default function FeaturedStack({ paintings }: Props) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  // Touch devices never fire hover, so the fanned-stack transform (which
+  // relies on hoveredIndex) would leave every card but the front one
+  // permanently hidden. Skip the inline transform there and let the
+  // stylesheet's (hover: none) rules render a plain scrollable strip.
+  const isCoarsePointer = useCoarsePointer();
 
   return (
     <div className={styles.stack}>
@@ -53,7 +59,11 @@ export default function FeaturedStack({ paintings }: Props) {
           className={`${styles.photo} ${
             hoveredIndex === index ? styles.active : ''
           }`}
-          style={photoStyle(index, hoveredIndex, paintings.length)}
+          style={
+            isCoarsePointer
+              ? undefined
+              : photoStyle(index, hoveredIndex, paintings.length)
+          }
           onMouseEnter={() => setHoveredIndex(index)}
           onMouseLeave={() => setHoveredIndex(null)}
         >
@@ -68,7 +78,7 @@ export default function FeaturedStack({ paintings }: Props) {
 
           <LikeButton
             paintingId={painting.id}
-            initialLikesCount={painting.likesCount}
+            likesCount={painting.likesCount}
             variant="overlay"
             hoverReveal
           />

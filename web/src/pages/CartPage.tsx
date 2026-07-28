@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { cartService } from '../api/cart.api';
-import { ordersService } from '../api/orders.api';
 import type { CartItem } from '../types/cart.types';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setCartCount } from '../store/slices/cartSlice';
 import { showToast } from '../store/slices/toastSlice';
+import { useCart } from '../hooks/queries/useCart';
+import { useRemoveCartItemMutation } from '../hooks/mutations/useCartMutations';
+import { useCheckoutMutation } from '../hooks/mutations/useCheckoutMutation';
 import Skeleton from '../components/ui/Skeleton';
 import styles from './CartPage.module.scss';
 
@@ -61,10 +61,12 @@ export default function CartPage() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [checkingOut, setCheckingOut] = useState(false);
+  const { data: cart, isLoading: loading } = useCart();
+  const removeItem = useRemoveCartItemMutation();
+  const checkout = useCheckoutMutation();
+
+  const items: CartItem[] = cart?.items ?? [];
+  const total = cart?.total ?? 0;
 
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
@@ -72,32 +74,12 @@ export default function CartPage() {
   const [guestEmail, setGuestEmail] = useState('');
   const [comment, setComment] = useState('');
 
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  const loadCart = async () => {
-    try {
-      const cart = await cartService.getCart();
-      setItems(cart.items);
-      setTotal(cart.total);
-      dispatch(
-        setCartCount(cart.items.reduce((sum, item) => sum + item.quantity, 0)),
-      );
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRemove = async (item: CartItem) => {
-    await cartService.removeItem(item.paintingId);
-    loadCart();
+  const handleRemove = (item: CartItem) => {
+    removeItem.mutate(item.paintingId);
   };
 
   const handleCheckout = async () => {
-    if (checkingOut || items.length === 0) return;
+    if (checkout.isPending || items.length === 0) return;
 
     if (
       !isAuthenticated &&
@@ -113,8 +95,7 @@ export default function CartPage() {
     }
 
     try {
-      setCheckingOut(true);
-      const order = await ordersService.checkout(
+      const order = await checkout.mutateAsync(
         isAuthenticated
           ? { comment: comment.trim() || undefined }
           : {
@@ -125,8 +106,6 @@ export default function CartPage() {
               comment: comment.trim() || undefined,
             },
       );
-
-      dispatch(setCartCount(0));
 
       if (isAuthenticated) {
         dispatch(
@@ -150,9 +129,6 @@ export default function CartPage() {
           variant: 'error',
         }),
       );
-      loadCart();
-    } finally {
-      setCheckingOut(false);
     }
   };
 
@@ -237,10 +213,10 @@ export default function CartPage() {
 
             <button
               onClick={handleCheckout}
-              disabled={checkingOut}
+              disabled={checkout.isPending}
               className={styles.checkoutButton}
             >
-              {checkingOut ? 'Оформлюємо…' : 'Оформити замовлення'}
+              {checkout.isPending ? 'Оформлюємо…' : 'Оформити замовлення'}
             </button>
           </div>
 

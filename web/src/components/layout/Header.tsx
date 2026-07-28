@@ -5,6 +5,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
+import { useCartCount } from '../../hooks/queries/useCart';
 import styles from './Header.module.scss';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -13,19 +14,24 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 const adminNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   `${styles.adminMenuLink} ${isActive ? styles.active : ''}`;
 
+const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `${styles.mobileNavLink} ${isActive ? styles.active : ''}`;
+
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
-  const cartCount = useAppSelector((state) => state.cart.count);
+  const cartCount = useCartCount();
   const isDark = useAppSelector((state) => state.theme.isDark);
 
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const adminMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsAdminMenuOpen(false);
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -47,6 +53,21 @@ export default function Header() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isAdminMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -81,6 +102,53 @@ export default function Header() {
       });
     });
   };
+
+  const themeIcon = isDark ? (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36-.7-.7M6.34 6.34l-.7-.7m12.72 0-.7.7M6.34 17.66l-.7.7M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
+  const profileIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M4.5 19.5c1.4-3.1 4.3-5 7.5-5s6.1 1.9 7.5 5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+
+  const cartIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M3 4h2l.4 2M7 13h10l3-8H6.4M7 13 5.4 6M7 13l-1.6 3.2A1 1 0 0 0 6.3 18H17"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9" cy="21" r="1.4" fill="currentColor" />
+      <circle cx="17" cy="21" r="1.4" fill="currentColor" />
+    </svg>
+  );
 
   return (
     <header className={styles.header}>
@@ -161,26 +229,7 @@ export default function Header() {
             aria-label="Перемкнути тему"
             className={styles.themeButton}
           >
-            {isDark ? (
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36-.7-.7M6.34 6.34l-.7-.7m12.72 0-.7.7M6.34 17.66l-.7.7M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
+            {themeIcon}
           </button>
 
           <NavLink
@@ -190,17 +239,7 @@ export default function Header() {
               `${styles.cartButton} ${isActive ? styles.active : ''}`
             }
           >
-            <svg viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 4h2l.4 2M7 13h10l3-8H6.4M7 13 5.4 6M7 13l-1.6 3.2A1 1 0 0 0 6.3 18H17"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="9" cy="21" r="1.4" fill="currentColor" />
-              <circle cx="17" cy="21" r="1.4" fill="currentColor" />
-            </svg>
+            {cartIcon}
             {cartCount > 0 && (
               <span className={styles.cartBadge}>{cartCount}</span>
             )}
@@ -215,21 +254,7 @@ export default function Header() {
                   `${styles.profileButton} ${isActive ? styles.active : ''}`
                 }
               >
-                <svg viewBox="0 0 24 24" fill="none">
-                  <circle
-                    cx="12"
-                    cy="8"
-                    r="3.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M4.5 19.5c1.4-3.1 4.3-5 7.5-5s6.1 1.9 7.5 5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                {profileIcon}
               </NavLink>
               <button
                 onClick={handleLogout}
@@ -260,7 +285,116 @@ export default function Header() {
             </NavLink>
           )}
         </nav>
+
+        <div className={styles.mobileActions}>
+          <button
+            onClick={handleThemeToggle}
+            aria-label="Перемкнути тему"
+            className={styles.themeButton}
+          >
+            {themeIcon}
+          </button>
+
+          <NavLink
+            to="/cart"
+            aria-label="Кошик"
+            className={({ isActive }) =>
+              `${styles.cartButton} ${isActive ? styles.active : ''}`
+            }
+          >
+            {cartIcon}
+            {cartCount > 0 && (
+              <span className={styles.cartBadge}>{cartCount}</span>
+            )}
+          </NavLink>
+
+          {user && (
+            <NavLink
+              to="/profile"
+              aria-label="Профіль"
+              className={({ isActive }) =>
+                `${styles.profileButton} ${isActive ? styles.active : ''}`
+              }
+            >
+              {profileIcon}
+            </NavLink>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            aria-label={isMobileMenuOpen ? 'Закрити меню' : 'Відкрити меню'}
+            aria-expanded={isMobileMenuOpen}
+            className={`${styles.burgerButton} ${
+              isMobileMenuOpen ? styles.burgerOpen : ''
+            }`}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </div>
+
+      {isMobileMenuOpen && (
+        <>
+          <div
+            className={styles.mobileBackdrop}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <nav className={styles.mobilePanel}>
+            <NavLink to="/" className={mobileNavLinkClass} end>
+              Головна
+            </NavLink>
+            <NavLink to="/catalog" className={mobileNavLinkClass}>
+              Каталог
+            </NavLink>
+            <NavLink to="/gallery" className={mobileNavLinkClass}>
+              Галерея
+            </NavLink>
+
+            {user && (
+              <NavLink to="/favorites" className={mobileNavLinkClass}>
+                Улюблені
+              </NavLink>
+            )}
+
+            {user?.role === 'ADMIN' && (
+              <>
+                <div className={styles.mobileDivider} />
+                <span className={styles.mobileGroupLabel}>Адмін</span>
+                <NavLink to="/admin/dictionaries" className={mobileNavLinkClass}>
+                  Матеріали і техніки
+                </NavLink>
+                <NavLink to="/admin/orders" className={mobileNavLinkClass}>
+                  Замовлення
+                </NavLink>
+                <NavLink to="/admin/settings" className={mobileNavLinkClass}>
+                  Налаштування
+                </NavLink>
+                <NavLink to="/admin/support" className={mobileNavLinkClass}>
+                  Підтримка
+                </NavLink>
+                <NavLink to="/admin/giveaways" className={mobileNavLinkClass}>
+                  Розіграш
+                </NavLink>
+              </>
+            )}
+
+            <div className={styles.mobileDivider} />
+
+            {user ? (
+              <button onClick={handleLogout} className={styles.mobileLogout}>
+                Вийти
+              </button>
+            ) : (
+              <NavLink to="/login" className={mobileNavLinkClass}>
+                Увійти
+              </NavLink>
+            )}
+          </nav>
+        </>
+      )}
     </header>
   );
 }

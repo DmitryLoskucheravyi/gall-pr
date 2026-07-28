@@ -1,24 +1,12 @@
-import { useEffect, useState } from 'react';
-
-import { likesService } from '../api/likes.api';
-import type { Painting } from '../types/painting.types';
+import { useLikedPaintings } from '../hooks/queries/useLikedPaintings';
 import PaintingCard from '../components/PaintingCard';
 import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
-import { useAddToCart } from '../hooks/useAddToCart';
+import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import styles from './FavoritesPage.module.scss';
 
 export default function FavoritesPage() {
   const addToCart = useAddToCart();
-  const [paintings, setPaintings] = useState<Painting[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    likesService
-      .getMyLikedPaintings()
-      .then(setPaintings)
-      .catch(() => setPaintings([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: paintings = [], isLoading: loading } = useLikedPaintings();
 
   return (
     <div>
@@ -40,7 +28,7 @@ export default function FavoritesPage() {
             <PaintingCard
               key={painting.id}
               painting={painting}
-              onBuy={() => addToCart(painting)}
+              onBuy={() => addToCart.mutate(painting)}
             />
           ))}
         </div>

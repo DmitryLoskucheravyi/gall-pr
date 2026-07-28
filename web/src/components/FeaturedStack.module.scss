@@ -5,6 +5,15 @@
   height: 560px;
   padding-inline: $spacing-xxxxl;
   perspective: 1600px;
+
+  @media (hover: none) {
+    height: auto;
+    gap: $spacing-md;
+    padding-inline: $container-padding;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .photo {
@@ -26,6 +35,16 @@
 
   &.active {
     --like-opacity: 1;
+  }
+
+  @media (hover: none) {
+    width: 200px;
+    scroll-snap-align: start;
+    --like-opacity: 1;
+
+    &:not(:first-child) {
+      margin-left: 0;
+    }
   }
 }
 
@@ -59,6 +78,11 @@
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
+
+  @media (hover: none) {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .photo.active .caption {

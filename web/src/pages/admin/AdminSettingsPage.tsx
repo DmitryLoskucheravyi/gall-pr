@@ -1,45 +1,22 @@
 import { useEffect, useState } from 'react';
 
-import { settingsService } from '../../api/settings.api';
-import { useAppDispatch } from '../../store/hooks';
-import { setAuthorName } from '../../store/slices/settingsSlice';
-import { showToast } from '../../store/slices/toastSlice';
+import { useSettings } from '../../hooks/queries/useSettings';
+import { useUpdateSettingsMutation } from '../../hooks/mutations/useSettingsMutation';
 import Skeleton from '../../components/ui/Skeleton';
 import styles from './AdminSettingsPage.module.scss';
 
 export default function AdminSettingsPage() {
-  const dispatch = useAppDispatch();
+  const { data: settings, isLoading: loading } = useSettings();
+  const updateSettings = useUpdateSettingsMutation();
   const [authorName, setAuthorNameInput] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    settingsService
-      .getSettings()
-      .then((settings) => setAuthorNameInput(settings.authorName))
-      .finally(() => setLoading(false));
-  }, []);
+    if (settings) setAuthorNameInput(settings.authorName);
+  }, [settings]);
 
-  const handleSave = async (event: React.FormEvent) => {
+  const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
-
-    try {
-      setSaving(true);
-      const settings = await settingsService.updateSettings(
-        authorName.trim(),
-      );
-      dispatch(setAuthorName(settings.authorName));
-      dispatch(showToast({ message: 'Автора оновлено на всіх картинах' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося зберегти',
-          variant: 'error',
-        }),
-      );
-    } finally {
-      setSaving(false);
-    }
+    updateSettings.mutate(authorName.trim());
   };
 
   if (loading) {
@@ -74,8 +51,12 @@ export default function AdminSettingsPage() {
           className={styles.input}
         />
 
-        <button type="submit" disabled={saving} className={styles.saveButton}>
-          {saving ? 'Зберігаємо…' : 'Зберегти'}
+        <button
+          type="submit"
+          disabled={updateSettings.isPending}
+          className={styles.saveButton}
+        >
+          {updateSettings.isPending ? 'Зберігаємо…' : 'Зберегти'}
         </button>
       </form>
     </div>

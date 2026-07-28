@@ -1,6 +1,6 @@
 .header {
   position: relative;
-  z-index: 1;
+  z-index: 20;
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-surface);
 }
@@ -35,10 +35,146 @@
 }
 
 .nav {
-  display: flex;
+  display: none;
   align-items: center;
   gap: $spacing-xxl;
   flex-wrap: wrap;
+
+  @include respond-up($breakpoint-lg) {
+    display: flex;
+  }
+}
+
+.mobileActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  @include respond-up($breakpoint-lg) {
+    display: none;
+  }
+}
+
+.burgerButton {
+  display: flex;
+  height: 34px;
+  width: 34px;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+
+  span {
+    display: block;
+    height: 2px;
+    width: 20px;
+    border-radius: $radius-pill;
+    background-color: var(--color-text);
+    transition:
+      transform 0.25s ease,
+      opacity 0.2s ease;
+  }
+
+  &.burgerOpen {
+    span:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+
+    span:nth-child(2) {
+      opacity: 0;
+    }
+
+    span:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+  }
+}
+
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.4);
+
+  @include respond-up($breakpoint-lg) {
+    display: none;
+  }
+}
+
+.mobilePanel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  max-height: calc(100vh - 100%);
+  flex-direction: column;
+  gap: $spacing-xs;
+  overflow-y: auto;
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: $spacing-md $container-padding $spacing-xxl;
+  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.18);
+
+  @include respond-up($breakpoint-lg) {
+    display: none !important;
+  }
+}
+
+.mobileNavLink {
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+  font-family: $font-display;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background-color: var(--color-background-alt);
+  }
+
+  &.active {
+    color: var(--color-primary);
+    background-color: var(--color-primary-soft);
+  }
+}
+
+.mobileGroupLabel {
+  padding: 0 $spacing-lg;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.mobileDivider {
+  margin: $spacing-sm $spacing-lg;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.mobileLogout {
+  display: flex;
+  width: 100%;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+  font-family: $font-display;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--color-error);
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--color-background-alt);
+  }
 }
 
 .navLink {

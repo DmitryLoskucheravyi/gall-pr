@@ -1,11 +1,16 @@
 .hero {
   position: relative;
   z-index: 1;
-  margin-bottom: $spacing-huge;
+  margin-bottom: $spacing-xxxxl;
   border-radius: $radius-xxl;
   background-color: var(--color-background-alt);
-  padding: $spacing-huge $spacing-xxxxl;
+  padding: $spacing-xxxl $spacing-xl;
   text-align: center;
+
+  @include respond-up($breakpoint-md) {
+    margin-bottom: $spacing-huge;
+    padding: $spacing-huge $spacing-xxxxl;
+  }
 }
 
 .eyebrow {
@@ -19,8 +24,12 @@
 .title {
   margin-top: $spacing-md;
   font-family: $font-display;
-  font-size: 48px;
+  font-size: 32px;
   color: var(--color-text);
+
+  @include respond-up($breakpoint-md) {
+    font-size: 48px;
+  }
 }
 
 .rule {

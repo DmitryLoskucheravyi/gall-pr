@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { paintingsService } from '../../api/paintings.api';
-import { materialsService } from '../../api/materials.api';
-import { techniquesService } from '../../api/techniques.api';
 import { uploadImage } from '../../api/uploads.api';
 import type { Painting } from '../../types/painting.types';
-import type { Material, Technique } from '../../types/dictionaries.types';
+import { useTechniques } from '../../hooks/queries/useTechniques';
+import { useMaterials } from '../../hooks/queries/useMaterials';
+import {
+  useCreatePaintingMutation,
+  useUpdatePaintingMutation,
+} from '../../hooks/mutations/usePaintingMutations';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import Select from '../ui/Select';
 import styles from './CreatePaintingForm.module.scss';
@@ -62,8 +64,10 @@ export default function CreatePaintingForm({
     null,
   );
 
-  const [techniques, setTechniques] = useState<Technique[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const { data: techniques = [] } = useTechniques();
+  const { data: materials = [] } = useMaterials();
+  const createPainting = useCreatePaintingMutation();
+  const updatePainting = useUpdatePaintingMutation();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,11 +106,6 @@ export default function CreatePaintingForm({
         URL.revokeObjectURL(item.previewUrl),
       );
     };
-  }, []);
-
-  useEffect(() => {
-    techniquesService.getTechniques().then(setTechniques);
-    materialsService.getMaterials().then(setMaterials);
   }, []);
 
   const techniqueOptions = [
@@ -240,9 +239,9 @@ export default function CreatePaintingForm({
       };
 
       if (painting) {
-        await paintingsService.updatePainting(painting.id, payload);
+        await updatePainting.mutateAsync({ id: painting.id, data: payload });
       } else {
-        await paintingsService.createPainting(payload);
+        await createPainting.mutateAsync(payload);
       }
 
       onSaved();

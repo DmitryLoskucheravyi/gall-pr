@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { paintingsService } from '../api/paintings.api';
-import { techniquesService } from '../api/techniques.api';
-import type { Painting } from '../types/painting.types';
-import type { Technique } from '../types/dictionaries.types';
+import { useTechniques } from '../hooks/queries/useTechniques';
+import { usePaintings } from '../hooks/queries/usePaintings';
+import { useLikedIds } from '../hooks/queries/useLikedIds';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import { useAppSelector } from '../store/hooks';
@@ -11,33 +10,25 @@ import styles from './GalleryPage.module.scss';
 
 export default function GalleryPage() {
   const user = useAppSelector((state) => state.auth.user);
-  const likedIds = useAppSelector((state) => state.likes.likedIds);
+  const { data: likedIds = [] } = useLikedIds();
 
-  const [paintings, setPaintings] = useState<Painting[]>([]);
-  const [techniques, setTechniques] = useState<Technique[]>([]);
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<
     number | null
   >(null);
   const [showLikedOnly, setShowLikedOnly] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  const { data: techniques = [] } = useTechniques();
+  const { data: paintingsResponse, isLoading: loading } = usePaintings({
+    page: 1,
+    limit: 60,
+    techniqueId: selectedTechniqueId ?? undefined,
+  });
+
+  const paintings = paintingsResponse?.data ?? [];
 
   const visiblePaintings = showLikedOnly
     ? paintings.filter((painting) => likedIds.includes(painting.id))
     : paintings;
-
-  useEffect(() => {
-    techniquesService.getTechniques().then(setTechniques);
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-
-    paintingsService
-      .getPaintings(1, 60, selectedTechniqueId ?? undefined)
-      .then((response) => setPaintings(response.data))
-      .catch(() => setPaintings([]))
-      .finally(() => setLoading(false));
-  }, [selectedTechniqueId]);
 
   return (
     <div>

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-
-import { ordersService } from '../../api/orders.api';
+import { useAdminOrders } from '../../hooks/queries/useOrders';
+import {
+  useDeleteOrderMutation,
+  useUpdateOrderStatusMutation,
+} from '../../hooks/mutations/useOrderMutations';
 import type { Order, OrderStatus } from '../../types/order.types';
-import { useAppDispatch } from '../../store/hooks';
-import { showToast } from '../../store/slices/toastSlice';
 import Skeleton from '../../components/ui/Skeleton';
 import styles from './AdminOrdersPage.module.scss';
 
@@ -22,60 +22,18 @@ const STATUS_OPTIONS: OrderStatus[] = [
 ];
 
 export default function AdminOrdersPage() {
-  const dispatch = useAppDispatch();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: orders = [], isLoading: loading } = useAdminOrders();
+  const updateStatus = useUpdateOrderStatusMutation();
+  const deleteOrder = useDeleteOrderMutation();
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
-
-  const loadOrders = async () => {
-    try {
-      const data = await ordersService.getAllOrders();
-      setOrders(data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStatusChange = async (order: Order, status: OrderStatus) => {
+  const handleStatusChange = (order: Order, status: OrderStatus) => {
     if (status === order.status) return;
-
-    try {
-      const updated = await ordersService.updateStatus(order.id, status);
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
-      dispatch(showToast({ message: 'Статус оновлено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося змінити статус',
-          variant: 'error',
-        }),
-      );
-    }
+    updateStatus.mutate({ id: order.id, status });
   };
 
-  const handleDelete = async (order: Order) => {
+  const handleDelete = (order: Order) => {
     if (!window.confirm(`Видалити замовлення №${order.id}?`)) return;
-
-    try {
-      await ordersService.deleteOrder(order.id);
-      setOrders((prev) => prev.filter((o) => o.id !== order.id));
-      dispatch(showToast({ message: 'Замовлення видалено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.response?.data?.message ??
-            'Не вдалося видалити замовлення',
-          variant: 'error',
-        }),
-      );
-    }
+    deleteOrder.mutate(order.id);
   };
 
   if (loading) {

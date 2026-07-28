@@ -10,20 +10,22 @@ class PaintingsService {
     isAvailable?: boolean,
     minPrice?: number,
     maxPrice?: number,
+    signal?: AbortSignal,
   ): Promise<PaintingsResponse> {
     const response = await api.get('/paintings', {
       params: { page, limit, techniqueId, isAvailable, minPrice, maxPrice },
+      signal,
     });
     return response.data;
   }
 
-  async getPriceRange(): Promise<{ min: number; max: number }> {
-    const response = await api.get('/paintings/price-range');
+  async getPriceRange(signal?: AbortSignal): Promise<{ min: number; max: number }> {
+    const response = await api.get('/paintings/price-range', { signal });
     return response.data;
   }
 
-  async getPainting(id: number): Promise<Painting> {
-    const response = await api.get(`/paintings/${id}`);
+  async getPainting(id: number, signal?: AbortSignal): Promise<Painting> {
+    const response = await api.get(`/paintings/${id}`, { signal });
     return response.data;
   }
 

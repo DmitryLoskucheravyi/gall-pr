@@ -1,15 +1,13 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { likesService } from '../../api/likes.api';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setLiked } from '../../store/slices/likesSlice';
-import { showToast } from '../../store/slices/toastSlice';
+import { useIsLiked } from '../../hooks/queries/useLikedIds';
+import { useLikeMutation } from '../../hooks/mutations/useLikeMutation';
+import { useAppSelector } from '../../store/hooks';
 import styles from './LikeButton.module.scss';
 
 type Props = {
   paintingId: number;
-  initialLikesCount: number;
+  likesCount: number;
   variant?: 'overlay' | 'inline';
   showCount?: boolean;
   hoverReveal?: boolean;
@@ -17,21 +15,17 @@ type Props = {
 
 export default function LikeButton({
   paintingId,
-  initialLikesCount,
+  likesCount,
   variant = 'inline',
   showCount = true,
   hoverReveal = false,
 }: Props) {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
-  const isLiked = useAppSelector((state) =>
-    state.likes.likedIds.includes(paintingId),
-  );
-  const [likesCount, setLikesCount] = useState(initialLikesCount);
-  const [pending, setPending] = useState(false);
+  const isLiked = useIsLiked(paintingId);
+  const likeMutation = useLikeMutation();
 
-  const handleClick = async (event: React.MouseEvent) => {
+  const handleClick = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -40,24 +34,9 @@ export default function LikeButton({
       return;
     }
 
-    if (pending) return;
+    if (likeMutation.isPending) return;
 
-    try {
-      setPending(true);
-      const result = await likesService.toggleLike(paintingId);
-      dispatch(setLiked({ paintingId, liked: result.liked }));
-      setLikesCount(result.likesCount);
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося оновити лайк',
-          variant: 'error',
-        }),
-      );
-    } finally {
-      setPending(false);
-    }
+    likeMutation.mutate(paintingId);
   };
 
   const heart = (

@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { giveawaysService } from '../../api/giveaways.api';
-import { paintingsService } from '../../api/paintings.api';
-import { newsService } from '../../api/news.api';
 import { uploadImage } from '../../api/uploads.api';
 import type { Giveaway } from '../../types/giveaway.types';
-import type { Painting } from '../../types/painting.types';
 import type { News } from '../../types/news.types';
+import { useGiveaways } from '../../hooks/queries/useGiveaways';
+import { useNews } from '../../hooks/queries/useNews';
+import { usePaintings } from '../../hooks/queries/usePaintings';
+import {
+  useCreateGiveawayMutation,
+  useDeleteGiveawayMutation,
+  useUpdateGiveawayMutation,
+} from '../../hooks/mutations/useGiveawayMutations';
+import {
+  useCreateNewsMutation,
+  useDeleteNewsMutation,
+  useUpdateNewsMutation,
+} from '../../hooks/mutations/useNewsMutations';
 import Select from '../../components/ui/Select';
 import { useAppDispatch } from '../../store/hooks';
 import { showToast } from '../../store/slices/toastSlice';
@@ -22,19 +31,25 @@ export default function AdminGiveawaysPage() {
   const dispatch = useAppDispatch();
   const [tab, setTab] = useState<'giveaways' | 'news'>('giveaways');
 
-  const [giveaways, setGiveaways] = useState<Giveaway[]>([]);
-  const [paintings, setPaintings] = useState<Painting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const { data: giveaways = [], isLoading: loading } = useGiveaways();
+  const { data: news = [], isLoading: newsLoading } = useNews();
+  const { data: paintingsResponse } = usePaintings({ page: 1, limit: 200 });
+  const paintings = paintingsResponse?.data ?? [];
 
+  const createGiveaway = useCreateGiveawayMutation();
+  const updateGiveaway = useUpdateGiveawayMutation();
+  const deleteGiveaway = useDeleteGiveawayMutation();
+  const createNews = useCreateNewsMutation();
+  const updateNews = useUpdateNewsMutation();
+  const deleteNews = useDeleteNewsMutation();
+
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [conditions, setConditions] = useState('');
   const [paintingId, setPaintingId] = useState('');
   const [deadline, setDeadline] = useState('');
 
-  const [news, setNews] = useState<News[]>([]);
-  const [newsLoading, setNewsLoading] = useState(true);
   const [newsEditingId, setNewsEditingId] = useState<number | null>(null);
   const [newsTitle, setNewsTitle] = useState('');
   const [newsText, setNewsText] = useState('');
@@ -45,7 +60,7 @@ export default function AdminGiveawaysPage() {
   const [newsExistingImageUrl, setNewsExistingImageUrl] = useState<
     string | null
   >(null);
-  const [newsSaving, setNewsSaving] = useState(false);
+  const [uploadingNewsImage, setUploadingNewsImage] = useState(false);
   const newsFileInputRef = useRef<HTMLInputElement>(null);
   const newsImageRef = useRef(newsImage);
   useEffect(() => {
@@ -57,34 +72,7 @@ export default function AdminGiveawaysPage() {
     };
   }, []);
 
-  useEffect(() => {
-    loadGiveaways();
-    loadNews();
-    paintingsService.getPaintings(1, 200).then((response) => {
-      setPaintings(response.data);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadGiveaways = async () => {
-    try {
-      setLoading(true);
-      const data = await giveawaysService.getGiveaways();
-      setGiveaways(data);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadNews = async () => {
-    try {
-      setNewsLoading(true);
-      const data = await newsService.getNews();
-      setNews(data);
-    } finally {
-      setNewsLoading(false);
-    }
-  };
+  const newsSaving = uploadingNewsImage || createNews.isPending || updateNews.isPending;
 
   const resetForm = () => {
     setEditingId(null);
@@ -104,7 +92,7 @@ export default function AdminGiveawaysPage() {
     setDeadline(toDatetimeLocalValue(giveaway.deadline));
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!title.trim() || !description.trim() || !paintingId || !deadline) return;
 
@@ -116,40 +104,16 @@ export default function AdminGiveawaysPage() {
       deadline: new Date(deadline).toISOString(),
     };
 
-    try {
-      if (editingId) {
-        await giveawaysService.updateGiveaway(editingId, dto);
-      } else {
-        await giveawaysService.createGiveaway(dto);
-      }
-      resetForm();
-      loadGiveaways();
-      dispatch(showToast({ message: 'Збережено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося зберегти',
-          variant: 'error',
-        }),
-      );
+    if (editingId) {
+      updateGiveaway.mutate({ id: editingId, dto }, { onSuccess: resetForm });
+    } else {
+      createGiveaway.mutate(dto, { onSuccess: resetForm });
     }
   };
 
-  const handleDelete = async (giveaway: Giveaway) => {
+  const handleDelete = (giveaway: Giveaway) => {
     if (!window.confirm(`Видалити розіграш "${giveaway.title}"?`)) return;
-
-    try {
-      await giveawaysService.deleteGiveaway(giveaway.id);
-      setGiveaways((prev) => prev.filter((item) => item.id !== giveaway.id));
-      dispatch(showToast({ message: 'Розіграш видалено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося видалити',
-          variant: 'error',
-        }),
-      );
-    }
+    deleteGiveaway.mutate(giveaway.id);
   };
 
   const resetNewsForm = () => {
@@ -190,57 +154,43 @@ export default function AdminGiveawaysPage() {
     event.preventDefault();
     if (!newsTitle.trim() || !newsText.trim()) return;
 
-    try {
-      setNewsSaving(true);
+    let imageUrl = newsExistingImageUrl ?? undefined;
 
-      let imageUrl = newsExistingImageUrl ?? undefined;
-      if (newsImage) {
+    if (newsImage) {
+      try {
+        setUploadingNewsImage(true);
         const uploaded = await uploadImage(newsImage.file);
         imageUrl = uploaded.url;
+      } catch (error: any) {
+        dispatch(
+          showToast({
+            message:
+              error?.response?.data?.message ?? 'Не вдалося завантажити зображення',
+            variant: 'error',
+          }),
+        );
+        setUploadingNewsImage(false);
+        return;
       }
+      setUploadingNewsImage(false);
+    }
 
-      const dto = {
-        title: newsTitle.trim(),
-        text: newsText.trim(),
-        imageUrl,
-      };
+    const dto = {
+      title: newsTitle.trim(),
+      text: newsText.trim(),
+      imageUrl,
+    };
 
-      if (newsEditingId) {
-        await newsService.updateNews(newsEditingId, dto);
-      } else {
-        await newsService.createNews(dto);
-      }
-
-      resetNewsForm();
-      loadNews();
-      dispatch(showToast({ message: 'Збережено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося зберегти',
-          variant: 'error',
-        }),
-      );
-    } finally {
-      setNewsSaving(false);
+    if (newsEditingId) {
+      updateNews.mutate({ id: newsEditingId, dto }, { onSuccess: resetNewsForm });
+    } else {
+      createNews.mutate(dto, { onSuccess: resetNewsForm });
     }
   };
 
-  const handleNewsDelete = async (item: News) => {
+  const handleNewsDelete = (item: News) => {
     if (!window.confirm(`Видалити новину "${item.title}"?`)) return;
-
-    try {
-      await newsService.deleteNews(item.id);
-      setNews((prev) => prev.filter((n) => n.id !== item.id));
-      dispatch(showToast({ message: 'Новину видалено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося видалити',
-          variant: 'error',
-        }),
-      );
-    }
+    deleteNews.mutate(item.id);
   };
 
   const paintingOptions = paintings.map((p) => ({

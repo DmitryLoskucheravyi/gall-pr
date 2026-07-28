@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { likesService } from '../api/likes.api';
-import type { Painting } from '../types/painting.types';
+import { useLikedPaintings } from '../hooks/queries/useLikedPaintings';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import { useAppSelector } from '../store/hooks';
@@ -12,18 +10,7 @@ const FAVORITES_PREVIEW_LIMIT = 6;
 
 export default function ProfilePage() {
   const user = useAppSelector((state) => state.auth.user);
-  const [likedPaintings, setLikedPaintings] = useState<Painting[]>([]);
-  const [likedLoading, setLikedLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-
-    likesService
-      .getMyLikedPaintings()
-      .then(setLikedPaintings)
-      .catch(() => setLikedPaintings([]))
-      .finally(() => setLikedLoading(false));
-  }, [user]);
+  const { data: likedPaintings = [], isLoading: likedLoading } = useLikedPaintings();
 
   if (!user) return null;
 

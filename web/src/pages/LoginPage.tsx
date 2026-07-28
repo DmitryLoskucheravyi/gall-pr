@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { authService } from '../api/auth.api';
-import { cartService } from '../api/cart.api';
+import { useMergeGuestCartMutation } from '../hooks/mutations/useCartMutations';
 import { useAppDispatch } from '../store/hooks';
 import { setAuth } from '../store/slices/authSlice';
-import { clearGuestToken, peekGuestToken } from '../utils/guestToken';
+import { peekGuestToken } from '../utils/guestToken';
 import styles from './AuthForm.module.scss';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const mergeGuestCart = useMergeGuestCartMutation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,8 +29,7 @@ export default function LoginPage() {
 
       const guestToken = peekGuestToken();
       if (guestToken) {
-        await cartService.mergeGuestCart(guestToken).catch(() => {});
-        clearGuestToken();
+        await mergeGuestCart.mutateAsync(guestToken).catch(() => {});
       }
 
       navigate('/');

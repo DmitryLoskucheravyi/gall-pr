@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { giveawaysService } from '../api/giveaways.api';
-import type { Giveaway } from '../types/giveaway.types';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { showToast } from '../store/slices/toastSlice';
+import { useGiveaway, useGiveawayMyStatus } from '../hooks/queries/useGiveaway';
+import { useGiveawayJoinMutation } from '../hooks/mutations/useGiveawayJoinMutation';
+import { useAppSelector } from '../store/hooks';
 import styles from './GiveawayDetailPage.module.scss';
 
 function formatDeadline(iso: string) {
@@ -20,35 +18,16 @@ function formatDeadline(iso: string) {
 export default function GiveawayDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
 
-  const [giveaway, setGiveaway] = useState<Giveaway | null>(null);
-  const [joined, setJoined] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
+  const giveawayId = id ? Number(id) : undefined;
+  const { data: giveaway, isLoading: loading } = useGiveaway(giveawayId);
+  const { data: myStatus } = useGiveawayMyStatus(giveawayId);
+  const joinMutation = useGiveawayJoinMutation();
 
-  useEffect(() => {
-    if (!id) return;
+  const joined = myStatus?.joined ?? false;
 
-    setLoading(true);
-    giveawaysService
-      .getGiveaway(Number(id))
-      .then(setGiveaway)
-      .catch(() => setGiveaway(null))
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  useEffect(() => {
-    if (!id || !user) return;
-
-    giveawaysService
-      .getMyStatus(Number(id))
-      .then(({ joined }) => setJoined(joined))
-      .catch(() => {});
-  }, [id, user]);
-
-  const handleJoin = async () => {
+  const handleJoin = () => {
     if (!user) {
       navigate('/login');
       return;
@@ -56,25 +35,7 @@ export default function GiveawayDetailPage() {
 
     if (!giveaway) return;
 
-    try {
-      setJoining(true);
-      const result = await giveawaysService.join(giveaway.id);
-      setJoined(true);
-      setGiveaway((prev) =>
-        prev ? { ...prev, participantsCount: result.participantsCount } : prev,
-      );
-      dispatch(showToast({ message: 'Ви берете участь у розіграші!' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося приєднатись',
-          variant: 'error',
-        }),
-      );
-    } finally {
-      setJoining(false);
-    }
+    joinMutation.mutate(giveaway.id);
   };
 
   if (loading) return <p className={styles.muted}>Завантаження…</p>;
@@ -147,10 +108,10 @@ export default function GiveawayDetailPage() {
           ) : (
             <button
               onClick={handleJoin}
-              disabled={joining}
+              disabled={joinMutation.isPending}
               className={styles.joinButton}
             >
-              {joining ? 'Зачекайте…' : 'Взяти участь'}
+              {joinMutation.isPending ? 'Зачекайте…' : 'Взяти участь'}
             </button>
           )}
         </div>

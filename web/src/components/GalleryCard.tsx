@@ -29,7 +29,7 @@ export default function GalleryCard({ painting }: Props) {
 
       <LikeButton
         paintingId={painting.id}
-        initialLikesCount={painting.likesCount}
+        likesCount={painting.likesCount}
         variant="overlay"
       />
     </div>

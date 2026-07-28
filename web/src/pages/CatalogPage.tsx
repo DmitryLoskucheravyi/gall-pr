@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { paintingsService } from '../api/paintings.api';
-import { techniquesService } from '../api/techniques.api';
 import type { Painting } from '../types/painting.types';
-import type { Technique } from '../types/dictionaries.types';
+import { useTechniques } from '../hooks/queries/useTechniques';
+import { usePriceRange } from '../hooks/queries/usePriceRange';
+import { usePaintings } from '../hooks/queries/usePaintings';
+import { useDeletePaintingMutation } from '../hooks/mutations/usePaintingMutations';
+import { useLikedIds } from '../hooks/queries/useLikedIds';
 import PaintingCard from '../components/PaintingCard';
 import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import CatalogFilters from '../components/CatalogFilters';
 import CatalogWalker from '../components/CatalogWalker';
-import { useAddToCart } from '../hooks/useAddToCart';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { showToast } from '../store/slices/toastSlice';
+import { useAddToCart } from '../hooks/mutations/useAddToCart';
+import { useAppSelector } from '../store/hooks';
 import styles from './CatalogPage.module.scss';
 
 type PriceRange = { min: number; max: number };
@@ -19,78 +20,47 @@ type PriceRange = { min: number; max: number };
 export default function CatalogPage() {
   const user = useAppSelector((state) => state.auth.user);
   const addToCart = useAddToCart();
-  const dispatch = useAppDispatch();
 
-  const likedIds = useAppSelector((state) => state.likes.likedIds);
+  const { data: likedIds = [] } = useLikedIds();
 
-  const [paintings, setPaintings] = useState<Painting[]>([]);
-  const [techniques, setTechniques] = useState<Technique[]>([]);
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<
     number | null
   >(null);
   const [showLikedOnly, setShowLikedOnly] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPainting, setEditingPainting] = useState<Painting | null>(
     null,
   );
-
-  const [priceBounds, setPriceBounds] = useState<PriceRange | null>(null);
   const [priceFilter, setPriceFilter] = useState<PriceRange | null>(null);
 
   const gridRef = useRef<HTMLDivElement>(null);
+
+  const { data: techniques = [] } = useTechniques();
+  const { data: priceBounds = null } = usePriceRange();
+
+  useEffect(() => {
+    if (priceBounds && !priceFilter) setPriceFilter(priceBounds);
+  }, [priceBounds, priceFilter]);
+
+  const { data: paintingsResponse, isLoading: loading } = usePaintings({
+    page: 1,
+    limit: 24,
+    techniqueId: selectedTechniqueId ?? undefined,
+    isAvailable: true,
+    minPrice: priceFilter?.min,
+    maxPrice: priceFilter?.max,
+  });
+
+  const paintings = paintingsResponse?.data ?? [];
+  const deletePainting = useDeletePaintingMutation();
 
   const visiblePaintings = showLikedOnly
     ? paintings.filter((painting) => likedIds.includes(painting.id))
     : paintings;
 
-  useEffect(() => {
-    techniquesService.getTechniques().then(setTechniques);
-    paintingsService.getPriceRange().then((range) => {
-      setPriceBounds(range);
-      setPriceFilter(range);
-    });
-  }, []);
-
-  useEffect(() => {
-    loadPaintings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTechniqueId, priceFilter]);
-
-  const loadPaintings = async () => {
-    try {
-      const response = await paintingsService.getPaintings(
-        1,
-        24,
-        selectedTechniqueId ?? undefined,
-        true,
-        priceFilter?.min,
-        priceFilter?.max,
-      );
-      setPaintings(response.data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (painting: Painting) => {
+  const handleDelete = (painting: Painting) => {
     if (!window.confirm(`Видалити картину "${painting.title}"?`)) return;
-
-    try {
-      await paintingsService.deletePainting(painting.id);
-      setPaintings((prev) => prev.filter((item) => item.id !== painting.id));
-      dispatch(showToast({ message: 'Картину видалено' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося видалити картину',
-          variant: 'error',
-        }),
-      );
-    }
+    deletePainting.mutate(painting);
   };
 
   return (
@@ -160,7 +130,7 @@ export default function CatalogPage() {
               key={painting.id}
               painting={painting}
               isAdmin={user?.role === 'ADMIN'}
-              onBuy={() => addToCart(painting)}
+              onBuy={() => addToCart.mutate(painting)}
               onEdit={() => setEditingPainting(painting)}
               onDelete={() => handleDelete(painting)}
             />
@@ -171,10 +141,7 @@ export default function CatalogPage() {
 
       {showCreateForm && (
         <CreatePaintingForm
-          onSaved={() => {
-            setShowCreateForm(false);
-            loadPaintings();
-          }}
+          onSaved={() => setShowCreateForm(false)}
           onClose={() => setShowCreateForm(false)}
         />
       )}
@@ -182,10 +149,7 @@ export default function CatalogPage() {
       {editingPainting && (
         <CreatePaintingForm
           painting={editingPainting}
-          onSaved={() => {
-            setEditingPainting(null);
-            loadPaintings();
-          }}
+          onSaved={() => setEditingPainting(null)}
           onClose={() => setEditingPainting(null)}
         />
       )}

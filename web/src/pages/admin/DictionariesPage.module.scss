@@ -22,12 +22,18 @@
 .form {
   margin-bottom: $spacing-xxl;
   display: flex;
+  flex-wrap: wrap;
   gap: $spacing-md;
 }
 
 .input {
   @include input-base;
-  flex: 1;
+  flex: 1 1 100%;
+
+  @include respond-up($breakpoint-sm) {
+    flex: 1 1 auto;
+    min-width: 160px;
+  }
 }
 
 .submitButton {
@@ -52,6 +58,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: $spacing-md;
   border-radius: $radius-md;
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
@@ -69,11 +76,17 @@
 }
 
 .itemName {
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text);
 }
 
 .itemActions {
   display: flex;
+  flex-shrink: 0;
   gap: $spacing-md;
 }
 

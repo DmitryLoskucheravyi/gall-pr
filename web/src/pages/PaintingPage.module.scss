@@ -257,7 +257,6 @@
 .animation3d {
   margin-top: $spacing-huge;
   padding-top: $spacing-huge;
-  border-top: 1px solid var(--color-border);
 }
 
 .animation3dTitle {
@@ -313,6 +312,7 @@
 
 .modal3dClose {
   position: absolute;
+  z-index: 1;
   top: $spacing-md;
   right: $spacing-md;
   display: flex;

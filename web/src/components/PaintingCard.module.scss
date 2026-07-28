@@ -79,11 +79,31 @@
   gap: $spacing-sm;
 }
 
+.buttonIcon {
+  display: block;
+  height: 18px;
+  width: 18px;
+
+  @include respond-up($breakpoint-lg) {
+    display: none;
+  }
+}
+
+.buttonText {
+  display: none;
+
+  @include respond-up($breakpoint-lg) {
+    display: inline;
+  }
+}
+
 .detailsButton {
   @include button-secondary;
   flex: 1;
   padding: $spacing-sm;
   font-size: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .buyButton {
@@ -91,6 +111,8 @@
   flex: 1;
   padding: $spacing-sm;
   font-size: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .adminActions {
@@ -104,6 +126,8 @@
   flex: 1;
   padding: $spacing-sm;
   font-size: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
   background-color: var(--color-background-alt);
   color: var(--color-text);
 
@@ -117,4 +141,6 @@
   flex: 1;
   padding: $spacing-sm;
   font-size: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
 }

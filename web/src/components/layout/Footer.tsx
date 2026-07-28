@@ -1,13 +1,13 @@
 import { Link, NavLink } from 'react-router-dom';
 
-import { useAppSelector } from '../../store/hooks';
+import { useAuthorName } from '../../hooks/queries/useSettings';
 import styles from './Footer.module.scss';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `${styles.link} ${isActive ? styles.active : ''}`;
 
 export default function Footer() {
-  const authorName = useAppSelector((state) => state.settings.authorName);
+  const authorName = useAuthorName();
   const year = new Date().getFullYear();
 
   const scrollToTop = () => {

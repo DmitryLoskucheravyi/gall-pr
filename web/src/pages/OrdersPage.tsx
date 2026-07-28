@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react';
-
-import { ordersService } from '../api/orders.api';
+import { useMyOrders } from '../hooks/queries/useOrders';
+import { useCancelOrderMutation } from '../hooks/mutations/useOrderMutations';
 import type { Order, OrderStatus } from '../types/order.types';
-import { useAppDispatch } from '../store/hooks';
-import { showToast } from '../store/slices/toastSlice';
 import Skeleton from '../components/ui/Skeleton';
 import styles from './OrdersPage.module.scss';
 
@@ -22,35 +19,12 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
 };
 
 export default function OrdersPage() {
-  const dispatch = useAppDispatch();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: orders = [], isLoading: loading } = useMyOrders();
+  const cancelOrder = useCancelOrderMutation();
 
-  useEffect(() => {
-    ordersService
-      .getOrders()
-      .then(setOrders)
-      .catch((error) => console.log(error))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleCancel = async (order: Order) => {
+  const handleCancel = (order: Order) => {
     if (!window.confirm(`Скасувати замовлення №${order.id}?`)) return;
-
-    try {
-      const updated = await ordersService.cancelOrder(order.id);
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
-      dispatch(showToast({ message: 'Замовлення скасовано' }));
-    } catch (error: any) {
-      dispatch(
-        showToast({
-          message:
-            error?.response?.data?.message ??
-            'Не вдалося скасувати замовлення',
-          variant: 'error',
-        }),
-      );
-    }
+    cancelOrder.mutate(order.id);
   };
 
   if (loading) {

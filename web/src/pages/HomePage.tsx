@@ -1,12 +1,8 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { paintingsService } from '../api/paintings.api';
-import { giveawaysService } from '../api/giveaways.api';
-import { newsService } from '../api/news.api';
-import type { Painting } from '../types/painting.types';
-import type { Giveaway } from '../types/giveaway.types';
-import type { News } from '../types/news.types';
+import { usePaintings } from '../hooks/queries/usePaintings';
+import { useGiveaways } from '../hooks/queries/useGiveaways';
+import { useNews } from '../hooks/queries/useNews';
 import FeaturedStack, {
   FeaturedStackSkeleton,
 } from '../components/FeaturedStack';
@@ -18,42 +14,24 @@ import ScrollBrushArt from '../components/ScrollBrushArt';
 import styles from './HomePage.module.scss';
 
 export default function HomePage() {
-  const [paintings, setPaintings] = useState<Painting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [giveaway, setGiveaway] = useState<Giveaway | null>(null);
-  const [giveawayLoading, setGiveawayLoading] = useState(true);
-  const [latestNews, setLatestNews] = useState<News | null>(null);
-  const [newsLoading, setNewsLoading] = useState(true);
+  const { data: paintingsResponse, isLoading: loading } = usePaintings({
+    page: 1,
+    limit: 200,
+    isAvailable: true,
+  });
+  const { data: giveaways, isLoading: giveawayLoading } = useGiveaways();
+  const { data: news, isLoading: newsLoading } = useNews();
 
-  useEffect(() => {
-    paintingsService
-      .getPaintings(1, 200, undefined, true)
-      .then((response) => setPaintings(response.data))
-      .catch(() => setPaintings([]))
-      .finally(() => setLoading(false));
+  const featured = (paintingsResponse?.data ?? []).filter((p) => p.isFeatured);
 
-    giveawaysService
-      .getGiveaways()
-      .then((data) => {
-        const active = data
-          .filter((item) => item.isActive)
-          .sort(
-            (a, b) =>
-              new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
-          );
-        setGiveaway(active[0] ?? null);
-      })
-      .catch(() => setGiveaway(null))
-      .finally(() => setGiveawayLoading(false));
+  const giveaway =
+    (giveaways ?? [])
+      .filter((item) => item.isActive)
+      .sort(
+        (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
+      )[0] ?? null;
 
-    newsService
-      .getNews()
-      .then((data) => setLatestNews(data[0] ?? null))
-      .catch(() => setLatestNews(null))
-      .finally(() => setNewsLoading(false));
-  }, []);
-
-  const featured = paintings.filter((p) => p.isFeatured);
+  const latestNews = news?.[0] ?? null;
 
   return (
     <div>

@@ -1,27 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { paintingsService } from '../api/paintings.api';
-import type { Painting } from '../types/painting.types';
 import PaintingCard from '../components/PaintingCard';
 import Painting3DViewer from '../components/Painting3DViewer';
 import LikeButton from '../components/ui/LikeButton';
 import Skeleton from '../components/ui/Skeleton';
-import { useAddToCart } from '../hooks/useAddToCart';
+import { usePainting } from '../hooks/queries/usePainting';
+import { useRelatedPaintings } from '../hooks/queries/useRelatedPaintings';
+import { useAddToCart } from '../hooks/mutations/useAddToCart';
+import { useAuthorName } from '../hooks/queries/useSettings';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-import { useAppSelector } from '../store/hooks';
 import styles from './PaintingPage.module.scss';
 
 export default function PaintingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const addToCart = useAddToCart();
-  const authorName = useAppSelector((state) => state.settings.authorName);
+  const authorName = useAuthorName();
 
-  const [painting, setPainting] = useState<Painting | null>(null);
-  const [related, setRelated] = useState<Painting[]>([]);
+  const { data: painting, isLoading: loading } = usePainting(
+    id ? Number(id) : undefined,
+  );
+  const { related } = useRelatedPaintings(painting);
+
   const [activeImage, setActiveImage] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [show3DModal, setShow3DModal] = useState(false);
   const [isDescOpen, setIsDescOpen] = useState(true);
@@ -31,55 +33,8 @@ export default function PaintingPage() {
   useEscapeKey(() => setShow3DModal(false), show3DModal);
 
   useEffect(() => {
-    if (!id) return;
-
-    setLoading(true);
     setActiveImage(0);
-
-    paintingsService
-      .getPainting(Number(id))
-      .then(setPainting)
-      .catch(() => setPainting(null))
-      .finally(() => setLoading(false));
   }, [id]);
-
-  useEffect(() => {
-    if (!painting) return;
-
-    let cancelled = false;
-
-    const loadRelated = async () => {
-      let items: Painting[] = [];
-
-      if (painting.techniqueId) {
-        const sameCategory = await paintingsService.getPaintings(
-          1,
-          8,
-          painting.techniqueId,
-          true,
-        );
-        items = sameCategory.data.filter((item) => item.id !== painting.id);
-      }
-
-      if (items.length === 0) {
-        const fallback = await paintingsService.getPaintings(
-          1,
-          8,
-          undefined,
-          true,
-        );
-        items = fallback.data.filter((item) => item.id !== painting.id);
-      }
-
-      if (!cancelled) setRelated(items);
-    };
-
-    loadRelated();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [painting]);
 
   if (loading) {
     return (
@@ -197,7 +152,7 @@ export default function PaintingPage() {
             <h1 className={styles.title}>{painting.title}</h1>
             <LikeButton
               paintingId={painting.id}
-              initialLikesCount={painting.likesCount}
+              likesCount={painting.likesCount}
             />
           </div>
 
@@ -206,7 +161,7 @@ export default function PaintingPage() {
           <p className={styles.price}>{price.toLocaleString()} ₴</p>
 
           <button
-            onClick={() => addToCart(painting)}
+            onClick={() => addToCart.mutate(painting)}
             disabled={!painting.isAvailable}
             className={styles.buyButton}
           >
@@ -266,7 +221,7 @@ export default function PaintingPage() {
               onClick={() => setShow3DModal(true)}
               className={styles.animation3dLabel}
             >
-              Покрутити в 3D
+              3D
             </button>
           </div>
         </section>

@@ -12,10 +12,11 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: $spacing-xxl;
+  gap: $spacing-md;
 
   @include respond-up($breakpoint-sm) {
     grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xxl;
   }
 
   @include respond-up($breakpoint-lg) {
