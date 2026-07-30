@@ -6,16 +6,25 @@ import {
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
-import { DeliveryMethod, Order, OrderStatus } from './entities/order.entity';
+import {
+  DeliveryMethod,
+  Order,
+  OrderStatus,
+  PaymentProvider,
+  PaymentStatus,
+} from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Painting } from '../paintings/entities/painting.entity';
 import { CheckoutDto } from './dto/checkout.dto';
 import { Identity } from '../common/identity.util';
 import { PaymentsService } from '../payments/payments.service';
+import { NovaPoshtaService } from '../nova-poshta/nova-poshta.service';
 import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
 
-function identityCartWhere(identity: Identity) {
+// Shared by both CartItem and Order lookups — both entities key guest rows
+// by the same guestToken column, so one where-clause builder covers both.
+function identityWhere(identity: Identity) {
   return 'userId' in identity
     ? { userId: identity.userId }
     : { guestToken: identity.guestToken };
@@ -34,6 +43,7 @@ export class OrdersService {
     private readonly dataSource: DataSource,
 
     private readonly paymentsService: PaymentsService,
+    private readonly novaPoshtaService: NovaPoshtaService,
   ) {}
 
   async checkout(
@@ -42,12 +52,9 @@ export class OrdersService {
   ): Promise<Order & { paymentForm: PaymentInitResult | null }> {
     const isGuest = !('userId' in identity);
 
-    if (
-      isGuest &&
-      (!dto.guestName?.trim() || !dto.guestPhone?.trim() || !dto.guestAddress?.trim())
-    ) {
+    if (isGuest && (!dto.guestName?.trim() || !dto.guestPhone?.trim())) {
       throw new BadRequestException(
-        "Вкажіть ім'я, телефон і адресу для оформлення замовлення",
+        "Вкажіть ім'я та телефон для оформлення замовлення",
       );
     }
 
@@ -58,11 +65,30 @@ export class OrdersService {
       throw new BadRequestException('Оберіть місто та відділення Нової пошти');
     }
 
-    const cartWhere = identityCartWhere(identity);
+    const cartWhere = identityWhere(identity);
     const cartItems = await this.cartRepository.find({ where: cartWhere });
 
     if (cartItems.length === 0) {
       throw new BadRequestException('Cart is empty');
+    }
+
+    // Delivery/COD price is always computed here, server-side, from the
+    // current cart and settings — the client only picks the recipient city,
+    // it never gets to influence the actual fee.
+    let deliveryCost = 0;
+    let codFee = 0;
+
+    if (dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA && dto.novaPoshtaCityRef) {
+      const price = await this.novaPoshtaService.calculateDeliveryPriceForCartItems(
+        cartItems,
+        dto.novaPoshtaCityRef,
+        dto.paymentProvider === PaymentProvider.CASH_ON_DELIVERY,
+      );
+
+      if (price) {
+        deliveryCost = price.shippingCost;
+        codFee = price.redeliveryCost;
+      }
     }
 
     const savedOrder = await this.dataSource.transaction(async (manager) => {
@@ -103,6 +129,8 @@ export class OrdersService {
         await manager.save(painting);
       }
 
+      total += deliveryCost + codFee;
+
       const order = manager.create(Order, {
         userId: isGuest ? null : (identity as { userId: number }).userId,
         guestToken: isGuest ? (identity as { guestToken: string }).guestToken : null,
@@ -117,6 +145,8 @@ export class OrdersService {
         callMeRequested: dto.callMeRequested ?? false,
         novaPoshtaCity: dto.novaPoshtaCity?.trim() || null,
         novaPoshtaWarehouse: dto.novaPoshtaWarehouse?.trim() || null,
+        deliveryCost,
+        codFee,
         total,
         items: orderItems,
       });
@@ -134,9 +164,9 @@ export class OrdersService {
     };
   }
 
-  async cancel(userId: number, id: number): Promise<Order> {
+  async cancel(identity: Identity, id: number): Promise<Order> {
     const order = await this.ordersRepository.findOne({
-      where: { id, userId },
+      where: { id, ...identityWhere(identity) },
     });
 
     if (!order) {
@@ -170,16 +200,16 @@ export class OrdersService {
     });
   }
 
-  findAllForUser(userId: number): Promise<Order[]> {
+  findAllForIdentity(identity: Identity): Promise<Order[]> {
     return this.ordersRepository.find({
-      where: { userId },
+      where: identityWhere(identity),
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findOne(userId: number, id: number): Promise<Order> {
+  async findOne(identity: Identity, id: number): Promise<Order> {
     const order = await this.ordersRepository.findOne({
-      where: { id, userId },
+      where: { id, ...identityWhere(identity) },
     });
 
     if (!order) {
@@ -207,6 +237,21 @@ export class OrdersService {
           }
         : null,
     }));
+  }
+
+  async updatePaymentStatusAdmin(
+    id: number,
+    paymentStatus: PaymentStatus,
+  ): Promise<Order> {
+    const order = await this.ordersRepository.findOne({ where: { id } });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    order.paymentStatus = paymentStatus;
+
+    return this.ordersRepository.save(order);
   }
 
   async updateStatusAdmin(id: number, status: OrderStatus): Promise<Order> {

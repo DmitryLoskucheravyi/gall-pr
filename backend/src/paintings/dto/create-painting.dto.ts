@@ -54,6 +54,11 @@ export class CreatePaintingDto {
   @IsNumber()
   year?: number;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  weight?: number;
+
   @IsString()
   description: string;
 }

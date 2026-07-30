@@ -22,6 +22,7 @@ export type CreatePaintingDto = {
   height?: number;
 
   year?: number;
+  weight?: number;
 
   description: string;
 };

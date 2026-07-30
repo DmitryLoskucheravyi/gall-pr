@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 
 import { useAuthorName } from '../../hooks/queries/useSettings';
+import { useAppSelector } from '../../store/hooks';
 import styles from './Footer.module.scss';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -8,6 +9,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Footer() {
   const authorName = useAuthorName();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const year = new Date().getFullYear();
 
   const scrollToTop = () => {
@@ -64,12 +66,16 @@ export default function Footer() {
             <NavLink to="/support" className={linkClass}>
               Чат з підтримкою
             </NavLink>
-            <NavLink to="/login" className={linkClass}>
-              Увійти
-            </NavLink>
-            <NavLink to="/register" className={linkClass}>
-              Реєстрація
-            </NavLink>
+            {!isAuthenticated && (
+              <>
+                <NavLink to="/login" className={linkClass}>
+                  Увійти
+                </NavLink>
+                <NavLink to="/register" className={linkClass}>
+                  Реєстрація
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
 

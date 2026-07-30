@@ -1,9 +1,19 @@
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateSettingsDto {
+  @IsOptional()
   @IsString()
-  authorName: string;
+  authorName?: string;
 
+  @IsOptional()
   @IsString()
-  cardTransferIban: string;
+  cardTransferIban?: string;
+
+  @IsOptional()
+  @IsString()
+  novaPoshtaSenderCityRef?: string;
+
+  @IsOptional()
+  @IsString()
+  novaPoshtaSenderCityName?: string;
 }

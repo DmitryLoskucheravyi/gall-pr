@@ -34,7 +34,6 @@ export enum PaymentStatus {
 
 export enum DeliveryMethod {
   NOVA_POSHTA = 'NOVA_POSHTA',
-  UKRPOSHTA = 'UKRPOSHTA',
 }
 
 @Entity('orders')
@@ -78,6 +77,12 @@ export class Order {
 
   @Column({ name: 'nova_poshta_warehouse', type: 'varchar', nullable: true })
   novaPoshtaWarehouse: string | null;
+
+  @Column('decimal', { name: 'delivery_cost', precision: 10, scale: 2, default: 0 })
+  deliveryCost: number;
+
+  @Column('decimal', { name: 'cod_fee', precision: 10, scale: 2, default: 0 })
+  codFee: number;
 
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;

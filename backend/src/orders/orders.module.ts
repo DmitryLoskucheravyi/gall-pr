@@ -6,6 +6,7 @@ import { OrderItem } from './entities/order-item.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Painting } from '../paintings/entities/painting.entity';
 import { PaymentsModule } from '../payments/payments.module';
+import { NovaPoshtaModule } from '../nova-poshta/nova-poshta.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
@@ -13,6 +14,7 @@ import { OrdersService } from './orders.service';
   imports: [
     TypeOrmModule.forFeature([Order, OrderItem, CartItem, Painting]),
     PaymentsModule,
+    NovaPoshtaModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],

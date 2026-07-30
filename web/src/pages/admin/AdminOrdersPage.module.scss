@@ -85,6 +85,86 @@
   color: var(--color-text-muted);
 }
 
+.detailsGrid {
+  margin-top: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.detailRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs $spacing-sm;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.detailLabel {
+  flex-shrink: 0;
+  min-width: 90px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.paymentStatusControl {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.paymentStatusPending {
+  color: var(--color-text-secondary);
+}
+
+.paymentStatusPaid {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.paymentStatusButton {
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background-alt);
+  padding: 2px $spacing-md;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.itemsList {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  gap: $spacing-md;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.itemTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemPrice {
+  flex-shrink: 0;
+  color: var(--color-text);
+}
+
 .skeletonNumber {
   height: 16px;
   width: 120px;

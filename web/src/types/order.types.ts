@@ -7,7 +7,7 @@ export type PaymentProvider =
   | 'CASH_ON_DELIVERY'
   | 'CARD_TRANSFER';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED';
-export type DeliveryMethod = 'NOVA_POSHTA' | 'UKRPOSHTA';
+export type DeliveryMethod = 'NOVA_POSHTA';
 
 export type OrderItem = {
   id: number;
@@ -40,6 +40,10 @@ export type Order = {
   paymentStatus: PaymentStatus;
   deliveryMethod: DeliveryMethod;
   callMeRequested: boolean;
+  novaPoshtaCity?: string | null;
+  novaPoshtaWarehouse?: string | null;
+  deliveryCost: string;
+  codFee: string;
   total: string;
   items: OrderItem[];
   createdAt: string;
@@ -62,4 +66,7 @@ export type CheckoutDto = {
   paymentProvider: PaymentProvider;
   deliveryMethod: DeliveryMethod;
   callMeRequested?: boolean;
+  novaPoshtaCity?: string;
+  novaPoshtaWarehouse?: string;
+  novaPoshtaCityRef?: string;
 };

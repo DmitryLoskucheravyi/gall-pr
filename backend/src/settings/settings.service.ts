@@ -20,15 +20,22 @@ export class SettingsService {
     }
 
     return this.settingsRepository.save(
-      this.settingsRepository.create({ authorName: '', cardTransferIban: '' }),
+      this.settingsRepository.create({
+        authorName: '',
+        cardTransferIban: '',
+        novaPoshtaSenderCityRef: '',
+        novaPoshtaSenderCityName: '',
+      }),
     );
   }
 
+  // Object.assign only touches keys actually present on dto — fields the
+  // caller omits are left as-is, so a partial PATCH can't blank out the
+  // rest of the settings (this bit us once during manual API testing).
   async update(dto: UpdateSettingsDto): Promise<AppSettings> {
     const settings = await this.get();
 
-    settings.authorName = dto.authorName;
-    settings.cardTransferIban = dto.cardTransferIban;
+    Object.assign(settings, dto);
 
     return this.settingsRepository.save(settings);
   }

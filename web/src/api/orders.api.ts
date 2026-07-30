@@ -4,6 +4,7 @@ import type {
   CheckoutResponse,
   Order,
   OrderStatus,
+  PaymentStatus,
 } from '../types/order.types';
 
 class OrdersService {
@@ -39,6 +40,16 @@ class OrdersService {
 
   async updateStatus(id: number, status: OrderStatus): Promise<Order> {
     const response = await api.patch(`/orders/${id}/status`, { status });
+    return response.data;
+  }
+
+  async updatePaymentStatus(
+    id: number,
+    paymentStatus: PaymentStatus,
+  ): Promise<Order> {
+    const response = await api.patch(`/orders/${id}/payment-status`, {
+      paymentStatus,
+    });
     return response.data;
   }
 }

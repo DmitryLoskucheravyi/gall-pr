@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type { CartItem } from '../types/cart.types';
-import type { DeliveryMethod, PaymentProvider } from '../types/order.types';
+import type { PaymentProvider } from '../types/order.types';
 import type { NovaPoshtaOption } from '../types/novaPoshta.types';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { showToast } from '../store/slices/toastSlice';
@@ -11,24 +11,19 @@ import { useRemoveCartItemMutation } from '../hooks/mutations/useCartMutations';
 import { useCheckoutMutation } from '../hooks/mutations/useCheckoutMutation';
 import { useCardTransferIban } from '../hooks/queries/useSettings';
 import {
-  useNovaPoshtaCities,
   useNovaPoshtaWarehouses,
+  useNovaPoshtaDeliveryPrice,
 } from '../hooks/queries/useNovaPoshta';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { submitPaymentForm } from '../utils/submitPaymentForm';
 import Skeleton from '../components/ui/Skeleton';
 import Select from '../components/ui/Select';
+import NovaPoshtaCityPicker from '../components/ui/NovaPoshtaCityPicker';
+import InfoTooltip from '../components/ui/InfoTooltip';
 import styles from './CartPage.module.scss';
-import selectStyles from '../components/ui/Select.module.scss';
 
 const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
   { value: 'CASH_ON_DELIVERY', label: 'Оплата при отриманні' },
   { value: 'CARD_TRANSFER', label: 'Переказ на карту' },
-];
-
-const DELIVERY_OPTIONS: { value: DeliveryMethod; label: string }[] = [
-  { value: 'NOVA_POSHTA', label: 'Нова пошта' },
-  { value: 'UKRPOSHTA', label: 'Укрпошта' },
 ];
 
 function FloatField({
@@ -91,24 +86,29 @@ export default function CartPage() {
 
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
-  const [guestAddress, setGuestAddress] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [comment, setComment] = useState('');
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider | null>(null);
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
   const [callMeRequested, setCallMeRequested] = useState(false);
 
-  const [npCityQuery, setNpCityQuery] = useState('');
-  const [npCityOpen, setNpCityOpen] = useState(false);
   const [npSelectedCity, setNpSelectedCity] = useState<NovaPoshtaOption | null>(null);
   const [npWarehouseRef, setNpWarehouseRef] = useState('');
 
   const cardTransferIban = useCardTransferIban();
-  const debouncedCityQuery = useDebouncedValue(npCityQuery, 300);
-  const { data: cityOptions = [] } = useNovaPoshtaCities(debouncedCityQuery);
   const { data: warehouseOptions = [] } = useNovaPoshtaWarehouses(
     npSelectedCity?.ref ?? null,
   );
+  const { data: deliveryPrice } = useNovaPoshtaDeliveryPrice(
+    npSelectedCity?.ref ?? null,
+    paymentProvider === 'CASH_ON_DELIVERY',
+  );
+
+  const shippingCost = npSelectedCity && deliveryPrice ? deliveryPrice.shippingCost : 0;
+  const codFee =
+    npSelectedCity && deliveryPrice && paymentProvider === 'CASH_ON_DELIVERY'
+      ? deliveryPrice.redeliveryCost
+      : 0;
+  const grandTotal = total + shippingCost + codFee;
 
   const handleRemove = (item: CartItem) => {
     removeItem.mutate(item.paintingId);
@@ -117,13 +117,10 @@ export default function CartPage() {
   const handleCheckout = async () => {
     if (checkout.isPending || items.length === 0) return;
 
-    if (
-      !isAuthenticated &&
-      (!guestName.trim() || !guestPhone.trim() || !guestAddress.trim())
-    ) {
+    if (!isAuthenticated && (!guestName.trim() || !guestPhone.trim())) {
       dispatch(
         showToast({
-          message: "Вкажіть ім'я, телефон і адресу для оформлення замовлення",
+          message: "Вкажіть ім'я та телефон для оформлення замовлення",
           variant: 'error',
         }),
       );
@@ -137,14 +134,7 @@ export default function CartPage() {
       return;
     }
 
-    if (!deliveryMethod) {
-      dispatch(
-        showToast({ message: 'Оберіть спосіб доставки', variant: 'error' }),
-      );
-      return;
-    }
-
-    if (deliveryMethod === 'NOVA_POSHTA' && (!npSelectedCity || !npWarehouseRef)) {
+    if (!npSelectedCity || !npWarehouseRef) {
       dispatch(
         showToast({
           message: 'Оберіть місто та відділення Нової пошти',
@@ -154,33 +144,30 @@ export default function CartPage() {
       return;
     }
 
-    const novaPoshtaExtra =
-      deliveryMethod === 'NOVA_POSHTA'
-        ? {
-            novaPoshtaCity: npSelectedCity!.name,
-            novaPoshtaWarehouse: warehouseOptions.find(
-              (warehouse) => warehouse.ref === npWarehouseRef,
-            )?.name,
-          }
-        : {};
+    const novaPoshtaExtra = {
+      novaPoshtaCity: npSelectedCity.name,
+      novaPoshtaCityRef: npSelectedCity.ref,
+      novaPoshtaWarehouse: warehouseOptions.find(
+        (warehouse) => warehouse.ref === npWarehouseRef,
+      )?.name,
+    };
 
     try {
       const order = await checkout.mutateAsync(
         isAuthenticated
           ? {
               paymentProvider,
-              deliveryMethod,
+              deliveryMethod: 'NOVA_POSHTA',
               callMeRequested,
               comment: comment.trim() || undefined,
               ...novaPoshtaExtra,
             }
           : {
               paymentProvider,
-              deliveryMethod,
+              deliveryMethod: 'NOVA_POSHTA',
               callMeRequested,
               guestName: guestName.trim(),
               guestPhone: guestPhone.trim(),
-              guestAddress: guestAddress.trim(),
               guestEmail: guestEmail.trim() || undefined,
               comment: comment.trim() || undefined,
               ...novaPoshtaExtra,
@@ -263,13 +250,6 @@ export default function CartPage() {
                   onChange={setGuestPhone}
                 />
                 <FloatField
-                  id="guest-address"
-                  label="Адреса доставки"
-                  required
-                  value={guestAddress}
-                  onChange={setGuestAddress}
-                />
-                <FloatField
                   id="guest-email"
                   label="Email (необов'язково)"
                   type="email"
@@ -290,75 +270,35 @@ export default function CartPage() {
             </div>
 
             <div className={styles.paymentMethods}>
-              <p className={styles.guestFormLabel}>Спосіб доставки</p>
-              <div className={styles.paymentOptions}>
-                {DELIVERY_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setDeliveryMethod(option.value)}
-                    className={
-                      deliveryMethod === option.value
-                        ? styles.paymentChipActive
-                        : styles.paymentChip
-                    }
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              <p className={styles.guestFormLabel}>Доставка: Нова пошта</p>
+
+              <div className={styles.npFields}>
+                <NovaPoshtaCityPicker
+                  value={npSelectedCity}
+                  onChange={(city) => {
+                    setNpSelectedCity(city);
+                    setNpWarehouseRef('');
+                  }}
+                />
+
+                {npSelectedCity && (
+                  <Select
+                    value={npWarehouseRef}
+                    onChange={setNpWarehouseRef}
+                    options={warehouseOptions.map((warehouse) => ({
+                      value: warehouse.ref,
+                      label: warehouse.name,
+                    }))}
+                    placeholder="Оберіть відділення"
+                  />
+                )}
+
+                {npSelectedCity && deliveryPrice && (
+                  <p className={styles.ibanHint}>
+                    Доставка: {deliveryPrice.shippingCost.toLocaleString()} ₴
+                  </p>
+                )}
               </div>
-
-              {deliveryMethod === 'NOVA_POSHTA' && (
-                <div className={styles.npFields}>
-                  <div className={styles.npCityField}>
-                    <input
-                      value={npCityQuery}
-                      onChange={(e) => {
-                        setNpCityQuery(e.target.value);
-                        setNpSelectedCity(null);
-                        setNpWarehouseRef('');
-                        setNpCityOpen(true);
-                      }}
-                      onFocus={() => setNpCityOpen(true)}
-                      onBlur={() => setNpCityOpen(false)}
-                      placeholder="Почніть вводити назву міста"
-                      className={styles.npCityInput}
-                    />
-                    {npCityOpen && cityOptions.length > 0 && (
-                      <ul className={selectStyles.menu}>
-                        {cityOptions.map((city) => (
-                          <li key={city.ref}>
-                            <button
-                              type="button"
-                              onMouseDown={() => {
-                                setNpCityQuery(city.name);
-                                setNpSelectedCity(city);
-                                setNpWarehouseRef('');
-                                setNpCityOpen(false);
-                              }}
-                              className={selectStyles.option}
-                            >
-                              {city.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {npSelectedCity && (
-                    <Select
-                      value={npWarehouseRef}
-                      onChange={setNpWarehouseRef}
-                      options={warehouseOptions.map((warehouse) => ({
-                        value: warehouse.ref,
-                        label: warehouse.name,
-                      }))}
-                      placeholder="Оберіть відділення"
-                    />
-                  )}
-                </div>
-              )}
             </div>
 
             <div className={styles.paymentMethods}>
@@ -387,6 +327,17 @@ export default function CartPage() {
                     : 'IBAN для переказу буде повідомлено окремо після оформлення.'}
                 </p>
               )}
+
+              {paymentProvider === 'CASH_ON_DELIVERY' && (
+                <p className={styles.ibanHint}>
+                  Комісія за накладений платіж: {total <= 2000 ? '30 ₴ + 2%' : '50 ₴ + 1%'}
+                  {npSelectedCity && deliveryPrice && (
+                    <InfoTooltip
+                      text={`Точна сума для цього замовлення: ${deliveryPrice.redeliveryCost.toLocaleString()} ₴`}
+                    />
+                  )}
+                </p>
+              )}
             </div>
 
             <label className={styles.checkboxLabel}>
@@ -398,10 +349,26 @@ export default function CartPage() {
               Зателефонувати мені
             </label>
 
+            {shippingCost > 0 && (
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>Доставка</span>
+                <span>{shippingCost.toLocaleString()} ₴</span>
+              </div>
+            )}
+
+            {codFee > 0 && (
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>
+                  Комісія за накладений платіж
+                </span>
+                <span>{codFee.toLocaleString()} ₴</span>
+              </div>
+            )}
+
             <div className={styles.summaryRow}>
               <span className={styles.summaryLabel}>Разом</span>
               <span className={styles.summaryTotal}>
-                {total.toLocaleString()} ₴
+                {grandTotal.toLocaleString()} ₴
               </span>
             </div>
 

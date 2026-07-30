@@ -71,6 +71,11 @@ export class Painting {
   @Column({ nullable: true })
   year: number;
 
+  // Kilograms, used for Nova Poshta shipping price calculation. Nullable
+  // for paintings created before this field existed.
+  @Column('decimal', { precision: 6, scale: 2, nullable: true })
+  weight: number | null;
+
   @Column('text')
   description: string;
 

@@ -64,15 +64,22 @@ export const queryKeys = {
   },
   orders: {
     all: ['orders'] as const,
-    mine: (userId: number) => [...queryKeys.orders.all, 'mine', userId] as const,
+    mine: (identity: number | 'guest') =>
+      [...queryKeys.orders.all, 'mine', identity] as const,
     admin: () => [...queryKeys.orders.all, 'admin'] as const,
   },
   settings: {
     all: ['settings'] as const,
   },
+  support: {
+    all: ['support'] as const,
+    adminChats: () => [...queryKeys.support.all, 'admin-chats'] as const,
+  },
   novaPoshta: {
     cities: (query: string) => ['nova-poshta', 'cities', query] as const,
     warehouses: (cityRef: string) => ['nova-poshta', 'warehouses', cityRef] as const,
+    deliveryPrice: (cityRecipientRef: string, withRedelivery: boolean) =>
+      ['nova-poshta', 'delivery-price', cityRecipientRef, withRedelivery] as const,
   },
   auth: {
     me: (userId: number) => ['auth', 'me', userId] as const,

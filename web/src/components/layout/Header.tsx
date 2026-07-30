@@ -6,6 +6,8 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
 import { useCartCount } from '../../hooks/queries/useCart';
+import { useAdminPendingOrdersCount } from '../../hooks/queries/useOrders';
+import { useAdminUnreadSupportCount } from '../../hooks/queries/useSupport';
 import styles from './Header.module.scss';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -23,6 +25,8 @@ export default function Header() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const cartCount = useCartCount();
+  const pendingOrdersCount = useAdminPendingOrdersCount();
+  const unreadSupportCount = useAdminUnreadSupportCount();
   const isDark = useAppSelector((state) => state.theme.isDark);
 
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -203,12 +207,18 @@ export default function Header() {
                   </NavLink>
                   <NavLink to="/admin/orders" className={adminNavLinkClass}>
                     Замовлення
+                    {pendingOrdersCount > 0 && (
+                      <span className={styles.navBadge}>{pendingOrdersCount}</span>
+                    )}
                   </NavLink>
                   <NavLink to="/admin/settings" className={adminNavLinkClass}>
                     Налаштування
                   </NavLink>
                   <NavLink to="/admin/support" className={adminNavLinkClass}>
                     Підтримка
+                    {unreadSupportCount > 0 && (
+                      <span className={styles.navBadge}>{unreadSupportCount}</span>
+                    )}
                   </NavLink>
                   <NavLink to="/admin/giveaways" className={adminNavLinkClass}>
                     Розіграш
@@ -368,12 +378,18 @@ export default function Header() {
                 </NavLink>
                 <NavLink to="/admin/orders" className={mobileNavLinkClass}>
                   Замовлення
+                  {pendingOrdersCount > 0 && (
+                    <span className={styles.navBadge}>{pendingOrdersCount}</span>
+                  )}
                 </NavLink>
                 <NavLink to="/admin/settings" className={mobileNavLinkClass}>
                   Налаштування
                 </NavLink>
                 <NavLink to="/admin/support" className={mobileNavLinkClass}>
                   Підтримка
+                  {unreadSupportCount > 0 && (
+                    <span className={styles.navBadge}>{unreadSupportCount}</span>
+                  )}
                 </NavLink>
                 <NavLink to="/admin/giveaways" className={mobileNavLinkClass}>
                   Розіграш

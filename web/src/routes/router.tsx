@@ -35,10 +35,10 @@ export const router = createBrowserRouter([
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
       { path: 'cart', element: <CartPage /> },
+      { path: 'orders', element: <OrdersPage /> },
       {
         element: <ProtectedRoute />,
         children: [
-          { path: 'orders', element: <OrdersPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'favorites', element: <FavoritesPage /> },
           { path: 'support', element: <SupportChatPage /> },

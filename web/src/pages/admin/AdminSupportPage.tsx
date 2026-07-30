@@ -71,6 +71,7 @@ export default function AdminSupportPage() {
     const handleMessage = (message: SupportMessage) => {
       if (message.chatId === selectedChatId) {
         setMessages((prev) => [...prev, message]);
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     };
 
@@ -84,10 +85,6 @@ export default function AdminSupportPage() {
       socket.off('support:message', handleMessage);
     };
   }, [socket, selectedChatId]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const handleSelectChat = async (chat: SupportChatSummary) => {
     setSelectedChatId(chat.id);

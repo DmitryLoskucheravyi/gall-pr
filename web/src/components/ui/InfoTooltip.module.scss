@@ -1,0 +1,47 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: $spacing-xs;
+  cursor: help;
+}
+
+.icon {
+  height: 15px;
+  width: 15px;
+  color: var(--color-text-muted);
+  transition: color 0.15s ease;
+}
+
+.wrap:hover .icon,
+.wrap:focus-visible .icon {
+  color: var(--color-primary);
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + #{$spacing-xs});
+  left: 50%;
+  z-index: 10;
+  width: max-content;
+  max-width: 240px;
+  transform: translateX(-50%) translateY(4px);
+  border-radius: $radius-sm;
+  background-color: var(--color-text);
+  padding: $spacing-xs $spacing-sm;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.wrap:hover .tooltip,
+.wrap:focus-visible .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

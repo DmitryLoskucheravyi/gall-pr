@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 
+import type { NovaPoshtaOption } from '../../types/novaPoshta.types';
 import { useSettings } from '../../hooks/queries/useSettings';
 import { useUpdateSettingsMutation } from '../../hooks/mutations/useSettingsMutation';
 import Skeleton from '../../components/ui/Skeleton';
+import NovaPoshtaCityPicker from '../../components/ui/NovaPoshtaCityPicker';
 import styles from './AdminSettingsPage.module.scss';
 
 export default function AdminSettingsPage() {
@@ -10,11 +12,20 @@ export default function AdminSettingsPage() {
   const updateSettings = useUpdateSettingsMutation();
   const [authorName, setAuthorNameInput] = useState('');
   const [cardTransferIban, setCardTransferIban] = useState('');
+  const [senderCity, setSenderCity] = useState<NovaPoshtaOption | null>(null);
 
   useEffect(() => {
     if (settings) {
       setAuthorNameInput(settings.authorName);
       setCardTransferIban(settings.cardTransferIban);
+      setSenderCity(
+        settings.novaPoshtaSenderCityRef
+          ? {
+              ref: settings.novaPoshtaSenderCityRef,
+              name: settings.novaPoshtaSenderCityName,
+            }
+          : null,
+      );
     }
   }, [settings]);
 
@@ -23,6 +34,8 @@ export default function AdminSettingsPage() {
     updateSettings.mutate({
       authorName: authorName.trim(),
       cardTransferIban: cardTransferIban.trim(),
+      novaPoshtaSenderCityRef: senderCity?.ref ?? '',
+      novaPoshtaSenderCityName: senderCity?.name ?? '',
     });
   };
 
@@ -69,6 +82,13 @@ export default function AdminSettingsPage() {
           placeholder="UA00 0000 0000 0000 0000 0000 000"
           className={styles.input}
         />
+
+        <label className={styles.label}>Місто відправлення (Нова пошта)</label>
+        <p className={styles.hint}>
+          Звідки рахується вартість доставки й комісія за накладений платіж
+        </p>
+
+        <NovaPoshtaCityPicker value={senderCity} onChange={setSenderCity} />
 
         <button
           type="submit"

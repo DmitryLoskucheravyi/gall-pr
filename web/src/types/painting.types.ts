@@ -28,6 +28,7 @@ export type Painting = {
   height: number | null;
 
   year: number | null;
+  weight: number | null;
 
   description: string;
 

@@ -1,6 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 
 import { NovaPoshtaService } from './nova-poshta.service';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import type { OptionalAuthenticatedRequest } from '../auth/types/optional-authenticated-request.type';
+import { resolveIdentity } from '../common/identity.util';
 
 @Controller('nova-poshta')
 export class NovaPoshtaController {
@@ -22,5 +25,23 @@ export class NovaPoshtaController {
     }
 
     return this.novaPoshtaService.getWarehouses(cityRef);
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get('delivery-price')
+  getDeliveryPrice(
+    @Request() req: OptionalAuthenticatedRequest,
+    @Query('cityRecipientRef') cityRecipientRef?: string,
+    @Query('withRedelivery') withRedelivery?: string,
+  ) {
+    if (!cityRecipientRef) {
+      return null;
+    }
+
+    return this.novaPoshtaService.calculateDeliveryPriceForIdentity(
+      resolveIdentity(req),
+      cityRecipientRef,
+      withRedelivery === 'true',
+    );
   }
 }

@@ -4,7 +4,7 @@ import { ordersService } from '../../api/orders.api';
 import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
-import type { OrderStatus } from '../../types/order.types';
+import type { OrderStatus, PaymentStatus } from '../../types/order.types';
 
 export function useCancelOrderMutation() {
   const queryClient = useQueryClient();
@@ -41,6 +41,28 @@ export function useUpdateOrderStatusMutation() {
       store.dispatch(
         showToast({
           message: error?.response?.data?.message ?? 'Не вдалося змінити статус',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
+export function useUpdatePaymentStatusMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, paymentStatus }: { id: number; paymentStatus: PaymentStatus }) =>
+      ordersService.updatePaymentStatus(id, paymentStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+      store.dispatch(showToast({ message: 'Статус оплати оновлено' }));
+    },
+    onError: (error: any) => {
+      store.dispatch(
+        showToast({
+          message:
+            error?.response?.data?.message ?? 'Не вдалося змінити статус оплати',
           variant: 'error',
         }),
       );

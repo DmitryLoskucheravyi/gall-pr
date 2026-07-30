@@ -16,6 +16,12 @@ export class AppSettings {
   @Column({ name: 'card_transfer_iban', default: '' })
   cardTransferIban: string;
 
+  @Column({ name: 'nova_poshta_sender_city_ref', default: '' })
+  novaPoshtaSenderCityRef: string;
+
+  @Column({ name: 'nova_poshta_sender_city_name', default: '' })
+  novaPoshtaSenderCityName: string;
+
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

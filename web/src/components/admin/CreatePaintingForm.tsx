@@ -45,6 +45,7 @@ export default function CreatePaintingForm({
   const [width, setWidth] = useState(painting?.width?.toString() ?? '');
   const [height, setHeight] = useState(painting?.height?.toString() ?? '');
   const [year, setYear] = useState(painting?.year?.toString() ?? '');
+  const [weight, setWeight] = useState(painting?.weight?.toString() ?? '0.5');
   const [isFeatured, setIsFeatured] = useState(painting?.isFeatured ?? false);
 
   const [existingCover, setExistingCover] = useState<string | null>(
@@ -236,6 +237,7 @@ export default function CreatePaintingForm({
         width: Number(width) || undefined,
         height: Number(height) || undefined,
         year: Number(year) || undefined,
+        weight: Number(weight) || undefined,
       };
 
       if (painting) {
@@ -411,6 +413,15 @@ export default function CreatePaintingForm({
             placeholder="Ціна"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            className={styles.input}
+          />
+
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Вага, кг (для розрахунку доставки)"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
             className={styles.input}
           />
 

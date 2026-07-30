@@ -40,4 +40,8 @@ export class CheckoutDto {
   @IsOptional()
   @IsString()
   novaPoshtaWarehouse?: string;
+
+  @IsOptional()
+  @IsString()
+  novaPoshtaCityRef?: string;
 }
