@@ -1,6 +1,13 @@
 import type { Painting } from './painting.types';
 
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type PaymentProvider =
+  | 'LIQPAY'
+  | 'WAYFORPAY'
+  | 'CASH_ON_DELIVERY'
+  | 'CARD_TRANSFER';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED';
+export type DeliveryMethod = 'NOVA_POSHTA' | 'UKRPOSHTA';
 
 export type OrderItem = {
   id: number;
@@ -29,11 +36,22 @@ export type Order = {
   guestAddress?: string | null;
   comment?: string | null;
   status: OrderStatus;
+  paymentProvider: PaymentProvider;
+  paymentStatus: PaymentStatus;
+  deliveryMethod: DeliveryMethod;
+  callMeRequested: boolean;
   total: string;
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
 };
+
+export type PaymentForm = {
+  actionUrl: string;
+  fields: Record<string, string | string[]>;
+} | null;
+
+export type CheckoutResponse = Order & { paymentForm: PaymentForm };
 
 export type CheckoutDto = {
   guestName?: string;
@@ -41,4 +59,7 @@ export type CheckoutDto = {
   guestPhone?: string;
   guestAddress?: string;
   comment?: string;
+  paymentProvider: PaymentProvider;
+  deliveryMethod: DeliveryMethod;
+  callMeRequested?: boolean;
 };

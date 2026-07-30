@@ -9,14 +9,21 @@ export default function AdminSettingsPage() {
   const { data: settings, isLoading: loading } = useSettings();
   const updateSettings = useUpdateSettingsMutation();
   const [authorName, setAuthorNameInput] = useState('');
+  const [cardTransferIban, setCardTransferIban] = useState('');
 
   useEffect(() => {
-    if (settings) setAuthorNameInput(settings.authorName);
+    if (settings) {
+      setAuthorNameInput(settings.authorName);
+      setCardTransferIban(settings.cardTransferIban);
+    }
   }, [settings]);
 
   const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
-    updateSettings.mutate(authorName.trim());
+    updateSettings.mutate({
+      authorName: authorName.trim(),
+      cardTransferIban: cardTransferIban.trim(),
+    });
   };
 
   if (loading) {
@@ -48,6 +55,18 @@ export default function AdminSettingsPage() {
           value={authorName}
           onChange={(e) => setAuthorNameInput(e.target.value)}
           placeholder="Ім'я автора"
+          className={styles.input}
+        />
+
+        <label className={styles.label}>IBAN для переказу на карту</label>
+        <p className={styles.hint}>
+          Показується покупцю, коли він обирає оплату "Переказ на карту"
+        </p>
+
+        <input
+          value={cardTransferIban}
+          onChange={(e) => setCardTransferIban(e.target.value)}
+          placeholder="UA00 0000 0000 0000 0000 0000 000"
           className={styles.input}
         />
 

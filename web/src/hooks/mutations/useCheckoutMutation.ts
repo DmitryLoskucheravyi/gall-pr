@@ -8,7 +8,7 @@ export function useCheckoutMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dto?: CheckoutDto) => ordersService.checkout(dto),
+    mutationFn: (dto: CheckoutDto) => ordersService.checkout(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });

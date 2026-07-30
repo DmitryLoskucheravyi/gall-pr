@@ -16,8 +16,13 @@
 }
 
 .label {
+  margin-top: $spacing-md;
   font-weight: 600;
   color: var(--color-text);
+
+  &:first-child {
+    margin-top: 0;
+  }
 }
 
 .hint {

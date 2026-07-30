@@ -6,12 +6,14 @@ import {
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
-import { Order, OrderStatus } from './entities/order.entity';
+import { DeliveryMethod, Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Painting } from '../paintings/entities/painting.entity';
 import { CheckoutDto } from './dto/checkout.dto';
 import { Identity } from '../common/identity.util';
+import { PaymentsService } from '../payments/payments.service';
+import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
 
 function identityCartWhere(identity: Identity) {
   return 'userId' in identity
@@ -30,9 +32,14 @@ export class OrdersService {
 
     @InjectDataSource()
     private readonly dataSource: DataSource,
+
+    private readonly paymentsService: PaymentsService,
   ) {}
 
-  async checkout(identity: Identity, dto: CheckoutDto): Promise<Order> {
+  async checkout(
+    identity: Identity,
+    dto: CheckoutDto,
+  ): Promise<Order & { paymentForm: PaymentInitResult | null }> {
     const isGuest = !('userId' in identity);
 
     if (
@@ -44,6 +51,13 @@ export class OrdersService {
       );
     }
 
+    if (
+      dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA &&
+      (!dto.novaPoshtaCity?.trim() || !dto.novaPoshtaWarehouse?.trim())
+    ) {
+      throw new BadRequestException('Оберіть місто та відділення Нової пошти');
+    }
+
     const cartWhere = identityCartWhere(identity);
     const cartItems = await this.cartRepository.find({ where: cartWhere });
 
@@ -51,7 +65,7 @@ export class OrdersService {
       throw new BadRequestException('Cart is empty');
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const savedOrder = await this.dataSource.transaction(async (manager) => {
       const orderItems: OrderItem[] = [];
       let total = 0;
 
@@ -98,6 +112,11 @@ export class OrdersService {
         guestAddress: isGuest ? dto.guestAddress : null,
         comment: dto.comment?.trim() || null,
         status: OrderStatus.PENDING,
+        paymentProvider: dto.paymentProvider,
+        deliveryMethod: dto.deliveryMethod,
+        callMeRequested: dto.callMeRequested ?? false,
+        novaPoshtaCity: dto.novaPoshtaCity?.trim() || null,
+        novaPoshtaWarehouse: dto.novaPoshtaWarehouse?.trim() || null,
         total,
         items: orderItems,
       });
@@ -108,6 +127,11 @@ export class OrdersService {
 
       return savedOrder;
     });
+
+    return {
+      ...savedOrder,
+      paymentForm: this.paymentsService.createPayment(savedOrder),
+    };
   }
 
   async cancel(userId: number, id: number): Promise<Order> {

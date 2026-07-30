@@ -33,6 +33,7 @@ import { LikesModule } from './likes/likes.module';
 import { SupportModule } from './support/support.module';
 import { GiveawaysModule } from './giveaways/giveaways.module';
 import { NewsModule } from './news/news.module';
+import { NovaPoshtaModule } from './nova-poshta/nova-poshta.module';
 
 import { ConfigModule } from '@nestjs/config';
 @Module({
@@ -92,6 +93,8 @@ import { ConfigModule } from '@nestjs/config';
     NewsModule,
 
     UploadsModule,
+
+    NovaPoshtaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

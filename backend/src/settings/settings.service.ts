@@ -20,7 +20,7 @@ export class SettingsService {
     }
 
     return this.settingsRepository.save(
-      this.settingsRepository.create({ authorName: '' }),
+      this.settingsRepository.create({ authorName: '', cardTransferIban: '' }),
     );
   }
 
@@ -28,6 +28,7 @@ export class SettingsService {
     const settings = await this.get();
 
     settings.authorName = dto.authorName;
+    settings.cardTransferIban = dto.cardTransferIban;
 
     return this.settingsRepository.save(settings);
   }

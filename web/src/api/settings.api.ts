@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { AppSettings } from '../types/settings.types';
+import type { AppSettings, UpdateSettingsDto } from '../types/settings.types';
 
 class SettingsService {
   async getSettings(): Promise<AppSettings> {
@@ -7,8 +7,8 @@ class SettingsService {
     return response.data;
   }
 
-  async updateSettings(authorName: string): Promise<AppSettings> {
-    const response = await api.patch('/settings', { authorName });
+  async updateSettings(dto: UpdateSettingsDto): Promise<AppSettings> {
+    const response = await api.patch('/settings', dto);
     return response.data;
   }
 }

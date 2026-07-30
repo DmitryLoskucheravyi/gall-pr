@@ -2,13 +2,34 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type { CartItem } from '../types/cart.types';
+import type { DeliveryMethod, PaymentProvider } from '../types/order.types';
+import type { NovaPoshtaOption } from '../types/novaPoshta.types';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { showToast } from '../store/slices/toastSlice';
 import { useCart } from '../hooks/queries/useCart';
 import { useRemoveCartItemMutation } from '../hooks/mutations/useCartMutations';
 import { useCheckoutMutation } from '../hooks/mutations/useCheckoutMutation';
+import { useCardTransferIban } from '../hooks/queries/useSettings';
+import {
+  useNovaPoshtaCities,
+  useNovaPoshtaWarehouses,
+} from '../hooks/queries/useNovaPoshta';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { submitPaymentForm } from '../utils/submitPaymentForm';
 import Skeleton from '../components/ui/Skeleton';
+import Select from '../components/ui/Select';
 import styles from './CartPage.module.scss';
+import selectStyles from '../components/ui/Select.module.scss';
+
+const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
+  { value: 'CASH_ON_DELIVERY', label: 'Оплата при отриманні' },
+  { value: 'CARD_TRANSFER', label: 'Переказ на карту' },
+];
+
+const DELIVERY_OPTIONS: { value: DeliveryMethod; label: string }[] = [
+  { value: 'NOVA_POSHTA', label: 'Нова пошта' },
+  { value: 'UKRPOSHTA', label: 'Укрпошта' },
+];
 
 function FloatField({
   id,
@@ -73,6 +94,21 @@ export default function CartPage() {
   const [guestAddress, setGuestAddress] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [comment, setComment] = useState('');
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider | null>(null);
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
+  const [callMeRequested, setCallMeRequested] = useState(false);
+
+  const [npCityQuery, setNpCityQuery] = useState('');
+  const [npCityOpen, setNpCityOpen] = useState(false);
+  const [npSelectedCity, setNpSelectedCity] = useState<NovaPoshtaOption | null>(null);
+  const [npWarehouseRef, setNpWarehouseRef] = useState('');
+
+  const cardTransferIban = useCardTransferIban();
+  const debouncedCityQuery = useDebouncedValue(npCityQuery, 300);
+  const { data: cityOptions = [] } = useNovaPoshtaCities(debouncedCityQuery);
+  const { data: warehouseOptions = [] } = useNovaPoshtaWarehouses(
+    npSelectedCity?.ref ?? null,
+  );
 
   const handleRemove = (item: CartItem) => {
     removeItem.mutate(item.paintingId);
@@ -94,18 +130,67 @@ export default function CartPage() {
       return;
     }
 
+    if (!paymentProvider) {
+      dispatch(
+        showToast({ message: 'Оберіть спосіб оплати', variant: 'error' }),
+      );
+      return;
+    }
+
+    if (!deliveryMethod) {
+      dispatch(
+        showToast({ message: 'Оберіть спосіб доставки', variant: 'error' }),
+      );
+      return;
+    }
+
+    if (deliveryMethod === 'NOVA_POSHTA' && (!npSelectedCity || !npWarehouseRef)) {
+      dispatch(
+        showToast({
+          message: 'Оберіть місто та відділення Нової пошти',
+          variant: 'error',
+        }),
+      );
+      return;
+    }
+
+    const novaPoshtaExtra =
+      deliveryMethod === 'NOVA_POSHTA'
+        ? {
+            novaPoshtaCity: npSelectedCity!.name,
+            novaPoshtaWarehouse: warehouseOptions.find(
+              (warehouse) => warehouse.ref === npWarehouseRef,
+            )?.name,
+          }
+        : {};
+
     try {
       const order = await checkout.mutateAsync(
         isAuthenticated
-          ? { comment: comment.trim() || undefined }
+          ? {
+              paymentProvider,
+              deliveryMethod,
+              callMeRequested,
+              comment: comment.trim() || undefined,
+              ...novaPoshtaExtra,
+            }
           : {
+              paymentProvider,
+              deliveryMethod,
+              callMeRequested,
               guestName: guestName.trim(),
               guestPhone: guestPhone.trim(),
               guestAddress: guestAddress.trim(),
               guestEmail: guestEmail.trim() || undefined,
               comment: comment.trim() || undefined,
+              ...novaPoshtaExtra,
             },
       );
+
+      if (order.paymentForm) {
+        submitPaymentForm(order.paymentForm);
+        return;
+      }
 
       if (isAuthenticated) {
         dispatch(
@@ -203,6 +288,115 @@ export default function CartPage() {
                 multiline
               />
             </div>
+
+            <div className={styles.paymentMethods}>
+              <p className={styles.guestFormLabel}>Спосіб доставки</p>
+              <div className={styles.paymentOptions}>
+                {DELIVERY_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setDeliveryMethod(option.value)}
+                    className={
+                      deliveryMethod === option.value
+                        ? styles.paymentChipActive
+                        : styles.paymentChip
+                    }
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {deliveryMethod === 'NOVA_POSHTA' && (
+                <div className={styles.npFields}>
+                  <div className={styles.npCityField}>
+                    <input
+                      value={npCityQuery}
+                      onChange={(e) => {
+                        setNpCityQuery(e.target.value);
+                        setNpSelectedCity(null);
+                        setNpWarehouseRef('');
+                        setNpCityOpen(true);
+                      }}
+                      onFocus={() => setNpCityOpen(true)}
+                      onBlur={() => setNpCityOpen(false)}
+                      placeholder="Почніть вводити назву міста"
+                      className={styles.npCityInput}
+                    />
+                    {npCityOpen && cityOptions.length > 0 && (
+                      <ul className={selectStyles.menu}>
+                        {cityOptions.map((city) => (
+                          <li key={city.ref}>
+                            <button
+                              type="button"
+                              onMouseDown={() => {
+                                setNpCityQuery(city.name);
+                                setNpSelectedCity(city);
+                                setNpWarehouseRef('');
+                                setNpCityOpen(false);
+                              }}
+                              className={selectStyles.option}
+                            >
+                              {city.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {npSelectedCity && (
+                    <Select
+                      value={npWarehouseRef}
+                      onChange={setNpWarehouseRef}
+                      options={warehouseOptions.map((warehouse) => ({
+                        value: warehouse.ref,
+                        label: warehouse.name,
+                      }))}
+                      placeholder="Оберіть відділення"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={styles.paymentMethods}>
+              <p className={styles.guestFormLabel}>Спосіб оплати</p>
+              <div className={styles.paymentOptions}>
+                {PAYMENT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setPaymentProvider(option.value)}
+                    className={
+                      paymentProvider === option.value
+                        ? styles.paymentChipActive
+                        : styles.paymentChip
+                    }
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {paymentProvider === 'CARD_TRANSFER' && (
+                <p className={styles.ibanHint}>
+                  {cardTransferIban
+                    ? `Переказ на IBAN: ${cardTransferIban}. Вкажіть номер замовлення в призначенні платежу.`
+                    : 'IBAN для переказу буде повідомлено окремо після оформлення.'}
+                </p>
+              )}
+            </div>
+
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={callMeRequested}
+                onChange={(e) => setCallMeRequested(e.target.checked)}
+              />
+              Зателефонувати мені
+            </label>
 
             <div className={styles.summaryRow}>
               <span className={styles.summaryLabel}>Разом</span>

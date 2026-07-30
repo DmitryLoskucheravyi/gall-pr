@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { settingsService } from '../../api/settings.api';
 import { queryKeys } from '../../lib/queryKeys';
+import type { UpdateSettingsDto } from '../../types/settings.types';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 
@@ -9,10 +10,10 @@ export function useUpdateSettingsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (authorName: string) => settingsService.updateSettings(authorName),
+    mutationFn: (dto: UpdateSettingsDto) => settingsService.updateSettings(dto),
     onSuccess: (settings) => {
       queryClient.setQueryData(queryKeys.settings.all, settings);
-      store.dispatch(showToast({ message: 'Автора оновлено на всіх картинах' }));
+      store.dispatch(showToast({ message: 'Налаштування збережено' }));
     },
     onError: (error: any) => {
       store.dispatch(

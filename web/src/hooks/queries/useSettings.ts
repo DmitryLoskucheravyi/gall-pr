@@ -15,3 +15,8 @@ export function useAuthorName(): string {
   const { data } = useSettings();
   return data?.authorName ?? '';
 }
+
+export function useCardTransferIban(): string {
+  const { data } = useSettings();
+  return data?.cardTransferIban ?? '';
+}

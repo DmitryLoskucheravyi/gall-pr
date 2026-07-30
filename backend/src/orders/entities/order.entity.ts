@@ -19,6 +19,24 @@ export enum OrderStatus {
   COMPLETED = 'COMPLETED',
 }
 
+export enum PaymentProvider {
+  LIQPAY = 'LIQPAY',
+  WAYFORPAY = 'WAYFORPAY',
+  CASH_ON_DELIVERY = 'CASH_ON_DELIVERY',
+  CARD_TRANSFER = 'CARD_TRANSFER',
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+}
+
+export enum DeliveryMethod {
+  NOVA_POSHTA = 'NOVA_POSHTA',
+  UKRPOSHTA = 'UKRPOSHTA',
+}
+
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn()
@@ -49,8 +67,34 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   comment: string | null;
 
+  @Column({ name: 'delivery_method', type: 'enum', enum: DeliveryMethod })
+  deliveryMethod: DeliveryMethod;
+
+  @Column({ name: 'call_me_requested', type: 'boolean', default: false })
+  callMeRequested: boolean;
+
+  @Column({ name: 'nova_poshta_city', type: 'varchar', nullable: true })
+  novaPoshtaCity: string | null;
+
+  @Column({ name: 'nova_poshta_warehouse', type: 'varchar', nullable: true })
+  novaPoshtaWarehouse: string | null;
+
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;
+
+  @Column({ name: 'payment_provider', type: 'enum', enum: PaymentProvider })
+  paymentProvider: PaymentProvider;
+
+  @Column({
+    name: 'payment_status',
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  paymentStatus: PaymentStatus;
+
+  @Column({ name: 'payment_transaction_id', type: 'varchar', nullable: true })
+  paymentTransactionId: string | null;
 
   @Column('decimal', { precision: 10, scale: 2 })
   total: number;

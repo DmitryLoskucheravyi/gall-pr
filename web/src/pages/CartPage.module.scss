@@ -174,6 +174,59 @@ textarea.floatInput {
   border-bottom: 1px solid var(--color-border);
 }
 
+.paymentMethods {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-xl;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.paymentOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.npFields {
+  margin-top: $spacing-sm;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.npCityField {
+  position: relative;
+}
+
+.npCityInput {
+  @include input-base;
+}
+
+.ibanHint {
+  margin-top: $spacing-sm;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.paymentChip {
+  @include chip;
+}
+
+.paymentChipActive {
+  @include chip($active: true);
+}
+
 .summaryRow {
   margin-bottom: $spacing-lg;
   display: flex;

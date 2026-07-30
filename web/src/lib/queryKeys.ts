@@ -70,6 +70,10 @@ export const queryKeys = {
   settings: {
     all: ['settings'] as const,
   },
+  novaPoshta: {
+    cities: (query: string) => ['nova-poshta', 'cities', query] as const,
+    warehouses: (cityRef: string) => ['nova-poshta', 'warehouses', cityRef] as const,
+  },
   auth: {
     me: (userId: number) => ['auth', 'me', userId] as const,
   },
