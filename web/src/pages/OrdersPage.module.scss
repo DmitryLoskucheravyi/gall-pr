@@ -15,63 +15,6 @@
   gap: $spacing-lg;
 }
 
-.order {
-  @include card;
-  padding: $spacing-xl;
-}
-
-.orderHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.orderNumber {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.status {
-  border-radius: $radius-pill;
-  padding: $spacing-xs $spacing-lg;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-on-accent);
-  background-color: var(--color-accent);
-}
-
-.statusConfirmed,
-.statusCompleted {
-  color: var(--color-on-primary);
-  background-color: var(--color-primary);
-}
-
-.statusCancelled {
-  color: #fff;
-  background-color: var(--color-error);
-}
-
-.date {
-  margin-top: $spacing-xs;
-  font-size: 14px;
-  color: var(--color-text-muted);
-}
-
-.thumbs {
-  margin-top: $spacing-lg;
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.thumb {
-  height: 56px;
-  width: 56px;
-  border-radius: $radius-md;
-  object-fit: cover;
-}
-
 .skeletonNumber {
   height: 16px;
   width: 120px;
@@ -91,38 +34,4 @@
 .skeletonThumb {
   height: 56px;
   width: 56px;
-}
-
-.footer {
-  margin-top: $spacing-lg;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--color-border);
-  padding-top: $spacing-lg;
-}
-
-.footerLabel {
-  color: var(--color-text-secondary);
-}
-
-.footerTotal {
-  font-family: $font-display;
-  font-size: 20px;
-  color: var(--color-primary);
-}
-
-.cancelButton {
-  @include button-base;
-  margin-top: $spacing-lg;
-  width: 100%;
-  padding: $spacing-sm;
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-  background-color: transparent;
-
-  &:hover {
-    background-color: var(--color-error);
-    color: #fff;
-  }
 }

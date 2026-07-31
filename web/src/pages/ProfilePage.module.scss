@@ -86,26 +86,33 @@
   padding: $spacing-lg $spacing-xl;
 }
 
-.statCardLink {
-  @include card;
-  display: block;
-  padding: $spacing-lg $spacing-xl;
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s ease;
+.ordersHeader {
+  margin-top: $spacing-xxxl;
+  margin-bottom: $spacing-lg;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
 
-  @include respond-up($breakpoint-sm) {
-    grid-column: span 2;
-  }
+.ordersTitle {
+  font-family: $font-display;
+  font-size: 26px;
+  color: var(--color-text);
+}
 
-  &:hover {
-    border-color: var(--color-primary);
-    transform: translateY(-2px);
-  }
+.ordersLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
 
-  .infoValue {
-    color: var(--color-primary);
-  }
+.ordersEmpty {
+  color: var(--color-text-secondary);
+}
+
+.orderSkeleton {
+  height: 180px;
+  width: 100%;
 }
 
 .infoLabel {

@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 
 import { useLikedPaintings } from '../hooks/queries/useLikedPaintings';
+import { useMyOrders } from '../hooks/queries/useOrders';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
+import OrderPreviewCard from '../components/OrderPreviewCard';
+import Skeleton from '../components/ui/Skeleton';
 import { useAppSelector } from '../store/hooks';
 import styles from './ProfilePage.module.scss';
 
@@ -11,8 +14,11 @@ const FAVORITES_PREVIEW_LIMIT = 6;
 export default function ProfilePage() {
   const user = useAppSelector((state) => state.auth.user);
   const { data: likedPaintings = [], isLoading: likedLoading } = useLikedPaintings();
+  const { data: orders = [], isLoading: ordersLoading } = useMyOrders();
 
   if (!user) return null;
+
+  const lastOrder = orders[0] ?? null;
 
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
 
@@ -46,12 +52,24 @@ export default function ProfilePage() {
               <p className={styles.infoLabel}>Телефон</p>
               <p className={styles.infoValue}>{user.phone || '—'}</p>
             </div>
-
-            <Link to="/orders" className={styles.statCardLink}>
-              <p className={styles.infoLabel}>Замовлення</p>
-              <p className={styles.infoValue}>Переглянути →</p>
-            </Link>
           </div>
+
+          <div className={styles.ordersHeader}>
+            <h2 className={styles.ordersTitle}>Замовлення</h2>
+            {orders.length > 0 && (
+              <Link to="/orders" className={styles.ordersLink}>
+                Усі →
+              </Link>
+            )}
+          </div>
+
+          {ordersLoading ? (
+            <Skeleton className={styles.orderSkeleton} />
+          ) : lastOrder ? (
+            <OrderPreviewCard order={lastOrder} />
+          ) : (
+            <p className={styles.ordersEmpty}>У вас ще немає замовлень</p>
+          )}
         </div>
 
         <section className={styles.favoritesSection}>
