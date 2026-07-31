@@ -9,14 +9,22 @@
   align-items: center;
   justify-content: center;
   border: none;
+  border-radius: $radius-pill;
   background-color: var(--color-primary);
   color: var(--color-on-primary);
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
-  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-md);
+  transition:
+    transform 0.35s $ease-spring,
+    box-shadow 0.25s ease;
 
   &:hover {
-    transform: scale(1.06);
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 
   svg {

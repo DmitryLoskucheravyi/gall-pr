@@ -6,31 +6,33 @@
   align-items: center;
   justify-content: center;
   gap: $spacing-sm;
-  border-radius: 0;
+  border-radius: $radius-pill;
   border: 1px solid transparent;
   font-family: $font-sans;
   font-weight: 600;
   font-size: 15px;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 0 0 0 var(--color-text);
   transition:
-    opacity 0.15s ease,
-    background-color 0.15s ease,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity $duration-fast ease,
+    background-color $duration-fast ease,
+    border-color $duration-fast ease,
+    color $duration-fast ease,
+    transform $duration-base $ease-out,
+    box-shadow $duration-base $ease-out;
 
   &:hover:not(:disabled) {
-    transform: translate(-3px, -3px);
-    box-shadow: 3px 3px 0 0 var(--color-text);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
 
   &:active:not(:disabled) {
-    transform: translate(-1px, -1px);
-    box-shadow: 1px 1px 0 0 var(--color-text);
+    transform: translateY(0) scale(0.98);
+    box-shadow: var(--shadow-sm);
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.55;
     cursor: not-allowed;
   }
 }
@@ -45,12 +47,12 @@
 @mixin button-secondary {
   @include button-base;
   padding: $spacing-md $spacing-xxl;
-  background-color: transparent;
-  border-color: var(--color-border);
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
   color: var(--color-text);
 
   &:hover:not(:disabled) {
-    background-color: var(--color-background-alt);
+    border-color: var(--color-text);
   }
 }
 
@@ -89,6 +91,9 @@
   color: var(--color-text);
   font-family: $font-sans;
   font-size: 15px;
+  transition:
+    border-color $duration-fast ease,
+    box-shadow $duration-fast ease;
 
   @include autofill-fix;
 
@@ -99,54 +104,117 @@
   &:focus {
     outline: none;
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-ring);
   }
 }
 
 @mixin card {
-  border-radius: $radius-sm;
+  border-radius: $radius-lg;
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+@mixin card-hover {
+  transition:
+    transform $duration-base $ease-out,
+    box-shadow $duration-base $ease-out,
+    border-color $duration-base ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 @mixin chip($active: false) {
   position: relative;
   padding: $spacing-sm $spacing-lg;
-  border-radius: 0;
+  border-radius: $radius-pill;
   border: 1px solid var(--color-border);
   font-family: $font-sans;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 0 0 0 var(--color-text);
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background-color $duration-fast ease,
+    border-color $duration-fast ease,
+    color $duration-fast ease,
+    transform $duration-base $ease-out,
+    box-shadow $duration-base $ease-out;
 
   @if $active {
     border-color: var(--color-primary);
     background-color: var(--color-primary);
     color: var(--color-on-primary);
+    font-weight: 600;
   } @else {
     background-color: var(--color-surface);
-    color: var(--color-text);
+    color: var(--color-text-secondary);
   }
 
   &:hover {
-    border-color: var(--color-primary);
-    transform: translate(-3px, -3px);
-    box-shadow: 3px 3px 0 0 var(--color-text);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
 
     @if not $active {
-      color: var(--color-primary);
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
     }
   }
 
   &:active {
-    transform: translate(-1px, -1px);
-    box-shadow: 1px 1px 0 0 var(--color-text);
+    transform: translateY(0);
+    box-shadow: none;
+  }
+}
+
+// Scroll-driven entrance: elements rise and fade in as they scroll into view.
+// Pure CSS (animation-timeline: view()), zero JS — browsers without support
+// (or reduced-motion users) simply render the final state. Keyframes are
+// emitted via @at-root so CSS-module scoping keeps the reference valid.
+@mixin reveal($range-end: 30%) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: reveal-rise $duration-slow $ease-out both;
+      animation-timeline: view();
+      animation-range: entry 0% entry $range-end;
+    }
+  }
+
+  @at-root {
+    @keyframes reveal-rise {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  }
+}
+
+// Time-based entrance for above-the-fold content (heroes) that should play
+// on mount rather than on scroll.
+@mixin rise-in($duration: $duration-slow, $delay: 0s) {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: mount-rise $duration $ease-out $delay both;
+  }
+
+  @at-root {
+    @keyframes mount-rise {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
   }
 }

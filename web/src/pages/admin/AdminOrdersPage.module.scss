@@ -1,7 +1,8 @@
 .title {
   margin-bottom: $spacing-xxl;
   font-family: $font-display;
-  font-size: 30px;
+  font-size: clamp(30px, 4vw, 40px);
+  letter-spacing: -0.01em;
   color: var(--color-text);
 }
 

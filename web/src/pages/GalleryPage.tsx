@@ -88,7 +88,7 @@ export default function GalleryPage() {
       ) : (
         <div className={styles.grid}>
           {visiblePaintings.map((painting) => (
-            <GalleryCard key={painting.id} painting={painting} />
+            <GalleryCard key={painting.id} painting={painting} natural />
           ))}
         </div>
       )}

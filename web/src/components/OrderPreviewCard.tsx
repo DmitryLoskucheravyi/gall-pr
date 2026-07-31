@@ -45,6 +45,8 @@ export default function OrderPreviewCard({ order, onCancel }: Props) {
             key={item.id}
             src={item.painting.cardImage}
             alt=""
+            loading="lazy"
+            decoding="async"
             className={styles.thumb}
           />
         ))}

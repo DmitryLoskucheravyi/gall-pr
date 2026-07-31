@@ -1,8 +1,21 @@
 .header {
-  position: relative;
-  z-index: 20;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+// Glass background lives on a pseudo-element: backdrop-filter on .header
+// itself would turn it into a containing block for the fixed-position
+// mobile backdrop below and break its full-screen coverage.
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  background-color: color-mix(in srgb, var(--color-background) 82%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
 }
 
 .inner {
@@ -11,27 +24,24 @@
   align-items: center;
   justify-content: space-between;
   max-width: $container-max-width;
-  padding: $spacing-md $container-padding;
+  padding: $spacing-lg $container-padding;
 }
 
 .logo {
-  display: flex;
-  flex-direction: column;
   line-height: 1;
 }
 
 .wordmark {
   font-family: $font-display;
   font-weight: 600;
-  font-size: 24px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
   color: var(--color-text);
-}
 
-.rule {
-  margin-top: $spacing-xs;
-  height: 2px;
-  width: 24px;
-  background-color: var(--color-accent);
+  &::after {
+    content: '.';
+    color: var(--color-accent);
+  }
 }
 
 .nav {
@@ -96,7 +106,7 @@
   position: fixed;
   inset: 0;
   z-index: 1;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(12, 10, 8, 0.45);
 
   @include respond-up($breakpoint-lg) {
     display: none;
@@ -115,19 +125,15 @@
   gap: $spacing-xs;
   overflow-y: auto;
   border-top: 1px solid var(--color-border);
+  border-radius: 0 0 $radius-xl $radius-xl;
   background-color: var(--color-surface);
   padding: $spacing-md $container-padding $spacing-xxl;
-  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.18);
-
-  @include respond-up($breakpoint-lg) {
-    display: none !important;
-  }
+  box-shadow: var(--shadow-lg);
 }
 
 .mobileNavLink {
   border-radius: $radius-md;
   padding: $spacing-md $spacing-lg;
-  font-family: $font-display;
   font-size: 16px;
   font-weight: 500;
   color: var(--color-text);
@@ -140,8 +146,8 @@
   }
 
   &.active {
-    color: var(--color-primary);
-    background-color: var(--color-primary-soft);
+    color: var(--color-accent);
+    background-color: var(--color-accent-soft);
   }
 }
 
@@ -165,7 +171,6 @@
   width: 100%;
   border-radius: $radius-md;
   padding: $spacing-md $spacing-lg;
-  font-family: $font-display;
   font-size: 16px;
   font-weight: 500;
   text-align: left;
@@ -180,10 +185,9 @@
 .navLink {
   position: relative;
   padding-bottom: 3px;
-  font-family: $font-display;
   font-size: 15px;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   color: var(--color-text-secondary);
   transition: color 0.2s ease;
 
@@ -194,14 +198,15 @@
     bottom: 0;
     width: 0;
     height: 2px;
-    background-color: var(--color-primary);
+    border-radius: $radius-pill;
+    background-color: var(--color-accent);
     transition:
-      width 0.25s ease,
-      left 0.25s ease;
+      width 0.25s $ease-out,
+      left 0.25s $ease-out;
   }
 
   &:hover {
-    color: var(--color-primary);
+    color: var(--color-text);
 
     &::after {
       left: 0;
@@ -210,7 +215,7 @@
   }
 
   &.active {
-    color: var(--color-primary);
+    color: var(--color-text);
 
     &::after {
       left: 0;
@@ -248,21 +253,37 @@
   right: 0;
   z-index: 10;
   display: flex;
-  min-width: 200px;
+  min-width: 220px;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 2px;
   border: 1px solid var(--color-border);
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   background-color: var(--color-surface);
   padding: $spacing-sm;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-lg);
+  transform-origin: top right;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: menu-pop 0.22s $ease-out both;
+  }
+}
+
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .adminMenuLink {
   border-radius: $radius-sm;
   padding: $spacing-sm $spacing-md;
-  font-family: $font-display;
   font-size: 14px;
+  font-weight: 500;
   color: var(--color-text);
   transition: background-color 0.15s ease;
 
@@ -271,8 +292,8 @@
   }
 
   &.active {
-    color: var(--color-primary);
-    background-color: var(--color-primary-soft);
+    color: var(--color-accent);
+    background-color: var(--color-accent-soft);
   }
 }
 
@@ -290,7 +311,9 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.3s $ease-spring;
 
   svg {
     height: 21px;
@@ -298,11 +321,12 @@
   }
 
   &:hover {
-    color: var(--color-primary);
+    color: var(--color-text);
+    transform: translateY(-1px);
   }
 
   &.active {
-    color: var(--color-primary);
+    color: var(--color-text);
   }
 }
 
@@ -315,12 +339,12 @@
   min-width: 18px;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background-color: var(--color-primary);
+  border-radius: $radius-pill;
+  background-color: var(--color-accent);
   padding: 0 4px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-on-primary);
+  color: var(--color-on-accent);
 }
 
 .navBadge {
@@ -330,12 +354,12 @@
   margin-left: $spacing-xs;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background-color: var(--color-primary);
+  border-radius: $radius-pill;
+  background-color: var(--color-accent);
   padding: 0 4px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-on-primary);
+  color: var(--color-on-accent);
 }
 
 .profileButton {
@@ -345,7 +369,9 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.3s $ease-spring;
 
   svg {
     height: 20px;
@@ -353,11 +379,12 @@
   }
 
   &:hover {
-    color: var(--color-primary);
+    color: var(--color-text);
+    transform: translateY(-1px);
   }
 
   &.active {
-    color: var(--color-primary);
+    color: var(--color-text);
   }
 }
 
@@ -370,8 +397,7 @@
   color: var(--color-error);
   cursor: pointer;
   transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
+    opacity 0.2s ease,
     transform 0.2s ease;
 
   svg {
@@ -380,8 +406,7 @@
   }
 
   &:hover {
-    color: var(--color-error);
-    opacity: 0.85;
+    opacity: 0.8;
     transform: translateY(-1px);
   }
 
@@ -402,11 +427,11 @@
   transition:
     color 0.2s ease,
     background-color 0.3s ease,
-    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform 0.45s $ease-spring;
 
   &:hover {
     color: var(--color-accent);
-    background-color: var(--color-primary-soft);
+    background-color: var(--color-accent-soft);
     transform: scale(1.14);
   }
 
@@ -417,7 +442,7 @@
   svg {
     height: 20px;
     width: 20px;
-    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.5s $ease-spring;
   }
 
   &:hover svg {

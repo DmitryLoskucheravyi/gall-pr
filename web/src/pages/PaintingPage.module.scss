@@ -19,7 +19,15 @@
   gap: $spacing-xxxxl;
 
   @include respond-up($breakpoint-lg) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: $spacing-huge;
+
+    // Info column stays in view while the artwork column scrolls
+    > div:last-child {
+      position: sticky;
+      top: 96px;
+      align-self: start;
+    }
   }
 }
 
@@ -31,8 +39,11 @@
   display: block;
   width: 100%;
   overflow: hidden;
-  border-radius: $radius-lg;
+  border-radius: $radius-xl;
+  border: 1px solid var(--color-border);
   background-color: var(--color-background-alt);
+  box-shadow: var(--shadow-sm);
+  cursor: zoom-in;
 }
 
 .mainImage {
@@ -162,7 +173,9 @@
 
 .title {
   font-family: $font-display;
-  font-size: 36px;
+  font-size: clamp(34px, 4.5vw, 48px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
   color: var(--color-text);
 }
 
@@ -277,7 +290,7 @@
   max-width: 100%;
   border-radius: $radius-md;
   object-fit: cover;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-lg);
 }
 
 .animation3dLabel {
@@ -362,6 +375,10 @@
 
   @include respond-up($breakpoint-lg) {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  > * {
+    @include reveal(25%);
   }
 }
 

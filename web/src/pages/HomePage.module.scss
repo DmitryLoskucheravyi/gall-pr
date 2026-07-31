@@ -1,54 +1,285 @@
+// ---------- Hero: asymmetric split with layered painting collage ----------
+
 .hero {
   position: relative;
-  z-index: 1;
-  margin-bottom: $spacing-xxxxl;
-  border-radius: $radius-xxl;
-  background-color: var(--color-background-alt);
-  padding: $spacing-xxxl $spacing-xl;
-  text-align: center;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xxxl;
+  align-items: center;
+  padding: $spacing-xl 0 $spacing-huge;
 
-  @include respond-up($breakpoint-md) {
-    margin-bottom: $spacing-huge;
-    padding: $spacing-huge $spacing-xxxxl;
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: $spacing-huge;
+    min-height: 560px;
+    padding: $spacing-xxxl 0 72px;
   }
+}
+
+.heroText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: 6px $spacing-lg;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.15em;
-  color: var(--color-accent);
+  letter-spacing: 0.14em;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
-}
+  @include rise-in($delay: 0s);
 
-.title {
-  margin-top: $spacing-md;
-  font-family: $font-display;
-  font-size: 32px;
-  color: var(--color-text);
-
-  @include respond-up($breakpoint-md) {
-    font-size: 48px;
+  &::before {
+    content: '';
+    height: 6px;
+    width: 6px;
+    border-radius: $radius-pill;
+    background-color: var(--color-accent);
   }
 }
 
-.rule {
-  margin: $spacing-lg auto 0;
-  height: 3px;
-  width: 40px;
-  background-color: var(--color-accent);
+.title {
+  margin-top: $spacing-xl;
+  font-family: $font-display;
+  font-size: clamp(42px, 6vw, 72px);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  @include rise-in($delay: 0.08s);
+
+  em {
+    font-style: italic;
+    color: var(--color-accent);
+  }
 }
 
 .subtitle {
-  margin: $spacing-lg auto 0;
-  max-width: 560px;
+  margin-top: $spacing-xl;
+  max-width: 480px;
+  font-size: 17px;
+  line-height: 1.65;
   color: var(--color-text-secondary);
+  @include rise-in($delay: 0.16s);
+}
+
+.actions {
+  margin-top: $spacing-xxxl;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-lg;
+  @include rise-in($delay: 0.24s);
 }
 
 .ctaButton {
   @include button-primary;
-  margin-top: $spacing-xxl;
+  padding: $spacing-lg $spacing-xxxl;
+  font-size: 16px;
+}
+
+.ctaGhost {
+  @include button-secondary;
+  padding: $spacing-lg $spacing-xxxl;
+  font-size: 16px;
+}
+
+.stats {
+  margin-top: $spacing-xxxxl;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xxxl $spacing-huge;
+  @include rise-in($delay: 0.32s);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.statValue {
+  font-family: $font-display;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.statLabel {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+// Collage: three layered, slightly rotated painting cards
+.heroArt {
+  position: relative;
+  height: 380px;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 420px;
+  @include rise-in($duration: 0.8s, $delay: 0.2s);
+
+  @include respond-up($breakpoint-md) {
+    height: 480px;
+    max-width: 560px;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    height: 560px;
+    max-width: none;
+    margin-inline: 0;
+  }
+}
+
+.heroCard {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  border-radius: $radius-lg;
+  border: 6px solid var(--color-surface);
+  background-color: var(--color-background-alt);
+  box-shadow: var(--shadow-lg);
+  transition:
+    transform 0.5s $ease-spring,
+    box-shadow 0.4s ease,
+    z-index 0s;
+
+  &:hover {
+    z-index: 5;
+    transform: rotate(0deg) scale(1.04) !important;
+  }
+}
+
+.heroCardA {
+  top: 4%;
+  left: 0;
+  width: 62%;
+  aspect-ratio: 3 / 4;
+  transform: rotate(-4deg);
+  z-index: 2;
+}
+
+.heroCardB {
+  top: 0;
+  right: 2%;
+  width: 46%;
+  aspect-ratio: 3 / 4;
+  transform: rotate(5deg);
+  z-index: 1;
+}
+
+.heroCardC {
+  bottom: 0;
+  right: 12%;
+  width: 42%;
+  aspect-ratio: 4 / 3;
+  transform: rotate(-3deg);
+  z-index: 3;
+}
+
+.heroImage {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.heroSkeleton {
+  height: 100%;
+  width: 100%;
+}
+
+.heroCaption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: $spacing-xxl $spacing-md $spacing-sm;
+  background: linear-gradient(to top, rgba(10, 8, 6, 0.72), transparent);
+  font-family: $font-display;
+  font-size: 14px;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+
+  .heroCard:hover & {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// ---------- Marquee strip ----------
+
+.marquee {
+  position: relative;
+  overflow: hidden;
+  margin-inline: calc(-1 * $container-padding);
+  border-block: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: $spacing-lg 0;
+  // Fade edges without extra elements
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  align-items: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: marquee-scroll 30s linear infinite;
+  }
+}
+
+@keyframes marquee-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marqueeItem {
   display: inline-flex;
+  align-items: center;
+  gap: $spacing-xxxl;
+  padding-right: $spacing-xxxl;
+  font-family: $font-display;
+  font-size: 18px;
+  font-style: italic;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.marqueeDot {
+  height: 5px;
+  width: 5px;
+  border-radius: $radius-pill;
+  background-color: var(--color-accent);
+}
+
+// ---------- Content sections ----------
+
+.section {
+  position: relative;
+  z-index: 1;
+  margin-top: $spacing-huge;
+  @include reveal;
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: 72px;
+  }
 }
 
 .sectionHeader {
@@ -60,25 +291,28 @@
 
 .sectionTitle {
   font-family: $font-display;
-  font-size: 30px;
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -0.01em;
   color: var(--color-text);
 }
 
 .sectionLink {
   display: flex;
-  height: 40px;
-  width: 40px;
+  height: 44px;
+  width: 44px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: $radius-pill;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
   color: var(--color-text);
   transition:
     background-color 0.25s ease,
     border-color 0.25s ease,
     color 0.25s ease,
-    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow 0.25s ease,
+    transform 0.25s $ease-spring;
 
   svg {
     height: 18px;
@@ -91,6 +325,7 @@
     border-color: var(--color-primary);
     background-color: var(--color-primary);
     color: var(--color-on-primary);
+    box-shadow: var(--shadow-md);
 
     svg {
       transform: translateX(2px);
@@ -106,17 +341,123 @@
   color: var(--color-text-secondary);
 }
 
-.giveawaySection {
-  position: relative;
-  z-index: 1;
-  margin-bottom: $spacing-huge;
+// ---------- Values strip ----------
+
+.values {
+  margin-top: $spacing-huge;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+  @include reveal;
+
+  @include respond-up($breakpoint-md) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xxl;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: 72px;
+  }
 }
 
-.featuredSection {
-  position: relative;
-  z-index: 1;
+.valueCard {
+  @include card;
+  @include card-hover;
+  padding: $spacing-xxl;
 }
 
-.fillerSection {
-  min-height: 60vh;
+.valueIcon {
+  display: flex;
+  height: 48px;
+  width: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-md;
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+
+  svg {
+    height: 24px;
+    width: 24px;
+  }
+}
+
+.valueTitle {
+  margin-top: $spacing-lg;
+  font-family: $font-display;
+  font-size: 20px;
+  color: var(--color-text);
+}
+
+.valueText {
+  margin-top: $spacing-sm;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+// ---------- Closing CTA band ----------
+
+.ctaBand {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  margin-top: $spacing-huge;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xxl;
+  border-radius: $radius-xxl;
+  background:
+    radial-gradient(
+      520px 280px at 14% -10%,
+      rgba(224, 82, 31, 0.28),
+      transparent 65%
+    ),
+    radial-gradient(
+      520px 300px at 90% 115%,
+      rgba(224, 82, 31, 0.18),
+      transparent 62%
+    ),
+    #16140f;
+  padding: $spacing-huge $spacing-xl;
+  text-align: center;
+  @include reveal;
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: 72px;
+    padding: 88px $spacing-huge;
+  }
+}
+
+.ctaTitle {
+  max-width: 15em;
+  font-family: $font-display;
+  font-size: clamp(30px, 4.5vw, 52px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: #f7f4ec;
+
+  em {
+    font-style: italic;
+    color: #ff8a5e;
+  }
+}
+
+.ctaBandButton {
+  @include button-base;
+  padding: $spacing-lg $spacing-xxxl;
+  background-color: #f7f4ec;
+  color: #16140f;
+  font-size: 16px;
+
+  svg {
+    height: 18px;
+    width: 18px;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover svg {
+    transform: translateX(3px);
+  }
 }

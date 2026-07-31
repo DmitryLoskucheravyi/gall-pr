@@ -71,6 +71,8 @@ export default function FeaturedStack({ paintings }: Props) {
             <img
               src={painting.cardImage}
               alt={painting.title}
+              loading="lazy"
+              decoding="async"
               className={styles.image}
             />
             <span className={styles.caption}>{painting.title}</span>

@@ -32,6 +32,8 @@ export default function PaintingCard({
           <img
             src={painting.cardImage}
             alt={painting.title}
+            loading="lazy"
+            decoding="async"
             className={styles.image}
           />
           {!painting.isAvailable && (

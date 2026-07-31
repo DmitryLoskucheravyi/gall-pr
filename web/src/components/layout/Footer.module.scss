@@ -1,15 +1,18 @@
+// Deliberately inverted (deep ink in both themes) — a grounded, modern
+// close to every page. Local literals instead of theme tokens on purpose.
 .footer {
   position: relative;
   z-index: 1;
   margin-top: $spacing-huge;
-  border-top: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  border-top: 1px solid rgba(240, 237, 229, 0.12);
+  background-color: #16140f;
+  color: #f0ede5;
 }
 
 .inner {
   margin: 0 auto;
   max-width: $container-max-width;
-  padding: $spacing-xxxxl $container-padding $spacing-xxl;
+  padding: $spacing-huge $container-padding $spacing-xxl;
 }
 
 .top {
@@ -42,21 +45,21 @@
 .wordmark {
   font-family: $font-display;
   font-weight: 600;
-  font-size: 28px;
-  color: var(--color-text);
-}
+  font-size: 30px;
+  letter-spacing: -0.01em;
+  color: #fdfcf8;
 
-.rule {
-  margin-top: $spacing-xs;
-  height: 2px;
-  width: 32px;
-  background-color: var(--color-accent);
+  &::after {
+    content: '.';
+    color: var(--color-accent);
+  }
 }
 
 .tagline {
   max-width: 340px;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
+  color: rgba(240, 237, 229, 0.6);
+  line-height: 1.65;
+  font-size: 14px;
 }
 
 .column {
@@ -67,23 +70,28 @@
 }
 
 .columnTitle {
-  font-family: $font-display;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text);
+  font-family: $font-sans;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(240, 237, 229, 0.45);
 }
 
 .link {
   font-size: 14px;
-  color: var(--color-text-secondary);
-  transition: color 0.2s ease;
+  color: rgba(240, 237, 229, 0.72);
+  transition:
+    color 0.2s ease,
+    transform 0.25s $ease-out;
 
   &:hover {
-    color: var(--color-primary);
+    color: #fdfcf8;
+    transform: translateX(3px);
   }
 
   &.active {
-    color: var(--color-primary);
+    color: var(--color-accent);
   }
 }
 
@@ -93,31 +101,31 @@
   align-items: center;
   justify-content: space-between;
   gap: $spacing-lg;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(240, 237, 229, 0.14);
   padding-top: $spacing-xl;
 }
 
 .copyright {
   font-size: 13px;
-  color: var(--color-text-muted);
+  color: rgba(240, 237, 229, 0.45);
 }
 
 .topButton {
   display: flex;
-  height: 38px;
-  width: 38px;
+  height: 40px;
+  width: 40px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: $radius-pill;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
+  border: 1px solid rgba(240, 237, 229, 0.25);
+  color: rgba(240, 237, 229, 0.75);
   cursor: pointer;
   transition:
     color 0.2s ease,
     border-color 0.2s ease,
     background-color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.3s $ease-out;
 
   svg {
     height: 17px;
@@ -125,9 +133,9 @@
   }
 
   &:hover {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-    background-color: var(--color-primary-soft);
+    color: #16140f;
+    border-color: #fdfcf8;
+    background-color: #fdfcf8;
     transform: translateY(-3px);
   }
 

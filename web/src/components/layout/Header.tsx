@@ -159,7 +159,6 @@ export default function Header() {
       <div className={styles.inner}>
         <Link to="/" className={styles.logo}>
           <span className={styles.wordmark}>Viktorumm</span>
-          <span className={styles.rule} />
         </Link>
 
         <nav className={styles.nav}>

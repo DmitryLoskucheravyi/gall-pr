@@ -1,8 +1,16 @@
 .card {
   position: relative;
   overflow: hidden;
-  border-radius: $radius-sm;
+  border-radius: $radius-md;
   background-color: var(--color-background-alt);
+  transition:
+    transform 0.35s $ease-out,
+    box-shadow 0.35s $ease-out;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 .linkArea {
@@ -13,11 +21,18 @@
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.6s $ease-out;
 }
 
-.card:hover .image {
-  transform: scale(1.06);
+.imageNatural {
+  width: 100%;
+  height: auto;
+  transition: transform 0.6s $ease-out;
+}
+
+.card:hover .image,
+.card:hover .imageNatural {
+  transform: scale(1.05);
 }
 
 .soldBadge {
@@ -25,8 +40,8 @@
   top: $spacing-md;
   left: $spacing-md;
   z-index: 1;
-  border-radius: $radius-sm;
-  background-color: rgba(0, 0, 0, 0.65);
+  border-radius: $radius-pill;
+  background-color: rgba(10, 8, 6, 0.65);
   backdrop-filter: blur(2px);
   padding: $spacing-xs $spacing-md;
   font-size: 11px;
@@ -44,8 +59,8 @@
   padding: $spacing-lg;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.7),
-    rgba(0, 0, 0, 0) 55%
+    rgba(10, 8, 6, 0.7),
+    rgba(10, 8, 6, 0) 55%
   );
   opacity: 0;
   transition: opacity 0.3s ease;

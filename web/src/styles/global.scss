@@ -11,53 +11,67 @@
 @import '@fontsource/inter/700.css';
 
 :root {
-  --color-background: #ffffff;
-  --color-background-alt: #f5f5f6;
-  --color-surface: #ffffff;
+  --color-background: #f6f4ef;
+  --color-background-alt: #eceae2;
+  --color-surface: #fffefb;
 
-  --color-primary: #6b0f2e;
-  --color-primary-soft: #f4e4e9;
-  --color-on-primary: #ffffff;
+  --color-primary: #1c1a16;
+  --color-primary-soft: #eae7de;
+  --color-on-primary: #f9f8f4;
 
-  --color-accent: #b8935b;
-  --color-accent-soft: #f1e4d0;
-  --color-on-accent: #2b1d0e;
+  --color-accent: #e0521f;
+  --color-accent-soft: #f9e5da;
+  --color-on-accent: #ffffff;
 
-  --color-text: #18181b;
-  --color-text-secondary: #6b6b70;
-  --color-text-muted: #9a9aa1;
+  --color-text: #1c1a16;
+  --color-text-secondary: #6d6961;
+  --color-text-muted: #9b968c;
 
-  --color-border: #e4e4e7;
-  --color-border-strong: #d4d4d8;
+  --color-border: #e3e0d6;
+  --color-border-strong: #cfcabd;
 
   --color-success: #2f7a4d;
   --color-error: #c0392b;
   --color-warning: #b8860b;
+
+  --color-ring: rgba(28, 26, 22, 0.14);
+
+  --shadow-sm: 0 1px 2px rgba(28, 26, 22, 0.05), 0 2px 8px rgba(28, 26, 22, 0.04);
+  --shadow-md:
+    0 2px 6px rgba(28, 26, 22, 0.05), 0 12px 28px -10px rgba(28, 26, 22, 0.14);
+  --shadow-lg:
+    0 4px 12px rgba(28, 26, 22, 0.06), 0 28px 56px -16px rgba(28, 26, 22, 0.22);
 }
 
 .dark {
-  --color-background: #14100f;
-  --color-background-alt: #1b1513;
-  --color-surface: #201a18;
+  --color-background: #121110;
+  --color-background-alt: #191816;
+  --color-surface: #1d1b19;
 
-  --color-primary: #e7c9a9;
-  --color-primary-soft: #332723;
-  --color-on-primary: #1e1310;
+  --color-primary: #f2efe7;
+  --color-primary-soft: #2a2823;
+  --color-on-primary: #161511;
 
-  --color-accent: #c9a468;
-  --color-accent-soft: #2e2620;
-  --color-on-accent: #1a140c;
+  --color-accent: #ff6b42;
+  --color-accent-soft: #33211b;
+  --color-on-accent: #1a0e08;
 
-  --color-text: #f5ede6;
-  --color-text-secondary: #b8a79e;
-  --color-text-muted: #7e6f68;
+  --color-text: #f0ede5;
+  --color-text-secondary: #a8a297;
+  --color-text-muted: #726d64;
 
-  --color-border: #332924;
-  --color-border-strong: #453830;
+  --color-border: #2b2925;
+  --color-border-strong: #3d3a33;
 
   --color-success: #5fae7f;
   --color-error: #e2685a;
   --color-warning: #d9a441;
+
+  --color-ring: rgba(242, 239, 231, 0.18);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 28px -10px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.34), 0 28px 56px -16px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -74,6 +88,8 @@ body {
   background-color: var(--color-background);
   color: var(--color-text);
   font-family: $font-sans;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -104,6 +120,23 @@ button {
 img {
   display: block;
   max-width: 100%;
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
 }
 
 // Theme toggle: expanding-circle reveal from the toggle button, driven by

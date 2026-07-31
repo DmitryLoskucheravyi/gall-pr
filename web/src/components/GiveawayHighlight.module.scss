@@ -3,8 +3,10 @@
   grid-template-columns: 1fr;
   overflow: hidden;
   border-radius: $radius-xxl;
-  background-color: var(--color-background-alt);
-  transition: box-shadow 0.2s ease;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s $ease-out;
 
   @include respond-up($breakpoint-lg) {
     grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
@@ -19,6 +21,7 @@
   position: relative;
   height: 280px;
   width: 100%;
+  overflow: hidden;
 
   @include respond-up($breakpoint-lg) {
     height: 100%;
@@ -29,6 +32,11 @@
   height: 100%;
   width: 100%;
   object-fit: cover;
+  transition: transform 0.7s $ease-out;
+
+  .banner:hover & {
+    transform: scale(1.04);
+  }
 }
 
 .daysBadge {
@@ -76,7 +84,7 @@
 .prize {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 .description {

@@ -23,7 +23,6 @@ export default function Footer() {
           <div className={styles.brand}>
             <Link to="/" className={styles.logo}>
               <span className={styles.wordmark}>Viktorumm</span>
-              <span className={styles.rule} />
             </Link>
             <p className={styles.tagline}>
               Кураторська добірка оригінальних картин{' '}

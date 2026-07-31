@@ -3,7 +3,9 @@
   flex-direction: column;
   overflow: hidden;
   border-radius: $radius-xxl;
-  background-color: var(--color-background-alt);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .imageWrap {

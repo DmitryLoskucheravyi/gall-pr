@@ -1,11 +1,20 @@
 .wrap {
-  max-width: 400px;
-  margin: 0 auto;
+  @include card;
+  @include rise-in($duration: 0.45s);
+  max-width: 440px;
+  margin: $spacing-xxl auto 0;
+  border-radius: $radius-xl;
+  padding: $spacing-xxxl $spacing-xxl;
+
+  @include respond-up($breakpoint-sm) {
+    padding: $spacing-xxxxl;
+  }
 }
 
 .title {
   font-family: $font-display;
   font-size: 32px;
+  letter-spacing: -0.01em;
   color: var(--color-text);
 }
 
@@ -38,5 +47,9 @@
 
 .footerLink {
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-accent);
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
