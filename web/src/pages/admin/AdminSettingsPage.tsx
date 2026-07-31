@@ -5,6 +5,7 @@ import { useSettings } from '../../hooks/queries/useSettings';
 import { useUpdateSettingsMutation } from '../../hooks/mutations/useSettingsMutation';
 import Skeleton from '../../components/ui/Skeleton';
 import NovaPoshtaCityPicker from '../../components/ui/NovaPoshtaCityPicker';
+import FaqAdminEditor from '../../components/admin/FaqAdminEditor';
 import styles from './AdminSettingsPage.module.scss';
 
 export default function AdminSettingsPage() {
@@ -98,6 +99,14 @@ export default function AdminSettingsPage() {
           {updateSettings.isPending ? 'Зберігаємо…' : 'Зберегти'}
         </button>
       </form>
+
+      <h2 className={styles.sectionTitle}>FAQ</h2>
+      <p className={styles.hint}>
+        Питання й відповіді, що показуються в розділі підтримки. Перетягуйте
+        картки, щоб змінити порядок.
+      </p>
+
+      <FaqAdminEditor />
     </div>
   );
 }

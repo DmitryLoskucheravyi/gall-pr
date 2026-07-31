@@ -71,6 +71,9 @@ export const queryKeys = {
   settings: {
     all: ['settings'] as const,
   },
+  faq: {
+    all: ['faq'] as const,
+  },
   support: {
     all: ['support'] as const,
     adminChats: () => [...queryKeys.support.all, 'admin-chats'] as const,

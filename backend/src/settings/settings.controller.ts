@@ -1,7 +1,21 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import {
+  CreateFaqItemDto,
+  ReorderFaqDto,
+  UpdateFaqItemDto,
+} from './dto/faq-item.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -21,5 +35,38 @@ export class SettingsController {
   @Patch()
   update(@Body() dto: UpdateSettingsDto) {
     return this.settingsService.update(dto);
+  }
+
+  @Get('faq')
+  getFaq() {
+    return this.settingsService.getFaq();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Post('faq')
+  createFaqItem(@Body() dto: CreateFaqItemDto) {
+    return this.settingsService.createFaqItem(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('faq/reorder')
+  reorderFaq(@Body() dto: ReorderFaqDto) {
+    return this.settingsService.reorderFaq(dto.order);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('faq/:id')
+  updateFaqItem(@Param('id') id: string, @Body() dto: UpdateFaqItemDto) {
+    return this.settingsService.updateFaqItem(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Delete('faq/:id')
+  deleteFaqItem(@Param('id') id: string) {
+    return this.settingsService.deleteFaqItem(id);
   }
 }

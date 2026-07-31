@@ -64,7 +64,7 @@ export default function Footer() {
           <nav className={styles.column}>
             <h3 className={styles.columnTitle}>Підтримка</h3>
             <NavLink to="/support" className={linkClass}>
-              Чат з підтримкою
+              Підтримка
             </NavLink>
             {!isAuthenticated && (
               <>

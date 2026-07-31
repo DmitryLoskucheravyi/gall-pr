@@ -21,7 +21,7 @@ export default function SupportWidget() {
       .catch(() => {});
   }, [userId]);
 
-  if (!userId || location.pathname === '/support') return null;
+  if (!userId || location.pathname.startsWith('/support')) return null;
 
   return (
     <button

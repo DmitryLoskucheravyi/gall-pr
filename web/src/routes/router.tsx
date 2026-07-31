@@ -15,6 +15,7 @@ const CartPage = lazy(() => import('../pages/CartPage'));
 const OrdersPage = lazy(() => import('../pages/OrdersPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
 const FavoritesPage = lazy(() => import('../pages/FavoritesPage'));
+const FaqPage = lazy(() => import('../pages/FaqPage'));
 const SupportChatPage = lazy(() => import('../pages/SupportChatPage'));
 const DictionariesPage = lazy(() => import('../pages/admin/DictionariesPage'));
 const AdminOrdersPage = lazy(() => import('../pages/admin/AdminOrdersPage'));
@@ -36,12 +37,13 @@ export const router = createBrowserRouter([
       { path: 'register', element: <RegisterPage /> },
       { path: 'cart', element: <CartPage /> },
       { path: 'orders', element: <OrdersPage /> },
+      { path: 'support', element: <FaqPage /> },
       {
         element: <ProtectedRoute />,
         children: [
           { path: 'profile', element: <ProfilePage /> },
           { path: 'favorites', element: <FavoritesPage /> },
-          { path: 'support', element: <SupportChatPage /> },
+          { path: 'support/chat', element: <SupportChatPage /> },
         ],
       },
       {

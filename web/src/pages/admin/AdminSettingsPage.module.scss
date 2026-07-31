@@ -1,5 +1,5 @@
 .wrap {
-  max-width: 400px;
+  max-width: 900px;
 }
 
 .title {
@@ -9,10 +9,19 @@
   color: var(--color-text);
 }
 
+.sectionTitle {
+  margin-top: $spacing-xxxl;
+  margin-bottom: $spacing-sm;
+  font-family: $font-display;
+  font-size: 22px;
+  color: var(--color-text);
+}
+
 .form {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+  max-width: 400px;
 }
 
 .label {
