@@ -1,14 +1,15 @@
 @use 'variables' as *;
 
-@import '@fontsource/playfair-display/400.css';
-@import '@fontsource/playfair-display/500.css';
-@import '@fontsource/playfair-display/600.css';
-@import '@fontsource/playfair-display/700.css';
-@import '@fontsource/playfair-display/600-italic.css';
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
+@import '@fontsource/cormorant-garamond/500.css';
+@import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource/cormorant-garamond/700.css';
+@import '@fontsource/cormorant-garamond/500-italic.css';
+@import '@fontsource/cormorant-garamond/600-italic.css';
+@import '@fontsource/tenor-sans/400.css';
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
 
 :root {
   --color-background: #f6f4ef;
@@ -90,6 +91,8 @@ body {
   font-family: $font-sans;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  // Cormorant defaults to oldstyle figures; prices and counts need lining ones
+  font-variant-numeric: lining-nums;
 }
 
 h1,
@@ -97,6 +100,7 @@ h2,
 h3 {
   margin: 0;
   font-family: $font-display;
+  font-weight: 600;
 }
 
 p,

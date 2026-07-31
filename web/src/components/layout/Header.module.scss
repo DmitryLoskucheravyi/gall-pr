@@ -33,9 +33,9 @@
 
 .wordmark {
   font-family: $font-display;
-  font-weight: 600;
-  font-size: 26px;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: 0.01em;
   color: var(--color-text);
 
   &::after {
@@ -153,9 +153,10 @@
 
 .mobileGroupLabel {
   padding: 0 $spacing-lg;
+  font-family: $font-accent;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 400;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
@@ -185,9 +186,11 @@
 .navLink {
   position: relative;
   padding-bottom: 3px;
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-family: $font-accent;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   color: var(--color-text-secondary);
   transition: color 0.2s ease;
 

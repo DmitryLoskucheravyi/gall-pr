@@ -13,40 +13,43 @@
   margin: 0 auto;
   max-width: $container-max-width;
   padding: $spacing-huge $container-padding $spacing-xxl;
+
+  @include respond-up($breakpoint-md) {
+    padding: 72px $container-padding $spacing-xxxl;
+  }
 }
 
-.top {
+// ---------- Main: brand + link columns ----------
+
+.main {
   display: grid;
   grid-template-columns: 1fr;
-  gap: $spacing-xxxl;
-  padding-bottom: $spacing-xxxxl;
-
-  @include respond-up($breakpoint-sm) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  gap: $spacing-huge $spacing-xxxl;
+  padding-bottom: $spacing-huge;
 
   @include respond-up($breakpoint-lg) {
-    grid-template-columns: minmax(0, 340px) repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr);
+    gap: $spacing-huge;
   }
 }
 
 .brand {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: $spacing-lg;
+  max-width: 400px;
 }
 
 .logo {
-  display: flex;
-  flex-direction: column;
   line-height: 1;
 }
 
 .wordmark {
   font-family: $font-display;
-  font-weight: 600;
-  font-size: 30px;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  font-size: 34px;
+  letter-spacing: 0.01em;
   color: #fdfcf8;
 
   &::after {
@@ -56,10 +59,21 @@
 }
 
 .tagline {
-  max-width: 340px;
   color: rgba(240, 237, 229, 0.6);
   line-height: 1.65;
   font-size: 14px;
+}
+
+// Link columns: 2-up on phones (compact, no tall single stack),
+// 3-up once there is room.
+.links {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-xxxl $spacing-lg;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .column {
@@ -67,13 +81,15 @@
   flex-direction: column;
   align-items: flex-start;
   gap: $spacing-md;
+  min-width: 0;
 }
 
 .columnTitle {
-  font-family: $font-sans;
+  margin-bottom: $spacing-xs;
+  font-family: $font-accent;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 400;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(240, 237, 229, 0.45);
 }
@@ -95,14 +111,55 @@
   }
 }
 
+// ---------- Info strip: payment / delivery / guarantee ----------
+
+.info {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+  border-top: 1px solid rgba(240, 237, 229, 0.14);
+  padding: $spacing-xxl 0;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xxl;
+  }
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.infoLabel {
+  font-family: $font-accent;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(240, 237, 229, 0.4);
+}
+
+.infoValue {
+  font-size: 14px;
+  color: rgba(240, 237, 229, 0.85);
+}
+
+// ---------- Bottom bar ----------
+
 .bottom {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column-reverse;
+  align-items: flex-start;
   gap: $spacing-lg;
   border-top: 1px solid rgba(240, 237, 229, 0.14);
   padding-top: $spacing-xl;
+
+  @include respond-up($breakpoint-sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 .copyright {
@@ -111,14 +168,16 @@
 }
 
 .topButton {
-  display: flex;
-  height: 40px;
-  width: 40px;
-  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: $spacing-sm;
   border-radius: $radius-pill;
   border: 1px solid rgba(240, 237, 229, 0.25);
+  padding: $spacing-sm $spacing-lg;
+  font-family: $font-accent;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: rgba(240, 237, 229, 0.75);
   cursor: pointer;
   transition:
@@ -128,18 +187,18 @@
     transform 0.3s $ease-out;
 
   svg {
-    height: 17px;
-    width: 17px;
+    height: 15px;
+    width: 15px;
   }
 
   &:hover {
     color: #16140f;
     border-color: #fdfcf8;
     background-color: #fdfcf8;
-    transform: translateY(-3px);
+    transform: translateY(-2px);
   }
 
   &:active {
-    transform: translateY(-1px);
+    transform: translateY(0);
   }
 }

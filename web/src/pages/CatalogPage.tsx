@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { Painting } from '../types/painting.types';
 import { useTechniques } from '../hooks/queries/useTechniques';
@@ -10,7 +10,6 @@ import PaintingCard from '../components/PaintingCard';
 import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import CatalogFilters from '../components/CatalogFilters';
-import CatalogWalker from '../components/CatalogWalker';
 import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import { useAppSelector } from '../store/hooks';
 import styles from './CatalogPage.module.scss';
@@ -32,8 +31,6 @@ export default function CatalogPage() {
     null,
   );
   const [priceFilter, setPriceFilter] = useState<PriceRange | null>(null);
-
-  const gridRef = useRef<HTMLDivElement>(null);
 
   const { data: techniques = [] } = useTechniques();
   const { data: priceBounds = null } = usePriceRange();
@@ -124,7 +121,7 @@ export default function CatalogPage() {
             : 'Картин поки немає'}
         </p>
       ) : (
-        <div className={styles.grid} ref={gridRef}>
+        <div className={styles.grid}>
           {visiblePaintings.map((painting) => (
             <PaintingCard
               key={painting.id}
@@ -135,7 +132,6 @@ export default function CatalogPage() {
               onDelete={() => handleDelete(painting)}
             />
           ))}
-          <CatalogWalker gridRef={gridRef} count={visiblePaintings.length} />
         </div>
       )}
 

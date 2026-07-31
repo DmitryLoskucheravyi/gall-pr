@@ -188,7 +188,8 @@
 .price {
   margin-top: $spacing-lg;
   font-family: $font-display;
-  font-size: 30px;
+  font-size: 34px;
+  font-weight: 600;
   color: var(--color-primary);
 }
 
@@ -253,6 +254,7 @@
 .sectionTitle {
   font-family: $font-display;
   font-size: 20px;
+  font-weight: 600;
   color: var(--color-text);
 }
 

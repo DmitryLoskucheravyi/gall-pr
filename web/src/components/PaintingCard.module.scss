@@ -53,7 +53,8 @@
 .title {
   overflow: hidden;
   font-family: $font-display;
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -77,7 +78,8 @@
 .price {
   margin-top: $spacing-sm;
   font-family: $font-display;
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 600;
   color: var(--color-primary);
 }
 

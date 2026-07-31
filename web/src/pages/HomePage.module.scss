@@ -30,8 +30,9 @@
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
   padding: 6px $spacing-lg;
+  font-family: $font-accent;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.14em;
   color: var(--color-text-secondary);
   text-transform: uppercase;
@@ -107,7 +108,8 @@
 
 .statValue {
   font-family: $font-display;
-  font-size: 30px;
+  font-size: 34px;
+  font-weight: 600;
   line-height: 1;
   color: var(--color-text);
 }
@@ -201,7 +203,8 @@
   padding: $spacing-xxl $spacing-md $spacing-sm;
   background: linear-gradient(to top, rgba(10, 8, 6, 0.72), transparent);
   font-family: $font-display;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
   color: #fff;
   opacity: 0;
   transform: translateY(6px);
@@ -256,7 +259,8 @@
   gap: $spacing-xxxl;
   padding-right: $spacing-xxxl;
   font-family: $font-display;
-  font-size: 18px;
+  font-size: 21px;
+  font-weight: 500;
   font-style: italic;
   white-space: nowrap;
   color: var(--color-text-secondary);

@@ -11,7 +11,7 @@ export default function SupportChatPage() {
   const [loading, setLoading] = useState(true);
 
   const socket = useSupportSocket(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supportService
@@ -34,8 +34,11 @@ export default function SupportChatPage() {
     };
   }, [socket]);
 
+  // Scroll only the messages container, never the page. scrollIntoView would
+  // bubble up and yank the whole window down to the footer on each new message.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -52,7 +55,7 @@ export default function SupportChatPage() {
       <h1 className={styles.title}>Підтримка</h1>
 
       <div className={styles.panel}>
-        <div className={styles.messages}>
+        <div ref={messagesRef} className={styles.messages}>
           {loading ? (
             <p className={styles.empty}>Завантаження…</p>
           ) : messages.length === 0 ? (
@@ -71,7 +74,6 @@ export default function SupportChatPage() {
               </div>
             ))
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>

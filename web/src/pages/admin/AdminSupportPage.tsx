@@ -30,7 +30,14 @@ export default function AdminSupportPage() {
   const [input, setInput] = useState('');
 
   const socket = useSupportSocket(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+
+  // Scroll only the messages container, never the page. scrollIntoView would
+  // bubble up and yank the whole window down to the footer.
+  const scrollMessagesToBottom = () => {
+    const el = messagesRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  };
 
   useEffect(() => {
     supportService
@@ -71,7 +78,7 @@ export default function AdminSupportPage() {
     const handleMessage = (message: SupportMessage) => {
       if (message.chatId === selectedChatId) {
         setMessages((prev) => [...prev, message]);
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        scrollMessagesToBottom();
       }
     };
 
@@ -189,7 +196,7 @@ export default function AdminSupportPage() {
                 </div>
               </div>
 
-              <div className={styles.threadMessages}>
+              <div ref={messagesRef} className={styles.threadMessages}>
                 {loadingMessages ? (
                   <p className={styles.muted}>Завантаження…</p>
                 ) : (
@@ -204,7 +211,6 @@ export default function AdminSupportPage() {
                     </div>
                   ))
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               <form onSubmit={handleSubmit} className={styles.threadForm}>
