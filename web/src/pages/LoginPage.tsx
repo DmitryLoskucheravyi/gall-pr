@@ -32,7 +32,7 @@ export default function LoginPage() {
         await mergeGuestCart.mutateAsync(guestToken).catch(() => {});
       }
 
-      navigate('/');
+      navigate(auth.user.isVerified ? '/' : '/verify-email');
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Не вдалося увійти');
     } finally {

@@ -20,6 +20,7 @@ import { CheckoutDto } from './dto/checkout.dto';
 import { Identity } from '../common/identity.util';
 import { PaymentsService } from '../payments/payments.service';
 import { NovaPoshtaService } from '../nova-poshta/nova-poshta.service';
+import { UsersService } from '../users/users.service';
 import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
 
 // Shared by both CartItem and Order lookups — both entities key guest rows
@@ -44,6 +45,7 @@ export class OrdersService {
 
     private readonly paymentsService: PaymentsService,
     private readonly novaPoshtaService: NovaPoshtaService,
+    private readonly usersService: UsersService,
   ) {}
 
   async checkout(
@@ -56,6 +58,19 @@ export class OrdersService {
       throw new BadRequestException(
         "Вкажіть ім'я та телефон для оформлення замовлення",
       );
+    }
+
+    // Registered users must have a verified email to place an order (guests
+    // are exempt — they have no account to verify).
+    if (!isGuest) {
+      const user = await this.usersService.findById(
+        (identity as { userId: number }).userId,
+      );
+      if (!user?.isVerified) {
+        throw new BadRequestException(
+          'Підтвердіть email, щоб оформити замовлення',
+        );
+      }
     }
 
     if (
