@@ -11,6 +11,7 @@ import GiveawayHighlight, {
 } from '../components/GiveawayHighlight';
 import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
 import Skeleton from '../components/ui/Skeleton';
+import Reveal from '../components/ui/Reveal';
 import styles from './HomePage.module.scss';
 
 const MARQUEE_ITEMS = [
@@ -136,9 +137,9 @@ export default function HomePage() {
           <NewsBannerSkeleton />
         </section>
       ) : latestNews ? (
-        <section className={styles.section}>
+        <Reveal as="section" className={styles.section}>
           <NewsBanner news={latestNews} />
-        </section>
+        </Reveal>
       ) : null}
 
       {giveawayLoading ? (
@@ -146,13 +147,13 @@ export default function HomePage() {
           <GiveawayHighlightSkeleton />
         </section>
       ) : giveaway ? (
-        <section className={styles.section}>
+        <Reveal as="section" className={styles.section}>
           <GiveawayHighlight giveaway={giveaway} />
-        </section>
+        </Reveal>
       ) : null}
 
       <section className={styles.section}>
-        <div className={styles.sectionHeader}>
+        <Reveal className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Рекомендовані</h2>
           <Link
             to="/catalog"
@@ -169,7 +170,7 @@ export default function HomePage() {
               />
             </svg>
           </Link>
-        </div>
+        </Reveal>
 
         {loading ? (
           <FeaturedStackSkeleton />
@@ -180,7 +181,7 @@ export default function HomePage() {
         )}
       </section>
 
-      <section className={styles.values}>
+      <Reveal as="section" className={styles.values}>
         <div className={styles.valueCard}>
           <span className={styles.valueIcon}>
             <svg viewBox="0 0 24 24" fill="none">
@@ -257,9 +258,9 @@ export default function HomePage() {
             Оплата при отриманні або переказ на карту — як вам зручніше.
           </p>
         </div>
-      </section>
+      </Reveal>
 
-      <section className={styles.ctaBand}>
+      <Reveal as="section" className={styles.ctaBand}>
         <h2 className={styles.ctaTitle}>
           Знайдіть картину, яка <em>заговорить</em> до вас
         </h2>
@@ -275,7 +276,7 @@ export default function HomePage() {
             />
           </svg>
         </Link>
-      </section>
+      </Reveal>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import type { Painting } from '../types/painting.types';
 import { useCoarsePointer } from '../hooks/useCoarsePointer';
+import { useInView } from '../hooks/useInView';
 import LikeButton from './ui/LikeButton';
 import Skeleton from './ui/Skeleton';
 import styles from './FeaturedStack.module.scss';
@@ -50,20 +51,29 @@ export default function FeaturedStack({ paintings }: Props) {
   // permanently hidden. Skip the inline transform there and let the
   // stylesheet's (hover: none) rules render a plain scrollable strip.
   const isCoarsePointer = useCoarsePointer();
+  // Slide the cards in from the right once the strip scrolls into view.
+  const { ref, inView } = useInView<HTMLDivElement>(0.1);
 
   return (
-    <div className={styles.stack}>
+    <div
+      ref={ref}
+      className={`${styles.stack} ${inView ? styles.revealed : ''}`}
+    >
       {paintings.map((painting, index) => (
         <div
           key={painting.id}
           className={`${styles.photo} ${
             hoveredIndex === index ? styles.active : ''
           }`}
-          style={
-            isCoarsePointer
-              ? undefined
-              : photoStyle(index, hoveredIndex, paintings.length)
-          }
+          style={{
+            // `--i` drives the staggered slide-in reveal (see .scss). It lives
+            // in `translate`, kept separate from the fan's `transform` so the
+            // two never fight.
+            ['--i' as string]: index,
+            ...(isCoarsePointer
+              ? {}
+              : photoStyle(index, hoveredIndex, paintings.length)),
+          }}
           onMouseEnter={() => setHoveredIndex(index)}
           onMouseLeave={() => setHoveredIndex(null)}
         >
@@ -92,7 +102,7 @@ export default function FeaturedStack({ paintings }: Props) {
 
 export function FeaturedStackSkeleton({ count = 7 }: { count?: number }) {
   return (
-    <div className={styles.stack}>
+    <div className={`${styles.stack} ${styles.revealed}`}>
       {Array.from({ length: count }).map((_, index) => (
         <Skeleton
           key={index}

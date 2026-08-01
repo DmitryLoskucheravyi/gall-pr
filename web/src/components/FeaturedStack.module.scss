@@ -1,51 +1,68 @@
+// Mobile-first: a horizontal, snap-scrolling strip of cards. On hover-capable
+// pointers (desktop) it upgrades to the fanned 3D deck.
 .stack {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  height: 560px;
-  padding-inline: $spacing-xxxxl;
-  perspective: 1600px;
+  gap: $spacing-md;
+  padding-inline: $container-padding;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 
-  @media (hover: none) {
-    height: auto;
-    gap: $spacing-md;
-    padding-inline: $container-padding;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
+  @media (hover: hover) {
+    gap: 0;
+    height: 560px;
+    padding-inline: $spacing-xxxxl;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    perspective: 1600px;
   }
 }
 
 .photo {
   position: relative;
   flex-shrink: 0;
-  width: 290px;
+  width: 200px;
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: $radius-md;
   background-color: var(--color-background-alt);
   box-shadow: -6px 10px 22px rgba(0, 0, 0, 0.3);
+  scroll-snap-align: start;
   transform-origin: left center;
   transform-style: preserve-3d;
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  --like-opacity: 0;
+  // `transform` drives the fan/hover; `translate` + `opacity` drive the
+  // slide-in reveal (staggered per card via `--i`). Keeping them on separate
+  // properties lets both run without fighting each other.
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.6s $ease-out,
+    opacity 0.6s $ease-out;
+  transition-delay: 0s, calc(var(--i, 0) * 55ms), calc(var(--i, 0) * 55ms);
+  --like-opacity: 1;
 
-  &:not(:first-child) {
-    margin-left: -162px;
-  }
-
-  &.active {
-    --like-opacity: 1;
-  }
-
-  @media (hover: none) {
-    width: 200px;
-    scroll-snap-align: start;
-    --like-opacity: 1;
+  @media (hover: hover) {
+    width: 290px;
+    scroll-snap-align: none;
+    --like-opacity: 0;
 
     &:not(:first-child) {
-      margin-left: 0;
+      margin-left: -162px;
     }
+
+    &.active {
+      --like-opacity: 1;
+    }
+  }
+}
+
+// Hidden/offset state before the strip scrolls into view. `.revealed` (added
+// by IntersectionObserver) drops this rule, so each card transitions back to
+// its natural position — sliding in from the right, staggered by `--i`.
+@media (prefers-reduced-motion: no-preference) {
+  .stack:not(.revealed) .photo {
+    opacity: 0;
+    translate: 44px 0;
   }
 }
 
@@ -75,15 +92,16 @@
   font-size: 17px;
   font-weight: 600;
   color: #fff;
-  opacity: 0;
-  transform: translateY(6px);
+  // Visible by default (mobile); on desktop it hides and reveals on hover.
+  opacity: 1;
+  transform: translateY(0);
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
 
-  @media (hover: none) {
-    opacity: 1;
-    transform: translateY(0);
+  @media (hover: hover) {
+    opacity: 0;
+    transform: translateY(6px);
   }
 }
 
