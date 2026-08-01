@@ -2,33 +2,31 @@
 
 @mixin button-base {
   position: relative;
+  z-index: 0;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: $spacing-sm;
-  border-radius: $radius-pill;
+  border-radius: $radius-md;
   border: 1px solid transparent;
   font-family: $font-sans;
   font-weight: 600;
   font-size: 15px;
   letter-spacing: 0.01em;
   cursor: pointer;
+  // Hover restyles colour in place — no vertical shift. A tiny press on
+  // :active is the only movement.
   transition:
-    opacity $duration-fast ease,
-    background-color $duration-fast ease,
-    border-color $duration-fast ease,
-    color $duration-fast ease,
-    transform $duration-base $ease-out,
-    box-shadow $duration-base $ease-out;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
+    color $duration-base ease,
+    background-color $duration-base ease,
+    border-color $duration-base ease,
+    box-shadow $duration-base ease,
+    transform $duration-fast ease,
+    opacity $duration-fast ease;
 
   &:active:not(:disabled) {
-    transform: translateY(0) scale(0.98);
-    box-shadow: var(--shadow-sm);
+    transform: scale(0.97);
   }
 
   &:disabled {
@@ -37,11 +35,34 @@
   }
 }
 
+// "Pixel dissolve" hover: on hover the fill colour floods the button as many
+// small squares appearing in a pseudo-random order. The square grid itself is
+// injected + animated by the global <PixelFill /> manager (it can't be done in
+// pure CSS — every cell needs its own random delay). This mixin just marks the
+// button (`--pixel`), hands it the fill colour (`--pixel-color`), and flips the
+// text colour / shadow on hover. Reduced-motion falls back to this plain swap.
+@mixin pixel-fill($fill, $on-fill) {
+  --pixel: 1;
+  --pixel-color: #{$fill};
+
+  &:hover:not(:disabled) {
+    color: $on-fill;
+  }
+
+  // No JS grid for reduced-motion users — swap the fill instantly instead.
+  @media (prefers-reduced-motion: reduce) {
+    &:hover:not(:disabled) {
+      background-color: $fill;
+    }
+  }
+}
+
 @mixin button-primary {
   @include button-base;
   padding: $spacing-md $spacing-xxl;
   background-color: var(--color-primary);
   color: var(--color-on-primary);
+  @include pixel-fill(var(--color-accent), var(--color-on-accent));
 }
 
 @mixin button-secondary {
@@ -50,9 +71,10 @@
   background-color: var(--color-surface);
   border-color: var(--color-border-strong);
   color: var(--color-text);
+  @include pixel-fill(var(--color-primary), var(--color-on-primary));
 
   &:hover:not(:disabled) {
-    border-color: var(--color-text);
+    border-color: var(--color-primary);
   }
 }
 
@@ -61,6 +83,7 @@
   padding: $spacing-md $spacing-xxl;
   background-color: var(--color-error);
   color: #fff;
+  @include pixel-fill(color-mix(in srgb, var(--color-error) 82%, #000), #fff);
 }
 
 // Chrome/Firefox paint autofilled inputs with an opaque native background
@@ -124,7 +147,7 @@
   &:hover {
     transform: translateY(-4px);
     border-color: var(--color-border-strong);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-card-hover);
   }
 }
 

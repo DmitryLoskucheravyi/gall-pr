@@ -1,0 +1,21 @@
+// Injected into every pixel-fill button by <PixelFill />. Sits above the
+// button's own background but below its text (z-index -1 inside the button's
+// stacking context), and never intercepts clicks.
+.grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: grid;
+  pointer-events: none;
+}
+
+.cell {
+  background-color: var(--pixel-color, var(--color-accent));
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  // per-cell transition-delay is set inline (random) for the scattered reveal
+}
+
+.active .cell {
+  opacity: 1;
+}

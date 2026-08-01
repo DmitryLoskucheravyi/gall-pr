@@ -20,8 +20,8 @@
   --color-primary-soft: #eae7de;
   --color-on-primary: #f9f8f4;
 
-  --color-accent: #e0521f;
-  --color-accent-soft: #f9e5da;
+  --color-accent: #551126;
+  --color-accent-soft: #ecd6dd;
   --color-on-accent: #ffffff;
 
   --color-text: #1c1a16;
@@ -42,6 +42,9 @@
     0 2px 6px rgba(28, 26, 22, 0.05), 0 12px 28px -10px rgba(28, 26, 22, 0.14);
   --shadow-lg:
     0 4px 12px rgba(28, 26, 22, 0.06), 0 28px 56px -16px rgba(28, 26, 22, 0.22);
+  // Tighter, less-blurred shadow for product-card hover
+  --shadow-card-hover:
+    0 4px 10px -4px rgba(28, 26, 22, 0.12), 0 12px 22px -12px rgba(28, 26, 22, 0.22);
 }
 
 .dark {
@@ -53,9 +56,9 @@
   --color-primary-soft: #2a2823;
   --color-on-primary: #161511;
 
-  --color-accent: #ff6b42;
-  --color-accent-soft: #33211b;
-  --color-on-accent: #1a0e08;
+  --color-accent: #983751;
+  --color-accent-soft: #261519;
+  --color-on-accent: #ffffff;
 
   --color-text: #f0ede5;
   --color-text-secondary: #a8a297;
@@ -73,6 +76,8 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.22);
   --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 28px -10px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.34), 0 28px 56px -16px rgba(0, 0, 0, 0.6);
+  --shadow-card-hover:
+    0 4px 10px -4px rgba(0, 0, 0, 0.45), 0 12px 22px -12px rgba(0, 0, 0, 0.6);
 }
 
 * {

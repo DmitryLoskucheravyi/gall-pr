@@ -279,7 +279,6 @@
   position: relative;
   z-index: 1;
   margin-top: $spacing-huge;
-  @include reveal;
 
   @include respond-up($breakpoint-lg) {
     margin-top: 72px;
@@ -352,7 +351,6 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: $spacing-lg;
-  @include reveal;
 
   @include respond-up($breakpoint-md) {
     grid-template-columns: repeat(3, 1fr);
@@ -415,18 +413,17 @@
   background:
     radial-gradient(
       520px 280px at 14% -10%,
-      rgba(224, 82, 31, 0.28),
+      rgba(95, 18, 44, 0.5),
       transparent 65%
     ),
     radial-gradient(
       520px 300px at 90% 115%,
-      rgba(224, 82, 31, 0.18),
+      rgba(95, 18, 44, 0.34),
       transparent 62%
     ),
     #16140f;
   padding: $spacing-huge $spacing-xl;
   text-align: center;
-  @include reveal;
 
   @include respond-up($breakpoint-lg) {
     margin-top: 72px;
@@ -444,12 +441,13 @@
 
   em {
     font-style: italic;
-    color: #ff8a5e;
+    color: #cf7089;
   }
 }
 
 .ctaBandButton {
   @include button-base;
+  @include pixel-fill(var(--color-accent), var(--color-on-accent));
   padding: $spacing-lg $spacing-xxxl;
   background-color: #f7f4ec;
   color: #16140f;

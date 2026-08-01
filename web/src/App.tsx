@@ -5,6 +5,7 @@ import { router } from './routes/router';
 import { useMeQuery } from './hooks/queries/useMe';
 import { useAppSelector } from './store/hooks';
 import Toast from './components/ui/Toast';
+import PixelFill from './components/ui/PixelFill';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
 
 // Statically importing the devtools would ship them in the production
@@ -31,6 +32,7 @@ function App() {
     <ConfirmProvider>
       <RouterProvider router={router} />
       <Toast />
+      <PixelFill />
       {ReactQueryDevtools && (
         <Suspense fallback={null}>
           <ReactQueryDevtools initialIsOpen={false} />

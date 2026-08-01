@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr;
   overflow: hidden;
-  border-radius: $radius-xxl;
+  border-radius: $radius-lg;
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
   box-shadow: var(--shadow-sm);
@@ -133,7 +133,7 @@
 
 .skeleton {
   height: 280px;
-  border-radius: $radius-xxl;
+  border-radius: $radius-lg;
   background-color: var(--color-background-alt);
 
   @include respond-up($breakpoint-lg) {
