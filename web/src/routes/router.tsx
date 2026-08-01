@@ -19,6 +19,7 @@ const FavoritesPage = lazy(() => import('../pages/FavoritesPage'));
 const FaqPage = lazy(() => import('../pages/FaqPage'));
 const SupportChatPage = lazy(() => import('../pages/SupportChatPage'));
 const DictionariesPage = lazy(() => import('../pages/admin/DictionariesPage'));
+const AdminUsersPage = lazy(() => import('../pages/admin/AdminUsersPage'));
 const AdminOrdersPage = lazy(() => import('../pages/admin/AdminOrdersPage'));
 const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
 const AdminSupportPage = lazy(() => import('../pages/admin/AdminSupportPage'));
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute adminOnly />,
         children: [
           { path: 'admin/dictionaries', element: <DictionariesPage /> },
+          { path: 'admin/users', element: <AdminUsersPage /> },
           { path: 'admin/orders', element: <AdminOrdersPage /> },
           { path: 'admin/settings', element: <AdminSettingsPage /> },
           { path: 'admin/support', element: <AdminSupportPage /> },

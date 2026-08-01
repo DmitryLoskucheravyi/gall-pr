@@ -68,6 +68,10 @@ export const queryKeys = {
       [...queryKeys.orders.all, 'mine', identity] as const,
     admin: () => [...queryKeys.orders.all, 'admin'] as const,
   },
+  users: {
+    all: ['users'] as const,
+    admin: () => [...queryKeys.users.all, 'admin'] as const,
+  },
   settings: {
     all: ['settings'] as const,
   },

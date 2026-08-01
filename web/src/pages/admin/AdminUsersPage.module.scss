@@ -1,0 +1,116 @@
+.title {
+  margin-bottom: $spacing-lg;
+  font-family: $font-display;
+  font-size: clamp(30px, 4vw, 40px);
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.count {
+  margin-bottom: $spacing-lg;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.row {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+
+  @include respond-up($breakpoint-sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-lg;
+  }
+}
+
+.info {
+  min-width: 0;
+  flex: 1;
+}
+
+.nameRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.name {
+  font-family: $font-display;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.adminBadge {
+  border-radius: $radius-pill;
+  background-color: var(--color-primary);
+  padding: 2px $spacing-sm;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-on-primary);
+}
+
+.verified {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.unverified {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-warning);
+}
+
+.meta {
+  margin-top: $spacing-xs;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.email {
+  color: var(--color-text);
+
+  &:hover {
+    color: var(--color-accent);
+  }
+}
+
+.date {
+  color: var(--color-text-muted);
+}
+
+.deleteButton {
+  @include button-danger;
+  flex-shrink: 0;
+  padding: $spacing-sm $spacing-lg;
+  font-size: 14px;
+}
+
+.rowSkeleton {
+  height: 78px;
+  width: 100%;
+  border-radius: $radius-lg;
+}

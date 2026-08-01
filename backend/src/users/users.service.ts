@@ -1,13 +1,22 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import { User } from './entities/user.entity';
+import { Order } from '../orders/entities/order.entity';
+import { PaintingLike } from '../likes/entities/painting-like.entity';
+import { CartItem } from '../cart/entities/cart-item.entity';
+import { SupportChat } from '../support/entities/support-chat.entity';
+import { SupportMessage } from '../support/entities/support-message.entity';
+import { GiveawayParticipant } from '../giveaways/entities/giveaway-participant.entity';
+
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async findByEmail(email: string): Promise<User | null> {
@@ -29,5 +38,56 @@ export class UsersService {
     refreshToken: string | null,
   ): Promise<void> {
     await this.usersRepository.update(userId, { refreshToken });
+  }
+
+  async update(userId: number, data: Partial<User>): Promise<void> {
+    await this.usersRepository.update(userId, data);
+  }
+
+  // Admin listing — never exposes password/refresh/verification secrets.
+  async findAllAdmin() {
+    return this.usersRepository.find({
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isVerified: true,
+        isActive: true,
+        createdAt: true,
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // Deletes a user and their owned data in one transaction. Orders are kept
+  // (business records) but anonymised — their user_id is nulled so history and
+  // stock stay intact.
+  async remove(id: number, requesterId: number): Promise<void> {
+    if (id === requesterId) {
+      throw new BadRequestException('Не можна видалити власний акаунт');
+    }
+
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('Користувача не знайдено');
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.update(Order, { userId: id }, { userId: null });
+      await manager.delete(PaintingLike, { userId: id });
+      await manager.delete(CartItem, { userId: id });
+      await manager.delete(GiveawayParticipant, { userId: id });
+
+      const chats = await manager.find(SupportChat, { where: { userId: id } });
+      const chatIds = chats.map((c) => c.id);
+      if (chatIds.length) {
+        await manager.delete(SupportMessage, { chatId: In(chatIds) });
+      }
+      await manager.delete(SupportMessage, { senderId: id });
+      await manager.delete(SupportChat, { userId: id });
+
+      await manager.delete(User, id);
+    });
   }
 }

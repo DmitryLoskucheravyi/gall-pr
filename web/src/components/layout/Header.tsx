@@ -204,6 +204,9 @@ export default function Header() {
                   <NavLink to="/admin/dictionaries" className={adminNavLinkClass}>
                     Матеріали і техніки
                   </NavLink>
+                  <NavLink to="/admin/users" className={adminNavLinkClass}>
+                    Користувачі
+                  </NavLink>
                   <NavLink to="/admin/orders" className={adminNavLinkClass}>
                     Замовлення
                     {pendingOrdersCount > 0 && (
@@ -374,6 +377,9 @@ export default function Header() {
                 <span className={styles.mobileGroupLabel}>Адмін</span>
                 <NavLink to="/admin/dictionaries" className={mobileNavLinkClass}>
                   Матеріали і техніки
+                </NavLink>
+                <NavLink to="/admin/users" className={mobileNavLinkClass}>
+                  Користувачі
                 </NavLink>
                 <NavLink to="/admin/orders" className={mobileNavLinkClass}>
                   Замовлення
