@@ -17,6 +17,7 @@ import {
   useUpdateNewsMutation,
 } from '../../hooks/mutations/useNewsMutations';
 import Select from '../../components/ui/Select';
+import { useConfirm } from '../../components/ui/ConfirmDialog';
 import { useAppDispatch } from '../../store/hooks';
 import { showToast } from '../../store/slices/toastSlice';
 import styles from './AdminGiveawaysPage.module.scss';
@@ -42,6 +43,7 @@ export default function AdminGiveawaysPage() {
   const createNews = useCreateNewsMutation();
   const updateNews = useUpdateNewsMutation();
   const deleteNews = useDeleteNewsMutation();
+  const confirm = useConfirm();
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
@@ -111,8 +113,14 @@ export default function AdminGiveawaysPage() {
     }
   };
 
-  const handleDelete = (giveaway: Giveaway) => {
-    if (!window.confirm(`Видалити розіграш "${giveaway.title}"?`)) return;
+  const handleDelete = async (giveaway: Giveaway) => {
+    const ok = await confirm({
+      title: 'Видалити розіграш?',
+      message: `«${giveaway.title}» буде видалено.`,
+      confirmLabel: 'Видалити',
+      danger: true,
+    });
+    if (!ok) return;
     deleteGiveaway.mutate(giveaway.id);
   };
 
@@ -188,8 +196,14 @@ export default function AdminGiveawaysPage() {
     }
   };
 
-  const handleNewsDelete = (item: News) => {
-    if (!window.confirm(`Видалити новину "${item.title}"?`)) return;
+  const handleNewsDelete = async (item: News) => {
+    const ok = await confirm({
+      title: 'Видалити новину?',
+      message: `«${item.title}» буде видалено.`,
+      confirmLabel: 'Видалити',
+      danger: true,
+    });
+    if (!ok) return;
     deleteNews.mutate(item.id);
   };
 

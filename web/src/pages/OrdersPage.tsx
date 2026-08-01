@@ -4,14 +4,23 @@ import type { Order } from '../types/order.types';
 import Skeleton from '../components/ui/Skeleton';
 import OrderPreviewCard from '../components/OrderPreviewCard';
 import cardStyles from '../components/OrderPreviewCard.module.scss';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 import styles from './OrdersPage.module.scss';
 
 export default function OrdersPage() {
   const { data: orders = [], isLoading: loading } = useMyOrders();
   const cancelOrder = useCancelOrderMutation();
+  const confirm = useConfirm();
 
-  const handleCancel = (order: Order) => {
-    if (!window.confirm(`Скасувати замовлення №${order.id}?`)) return;
+  const handleCancel = async (order: Order) => {
+    const ok = await confirm({
+      title: `Скасувати замовлення №${order.id}?`,
+      message: 'Цю дію не можна скасувати.',
+      confirmLabel: 'Скасувати замовлення',
+      cancelLabel: 'Назад',
+      danger: true,
+    });
+    if (!ok) return;
     cancelOrder.mutate(order.id);
   };
 

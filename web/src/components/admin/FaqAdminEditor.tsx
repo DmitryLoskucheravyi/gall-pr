@@ -9,6 +9,7 @@ import {
   useUpdateFaqItemMutation,
 } from '../../hooks/mutations/useFaqMutations';
 import FaqAccordion from '../ui/FaqAccordion';
+import { useConfirm } from '../ui/ConfirmDialog';
 import styles from './FaqAdminEditor.module.scss';
 
 function FaqEditorItem({
@@ -90,6 +91,7 @@ export default function FaqAdminEditor() {
   const updateItem = useUpdateFaqItemMutation();
   const deleteItem = useDeleteFaqItemMutation();
   const reorder = useReorderFaqMutation();
+  const confirm = useConfirm();
 
   const [newTitle, setNewTitle] = useState('');
   const [newText, setNewText] = useState('');
@@ -116,8 +118,14 @@ export default function FaqAdminEditor() {
     updateItem.mutate({ id, dto: { title: dto.title.trim(), text: dto.text.trim() } });
   };
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Видалити це запитання?')) return;
+  const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: 'Видалити запитання?',
+      message: 'Це запитання зникне з FAQ.',
+      confirmLabel: 'Видалити',
+      danger: true,
+    });
+    if (!ok) return;
     deleteItem.mutate(id);
   };
 

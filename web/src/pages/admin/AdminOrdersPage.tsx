@@ -12,6 +12,7 @@ import type {
   PaymentStatus,
 } from '../../types/order.types';
 import Skeleton from '../../components/ui/Skeleton';
+import { useConfirm } from '../../components/ui/ConfirmDialog';
 import styles from './AdminOrdersPage.module.scss';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -60,6 +61,7 @@ export default function AdminOrdersPage() {
   const updateStatus = useUpdateOrderStatusMutation();
   const updatePaymentStatus = useUpdatePaymentStatusMutation();
   const deleteOrder = useDeleteOrderMutation();
+  const confirm = useConfirm();
 
   const handleStatusChange = (order: Order, status: OrderStatus) => {
     if (status === order.status) return;
@@ -71,8 +73,14 @@ export default function AdminOrdersPage() {
     updatePaymentStatus.mutate({ id: order.id, paymentStatus: next });
   };
 
-  const handleDelete = (order: Order) => {
-    if (!window.confirm(`Видалити замовлення №${order.id}?`)) return;
+  const handleDelete = async (order: Order) => {
+    const ok = await confirm({
+      title: `Видалити замовлення №${order.id}?`,
+      message: 'Замовлення буде видалено назавжди.',
+      confirmLabel: 'Видалити',
+      danger: true,
+    });
+    if (!ok) return;
     deleteOrder.mutate(order.id);
   };
 

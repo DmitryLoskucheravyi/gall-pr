@@ -5,6 +5,7 @@ import { router } from './routes/router';
 import { useMeQuery } from './hooks/queries/useMe';
 import { useAppSelector } from './store/hooks';
 import Toast from './components/ui/Toast';
+import { ConfirmProvider } from './components/ui/ConfirmDialog';
 
 // Statically importing the devtools would ship them in the production
 // bundle even though they never render there. A lazy() wrapped in a
@@ -27,7 +28,7 @@ function App() {
   }, [isDark]);
 
   return (
-    <>
+    <ConfirmProvider>
       <RouterProvider router={router} />
       <Toast />
       {ReactQueryDevtools && (
@@ -35,7 +36,7 @@ function App() {
           <ReactQueryDevtools initialIsOpen={false} />
         </Suspense>
       )}
-    </>
+    </ConfirmProvider>
   );
 }
 

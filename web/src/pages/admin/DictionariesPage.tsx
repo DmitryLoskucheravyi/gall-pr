@@ -8,6 +8,7 @@ import {
   useTechniqueMutations,
 } from '../../hooks/mutations/useDictionaryMutations';
 import Skeleton from '../../components/ui/Skeleton';
+import { useConfirm } from '../../components/ui/ConfirmDialog';
 import styles from './DictionariesPage.module.scss';
 
 type Tab = 'materials' | 'techniques';
@@ -22,6 +23,7 @@ export default function DictionariesPage() {
   const { data: techniques = [], isLoading: techniquesLoading } = useTechniques();
   const materialMutations = useMaterialMutations();
   const techniqueMutations = useTechniqueMutations();
+  const confirm = useConfirm();
 
   const items = tab === 'materials' ? materials : techniques;
   const loading = tab === 'materials' ? materialsLoading : techniquesLoading;
@@ -43,8 +45,14 @@ export default function DictionariesPage() {
     }
   };
 
-  const handleDelete = (item: Item) => {
-    if (!window.confirm(`Видалити "${item.name}"?`)) return;
+  const handleDelete = async (item: Item) => {
+    const ok = await confirm({
+      title: 'Видалити запис?',
+      message: `«${item.name}» буде видалено.`,
+      confirmLabel: 'Видалити',
+      danger: true,
+    });
+    if (!ok) return;
     mutations.remove.mutate(item.id);
   };
 
