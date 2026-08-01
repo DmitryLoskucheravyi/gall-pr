@@ -13,7 +13,7 @@ type Props = {
 
 export default function GalleryCard({ painting, natural = false }: Props) {
   return (
-    <div className={styles.card}>
+    <article className={styles.card}>
       <Link to={`/painting/${painting.id}`} className={styles.linkArea}>
         <img
           src={painting.cardImage}
@@ -37,6 +37,6 @@ export default function GalleryCard({ painting, natural = false }: Props) {
         likesCount={painting.likesCount}
         variant="overlay"
       />
-    </div>
+    </article>
   );
 }

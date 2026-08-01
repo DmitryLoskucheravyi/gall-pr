@@ -5,10 +5,16 @@ import { usePaintings } from '../hooks/queries/usePaintings';
 import { useLikedIds } from '../hooks/queries/useLikedIds';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { useAppSelector } from '../store/hooks';
 import styles from './GalleryPage.module.scss';
 
 export default function GalleryPage() {
+  usePageMeta(
+    'Галерея',
+    'Уся колекція робіт галереї Viktorumm — доступні для придбання та вже продані картини українських художників.',
+  );
+
   const user = useAppSelector((state) => state.auth.user);
   const { data: likedIds = [] } = useLikedIds();
 

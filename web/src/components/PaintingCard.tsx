@@ -26,7 +26,7 @@ export default function PaintingCard({
   const price = Number(painting.price);
 
   return (
-    <div className={styles.card}>
+    <article className={styles.card}>
       <div className={styles.imageWrap}>
         <Link to={`/painting/${painting.id}`} className={styles.imageLink}>
           <img
@@ -143,6 +143,6 @@ export default function PaintingCard({
           </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }

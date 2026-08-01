@@ -10,6 +10,7 @@ import { useRelatedPaintings } from '../hooks/queries/useRelatedPaintings';
 import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import { useAuthorName } from '../hooks/queries/useSettings';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { usePageMeta } from '../hooks/usePageMeta';
 import styles from './PaintingPage.module.scss';
 
 export default function PaintingPage() {
@@ -35,6 +36,13 @@ export default function PaintingPage() {
   useEffect(() => {
     setActiveImage(0);
   }, [id]);
+
+  usePageMeta(
+    painting?.title,
+    painting
+      ? `${painting.title}${authorName ? ` — ${authorName}` : ''}. Оригінальна картина, ${Number(painting.price).toLocaleString('uk-UA')} ₴.`
+      : undefined,
+  );
 
   if (loading) {
     return (
@@ -65,8 +73,33 @@ export default function PaintingPage() {
   const images = painting.images.length > 0 ? painting.images : [painting.cardImage];
   const price = Number(painting.price);
 
+  // Product structured data — lets search engines show the painting as a rich
+  // result (name, image, price, availability).
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: painting.title,
+    image: images,
+    ...(painting.description ? { description: painting.description } : {}),
+    ...(authorName ? { brand: { '@type': 'Brand', name: authorName } } : {}),
+    offers: {
+      '@type': 'Offer',
+      price,
+      priceCurrency: 'UAH',
+      availability: painting.isAvailable
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+    },
+  };
+
   return (
     <div>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+
       <button onClick={() => navigate(-1)} className={styles.backButton}>
         ← Назад
       </button>

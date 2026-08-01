@@ -10,17 +10,25 @@ import PaintingCard from '../components/PaintingCard';
 import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import CatalogFilters from '../components/CatalogFilters';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useAddToCart } from '../hooks/mutations/useAddToCart';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { useAppSelector } from '../store/hooks';
 import styles from './CatalogPage.module.scss';
 
 type PriceRange = { min: number; max: number };
 
 export default function CatalogPage() {
+  usePageMeta(
+    'Каталог',
+    'Каталог оригінальних картин українських художників — доступні для придбання роботи з доставкою Новою поштою.',
+  );
+
   const user = useAppSelector((state) => state.auth.user);
   const addToCart = useAddToCart();
 
   const { data: likedIds = [] } = useLikedIds();
+  const confirm = useConfirm();
 
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<
     number | null
@@ -55,8 +63,14 @@ export default function CatalogPage() {
     ? paintings.filter((painting) => likedIds.includes(painting.id))
     : paintings;
 
-  const handleDelete = (painting: Painting) => {
-    if (!window.confirm(`Видалити картину "${painting.title}"?`)) return;
+  const handleDelete = async (painting: Painting) => {
+    const ok = await confirm({
+      title: 'Видалити картину?',
+      message: `«${painting.title}» буде видалено назавжди.`,
+      confirmLabel: 'Видалити',
+      danger: true,
+    });
+    if (!ok) return;
     deletePainting.mutate(painting);
   };
 

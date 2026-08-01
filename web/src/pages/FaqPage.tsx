@@ -3,9 +3,15 @@ import { Link } from 'react-router-dom';
 import { useFaq, useFaqEntries } from '../hooks/queries/useFaq';
 import Skeleton from '../components/ui/Skeleton';
 import FaqAccordion from '../components/ui/FaqAccordion';
+import { usePageMeta } from '../hooks/usePageMeta';
 import styles from './FaqPage.module.scss';
 
 export default function FaqPage() {
+  usePageMeta(
+    'Підтримка',
+    'Поширені запитання про замовлення, оплату та доставку картин у галереї Viktorumm.',
+  );
+
   const { isLoading: loading } = useFaq();
   const entries = useFaqEntries();
 
