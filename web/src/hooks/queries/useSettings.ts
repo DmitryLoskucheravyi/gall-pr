@@ -20,3 +20,8 @@ export function useCardTransferIban(): string {
   const { data } = useSettings();
   return data?.cardTransferIban ?? '';
 }
+
+export function useSupportTelegramUrl(): string {
+  const { data } = useSettings();
+  return data?.supportTelegramUrl ?? '';
+}

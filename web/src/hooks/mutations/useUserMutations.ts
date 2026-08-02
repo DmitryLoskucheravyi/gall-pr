@@ -4,6 +4,7 @@ import { usersService } from '../../api/users.api';
 import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
+import { setUser } from '../../store/slices/authSlice';
 
 export function useTelegramLinkMutation() {
   return useMutation({
@@ -12,6 +13,24 @@ export function useTelegramLinkMutation() {
       store.dispatch(
         showToast({
           message: 'Не вдалося згенерувати посилання. Спробуйте ще раз',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
+export function useRedeemTelegramLinkCodeMutation() {
+  return useMutation({
+    mutationFn: (code: string) => usersService.redeemTelegramLinkCode(code),
+    onSuccess: (user) => {
+      store.dispatch(setUser(user));
+      store.dispatch(showToast({ message: 'Telegram підключено!' }));
+    },
+    onError: (error: any) => {
+      store.dispatch(
+        showToast({
+          message: error?.response?.data?.message ?? 'Невірний або застарілий код',
           variant: 'error',
         }),
       );

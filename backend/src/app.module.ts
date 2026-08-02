@@ -18,6 +18,7 @@ import { SupportMessage } from './support/entities/support-message.entity';
 import { Giveaway } from './giveaways/entities/giveaway.entity';
 import { GiveawayParticipant } from './giveaways/entities/giveaway-participant.entity';
 import { News } from './news/entities/news.entity';
+import { TelegramPendingLink } from './telegram/entities/telegram-pending-link.entity';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -62,6 +63,7 @@ import { ConfigModule } from '@nestjs/config';
         Giveaway,
         GiveawayParticipant,
         News,
+        TelegramPendingLink,
       ],
 
       synchronize: false,

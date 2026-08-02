@@ -1,8 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Bot, InputFile } from 'grammy';
 
 import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
+import { TelegramPendingLink } from './entities/telegram-pending-link.entity';
+
+const PENDING_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
 
 // Thin wrapper around the Telegram Bot API (via grammy), long-polling so it
 // needs no public URL/webhook — works the same in dev and prod. Every method
@@ -17,6 +22,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly settingsService: SettingsService,
     private readonly usersService: UsersService,
+    @InjectRepository(TelegramPendingLink)
+    private readonly pendingLinkRepository: Repository<TelegramPendingLink>,
   ) {}
 
   async onModuleInit() {
@@ -48,8 +55,24 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       const chatId = String(ctx.chat.id);
 
       if (!payload) {
+        // No linking code in the /start payload — the user opened the bot
+        // directly (e.g. via the support link) rather than the personalized
+        // deep link from their profile. Issue a one-time code they can type
+        // into the site themselves; the same reply also covers the admin
+        // setup case, since that's just this chat's id.
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+
+        await this.pendingLinkRepository.delete({ chatId });
+        await this.pendingLinkRepository.save(
+          this.pendingLinkRepository.create({
+            code,
+            chatId,
+            expiresAt: new Date(Date.now() + PENDING_CODE_TTL_MS),
+          }),
+        );
+
         await ctx.reply(
-          `Це ваш Telegram Chat ID: ${chatId}\n\nВставте його в адмінці → Налаштування → "Telegram чат адміна", щоб отримувати сповіщення про нові замовлення та повідомлення підтримки.`,
+          `Вітаємо в Viktorumm! 🎨\n\nВаш код підтвердження: ${code}\nВведіть його на сайті → Профіль → «Ввести код з Telegram» (діє 10 хв).\n\nЯкщо ви адміністратор і хочете отримувати сюди сповіщення — ваш Telegram Chat ID: ${chatId}. Вставте його в адмінці → Налаштування → "Telegram чат адміна".`,
         );
         return;
       }

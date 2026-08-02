@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useLikedPaintings } from '../hooks/queries/useLikedPaintings';
 import { useMyOrders } from '../hooks/queries/useOrders';
-import { useTelegramLinkMutation } from '../hooks/mutations/useUserMutations';
+import {
+  useTelegramLinkMutation,
+  useRedeemTelegramLinkCodeMutation,
+} from '../hooks/mutations/useUserMutations';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import OrderPreviewCard from '../components/OrderPreviewCard';
@@ -21,7 +25,20 @@ export default function ProfilePage() {
   const { data: likedPaintings = [], isLoading: likedLoading } = useLikedPaintings();
   const { data: orders = [], isLoading: ordersLoading } = useMyOrders();
   const telegramLink = useTelegramLinkMutation();
+  const redeemCode = useRedeemTelegramLinkCodeMutation();
   const [linkOpened, setLinkOpened] = useState(false);
+  const [codeModalOpen, setCodeModalOpen] = useState(false);
+  const [pendingCode, setPendingCode] = useState('');
+
+  useEscapeKey(() => setCodeModalOpen(false), codeModalOpen);
+
+  useEffect(() => {
+    if (!codeModalOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [codeModalOpen]);
 
   if (!user) return null;
 
@@ -33,6 +50,22 @@ export default function ProfilePage() {
       'noopener,noreferrer',
     );
     setLinkOpened(true);
+  };
+
+  const openCodeModal = () => {
+    setPendingCode('');
+    redeemCode.reset();
+    setCodeModalOpen(true);
+  };
+
+  const handleRedeemCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      await redeemCode.mutateAsync(pendingCode);
+      setCodeModalOpen(false);
+    } catch {
+      // error is surfaced inline below via redeemCode.error
+    }
   };
 
   const lastOrder = orders[0] ?? null;
@@ -100,6 +133,14 @@ export default function ProfilePage() {
                       Натисніть Start у Telegram — акаунт звʼяжеться автоматично
                     </p>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={openCodeModal}
+                    className={styles.telegramCodeLink}
+                  >
+                    Вже є код з Telegram? Ввести
+                  </button>
                 </>
               )}
             </div>
@@ -152,6 +193,72 @@ export default function ProfilePage() {
           )}
         </section>
       </div>
+
+      {codeModalOpen && (
+        <div className={styles.codeModalOverlay} onClick={() => setCodeModalOpen(false)}>
+          <div
+            className={styles.codeModalDialog}
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className={styles.codeModalTitle}>Підтвердження Telegram</h2>
+            <p className={styles.codeModalHint}>
+              Напишіть боту{' '}
+              {TELEGRAM_BOT_USERNAME ? (
+                <a
+                  href={`https://t.me/${TELEGRAM_BOT_USERNAME}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  @{TELEGRAM_BOT_USERNAME}
+                </a>
+              ) : (
+                'у Telegram'
+              )}{' '}
+              команду /start — він надішле код підтвердження. Введіть його нижче.
+            </p>
+
+            <form onSubmit={handleRedeemCode} className={styles.codeModalForm}>
+              <input
+                required
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="000000"
+                value={pendingCode}
+                onChange={(e) => setPendingCode(e.target.value.replace(/\D/g, ''))}
+                className={styles.codeModalInput}
+                autoFocus
+              />
+
+              {redeemCode.isError && (
+                <p className={styles.codeModalError}>
+                  {(redeemCode.error as any)?.response?.data?.message ??
+                    'Невірний або застарілий код'}
+                </p>
+              )}
+
+              <div className={styles.codeModalActions}>
+                <button
+                  type="button"
+                  onClick={() => setCodeModalOpen(false)}
+                  className={styles.codeModalCancel}
+                >
+                  Скасувати
+                </button>
+                <button
+                  type="submit"
+                  disabled={redeemCode.isPending || pendingCode.length !== 6}
+                  className={styles.codeModalSubmit}
+                >
+                  {redeemCode.isPending ? 'Перевірка…' : 'Підтвердити'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

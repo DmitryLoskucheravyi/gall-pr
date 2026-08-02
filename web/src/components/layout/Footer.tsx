@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 
-import { useAuthorName } from '../../hooks/queries/useSettings';
+import { useAuthorName, useSupportTelegramUrl } from '../../hooks/queries/useSettings';
 import { useAppSelector } from '../../store/hooks';
 import styles from './Footer.module.scss';
 
@@ -9,6 +9,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Footer() {
   const authorName = useAuthorName();
+  const supportTelegramUrl = useSupportTelegramUrl();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const year = new Date().getFullYear();
 
@@ -66,6 +67,16 @@ export default function Footer() {
               <NavLink to="/support" className={linkClass}>
                 Підтримка
               </NavLink>
+              {supportTelegramUrl && (
+                <a
+                  href={supportTelegramUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.link}
+                >
+                  Бот у Telegram
+                </a>
+              )}
               {!isAuthenticated && (
                 <>
                   <NavLink to="/login" className={linkClass}>
