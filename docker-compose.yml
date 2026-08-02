@@ -1,0 +1,8 @@
+services:
+  backend:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - '3001:3001'
+    restart: unless-stopped
