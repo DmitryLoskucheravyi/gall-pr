@@ -32,11 +32,32 @@ export default function Header() {
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const adminMenuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setIsAdminMenuOpen(false);
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Exposes the header's real rendered height as a CSS var — the mobile hero
+  // sticks just below it (see HomePage.module.scss), and hardcoding a pixel
+  // guess would drift the moment the header's content/padding changes.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const setHeightVar = () => {
+      document.documentElement.style.setProperty(
+        '--header-height',
+        `${el.offsetHeight}px`,
+      );
+    };
+
+    setHeightVar();
+    const observer = new ResizeObserver(setHeightVar);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isAdminMenuOpen) return;
@@ -155,7 +176,7 @@ export default function Header() {
   );
 
   return (
-    <header className={styles.header}>
+    <header ref={headerRef} className={styles.header}>
       <div className={styles.inner}>
         <Link to="/" className={styles.logo}>
           <span className={styles.wordmark}>Viktorumm</span>

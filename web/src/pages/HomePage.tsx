@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 
 import { usePaintings } from '../hooks/queries/usePaintings';
@@ -22,6 +22,25 @@ const MARQUEE_ITEMS = [
   'Кураторська добірка',
   'Доставка по Україні',
 ];
+
+// The four corners the hero's Ken Burns tour visits, in %-of-image-box units
+// (see --pan-x*/--pan-y* in HomePage.module.scss). Shuffled fresh each pan
+// cycle so the tour doesn't always start top-left and go clockwise.
+const HERO_CORNERS: Array<[string, string]> = [
+  ['-9%', '-9%'],
+  ['9%', '-9%'],
+  ['9%', '9%'],
+  ['-9%', '9%'],
+];
+
+function shuffledCorners(): Array<[string, string]> {
+  const corners = [...HERO_CORNERS];
+  for (let i = corners.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [corners[i], corners[j]] = [corners[j], corners[i]];
+  }
+  return corners;
+}
 
 export default function HomePage() {
   const { data: paintingsResponse, isLoading: loading } = usePaintings({
@@ -50,50 +69,76 @@ export default function HomePage() {
 
   const latestNews = news?.[0] ?? null;
 
-  // Mobile/tablet-only background slideshow behind the hero (desktop keeps
-  // the layered card collage instead — see .heroBg's display:none above
-  // $breakpoint-lg). The rhythm itself (6 quick beats, then 1 slower hold)
-  // stays fixed — only which photo lands on which beat is randomized, via a
-  // shuffled queue, so it isn't always the same photo sitting on the pause.
-  const [activeSlide, setActiveSlide] = useState(0);
+  // Mobile/tablet-only "slot machine" behind the hero (desktop keeps the
+  // layered card collage instead — see .heroBg's display:none above
+  // $breakpoint-lg). Three horizontal bands, each showing a third of a
+  // painting (top/middle/bottom). Bands spin through random decoys one at a
+  // time, top to bottom, each guaranteed to settle on the same target
+  // painting's matching third — so the three always reassemble into one
+  // complete picture. Once assembled, pans/zooms across it for a couple of
+  // seconds (see .heroBandImagePanning), then reshuffles and repeats.
+  const [bandImages, setBandImages] = useState<[number, number, number]>([0, 0, 0]);
+  const [assembled, setAssembled] = useState(false);
+  const [panCorners, setPanCorners] = useState(HERO_CORNERS);
 
   useEffect(() => {
-    if (heroBgSlides.length <= 1) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (heroBgSlides.length === 0) return;
 
-    const RHYTHM = [120, 120, 120, 120, 120, 120, 1000];
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
 
-    // "Shuffle bag": a random-order queue of every photo, refilled once
-    // drained, so each full pass shows every photo exactly once with no
-    // fixed sequence, and (mostly) no immediate repeat across a reshuffle.
-    const shuffledQueue = (avoidFirst: number | null) => {
-      const indexes = Array.from({ length: heroBgSlides.length }, (_, i) => i);
-      for (let i = indexes.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
-      }
-      if (indexes.length > 1 && indexes[0] === avoidFirst) {
-        [indexes[0], indexes[1]] = [indexes[1], indexes[0]];
-      }
-      return indexes;
+    if (reducedMotion) {
+      setBandImages([0, 0, 0]);
+      setAssembled(true);
+      return;
+    }
+
+    let cancelled = false;
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => setTimeout(resolve, ms));
+    const randomIndex = () => Math.floor(Math.random() * heroBgSlides.length);
+
+    const setBand = (band: 0 | 1 | 2, index: number) => {
+      setBandImages((prev) => {
+        const next: [number, number, number] = [...prev];
+        next[band] = index;
+        return next;
+      });
     };
 
-    let queue = shuffledQueue(null);
-    let lastShown: number | null = null;
-    let step = 0;
-    let timeoutId: ReturnType<typeof setTimeout>;
+    // Pause is as long as the Ken Burns pan needs to read as smooth (see
+    // $hero-pan-duration in HomePage.module.scss — keep both in sync) rather
+    // than a fixed short beat like the spin.
+    const PAN_DURATION_MS = 12000;
 
-    const tick = () => {
-      if (queue.length === 0) queue = shuffledQueue(lastShown);
-      lastShown = queue.shift()!;
-      setActiveSlide(lastShown);
-      step = (step + 1) % RHYTHM.length;
-      timeoutId = setTimeout(tick, RHYTHM[step]);
+    const run = async () => {
+      while (!cancelled) {
+        setAssembled(false);
+        const target = randomIndex();
+
+        for (const band of [0, 1, 2] as const) {
+          const beats = 3 + Math.floor(Math.random() * 2); // 3-4 decoys
+          for (let i = 0; i < beats; i++) {
+            if (cancelled) return;
+            setBand(band, randomIndex());
+            await sleep(140);
+          }
+          if (cancelled) return;
+          setBand(band, target);
+        }
+
+        if (cancelled) return;
+        setPanCorners(shuffledCorners());
+        setAssembled(true);
+        await sleep(PAN_DURATION_MS);
+      }
     };
 
-    timeoutId = setTimeout(tick, RHYTHM[step]);
-
-    return () => clearTimeout(timeoutId);
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, [heroBgSlides.length]);
 
   const marqueeContent = (
@@ -111,19 +156,41 @@ export default function HomePage() {
     <div>
       <section className={styles.hero}>
         {!loading && heroBgSlides.length > 0 && (
-          <div className={styles.heroBg} aria-hidden="true">
-            {heroBgSlides.map((painting, index) => (
-              <img
-                key={painting.id}
-                src={painting.cardImage}
-                alt=""
-                className={
-                  index === activeSlide
-                    ? `${styles.heroBgImage} ${styles.heroBgImageActive}`
-                    : styles.heroBgImage
-                }
-              />
-            ))}
+          <div
+            className={styles.heroBg}
+            aria-hidden="true"
+            style={
+              {
+                '--pan-x1': panCorners[0][0],
+                '--pan-y1': panCorners[0][1],
+                '--pan-x2': panCorners[1][0],
+                '--pan-y2': panCorners[1][1],
+                '--pan-x3': panCorners[2][0],
+                '--pan-y3': panCorners[2][1],
+                '--pan-x4': panCorners[3][0],
+                '--pan-y4': panCorners[3][1],
+              } as CSSProperties
+            }
+          >
+            {([0, 1, 2] as const).map((band) => {
+              const painting = heroBgSlides[bandImages[band]];
+              if (!painting) return null;
+
+              return (
+                <div key={band} className={styles.heroBand}>
+                  <img
+                    src={painting.cardImage}
+                    alt=""
+                    style={{ top: `${-band * 100}%` }}
+                    className={
+                      assembled
+                        ? `${styles.heroBandImage} ${styles.heroBandImagePanning}`
+                        : styles.heroBandImage
+                    }
+                  />
+                </div>
+              );
+            })}
             <div className={styles.heroOverlay} />
           </div>
         )}
@@ -194,6 +261,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Opaque wrapper that slides up over the sticky mobile/tablet hero
+          as the page scrolls — see .hero's position:sticky. */}
+      <div className={styles.pageContent}>
       <div className={styles.marquee} aria-hidden="true">
         <div className={styles.marqueeTrack}>
           {marqueeContent}
@@ -346,6 +416,7 @@ export default function HomePage() {
           </svg>
         </Link>
       </Reveal>
+      </div>
     </div>
   );
 }

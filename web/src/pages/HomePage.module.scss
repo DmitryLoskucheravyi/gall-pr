@@ -1,7 +1,16 @@
 // ---------- Hero: asymmetric split with layered painting collage ----------
 
+// Kept in sync with PAN_DURATION_MS in HomePage.tsx.
+$hero-pan-duration: 12s;
+
 .hero {
-  position: relative;
+  // Sticky on mobile/tablet: the hero freezes just below the (also sticky)
+  // header while .pageContent below scrolls up and visually covers it —
+  // top matches the header's real measured height (see Header.tsx), so the
+  // two don't overlap.
+  position: sticky;
+  top: var(--header-height, 64px);
+  z-index: 0;
   overflow: hidden;
   display: grid;
   grid-template-columns: 1fr;
@@ -14,10 +23,12 @@
   // side. 100dvh (not vh/%) accounts for mobile browser chrome correctly.
   margin-inline: calc(-1 * $container-padding);
   margin-top: calc(-1 * $spacing-xxxxl);
-  min-height: 100dvh;
+  min-height: calc(100dvh - var(--header-height, 64px));
   padding: $spacing-xxxl $spacing-xl $spacing-huge;
 
   @include respond-up($breakpoint-lg) {
+    position: relative;
+    top: auto;
     overflow: visible;
     margin-inline: 0;
     margin-top: 0;
@@ -28,30 +39,80 @@
   }
 }
 
-// Mobile/tablet: featured paintings cycle as a full-bleed background behind
-// the text, instead of sitting in their own collage below it. Desktop keeps
-// the layered card collage (.heroArt below) and never renders this.
+// Mobile/tablet: three horizontal "slot machine" bands, each locked to a
+// third of the hero's height, cycling paintings behind the (currently
+// hidden) text. Desktop keeps the layered card collage (.heroArt below) and
+// never renders any of this.
 .heroBg {
   position: absolute;
   inset: 0;
   z-index: 0;
+  display: flex;
+  flex-direction: column;
 
   @include respond-up($breakpoint-lg) {
     display: none;
   }
 }
 
-.heroBgImage {
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  opacity: 0;
+.heroBand {
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 0;
 }
 
-.heroBgImageActive {
-  opacity: 1;
+// Sized to exactly 3x the band's own height and shifted up by `band * 100%`
+// (inline style, per band) — each band then only shows its own third of the
+// image, and since all three bands render the same target src at settle
+// time, the crops line up into one seamless picture.
+.heroBandImage {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 300%;
+  object-fit: cover;
+  filter: blur(4px);
+}
+
+// Once all three bands land on the same painting, tour across it in sync —
+// every band gets the identical keyframe on an identically-sized box, which
+// (since they're windows onto the same reconstructed image) reads as one
+// continuous camera move rather than three separate ones. A sharp snap into
+// the first corner, then a smooth glide corner to corner, then pull back out
+// — each keyframe sets its own animation-timing-function for the segment
+// leading into it, so the first beat can be sharp while the rest is smooth.
+// Which corner is visited at which waypoint is randomized per cycle (see
+// the --pan-x*/--pan-y* custom properties set from HomePage.tsx) rather than
+// a fixed top-left-then-clockwise order, so the tour doesn't read as scripted.
+@keyframes hero-band-pan {
+  0% {
+    transform: scale(1.08) translate(0%, 0%);
+    animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); // sharp snap in
+  }
+  12% {
+    transform: scale(1.55) translate(var(--pan-x1, -9%), var(--pan-y1, -9%));
+    // Gentler S-curve than plain ease-in-out for the long glides that
+    // follow — reads as fluid drifting rather than mechanical easing.
+    animation-timing-function: cubic-bezier(0.45, 0, 0.15, 1);
+  }
+  34% {
+    transform: scale(1.45) translate(var(--pan-x2, 9%), var(--pan-y2, -9%));
+  }
+  56% {
+    transform: scale(1.45) translate(var(--pan-x3, 9%), var(--pan-y3, 9%));
+  }
+  78% {
+    transform: scale(1.45) translate(var(--pan-x4, -9%), var(--pan-y4, 9%));
+  }
+  100% {
+    transform: scale(1.08) translate(0%, 0%); // pull back out, wide
+  }
+}
+
+.heroBandImagePanning {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: hero-band-pan $hero-pan-duration cubic-bezier(0.45, 0, 0.15, 1) both;
+  }
 }
 
 // Theme-aware wash so the text stays legible over a busy photo: lightens in
@@ -61,11 +122,12 @@
 .heroOverlay {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background-color: color-mix(in srgb, var(--color-background) 30%, transparent);
 }
 
-// Hidden on mobile/tablet for now — the hero there is just the full-screen
-// cycling background, no overlaid copy yet.
+// Hidden on mobile/tablet for now — the hero there is just the slot-machine
+// background, no overlaid copy.
 .heroText {
   display: none;
 
@@ -78,8 +140,10 @@
   }
 }
 
+// Hidden on mobile/tablet along with .stats below — only title/subtitle/
+// actions show over the photo hero there.
 .eyebrow {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: $spacing-sm;
   border-radius: $radius-pill;
@@ -93,6 +157,10 @@
   color: var(--color-text-secondary);
   text-transform: uppercase;
   @include rise-in($delay: 0s);
+
+  @include respond-up($breakpoint-lg) {
+    display: inline-flex;
+  }
 
   &::before {
     content: '';
@@ -164,11 +232,15 @@
 }
 
 .stats {
-  margin-top: $spacing-xxxxl;
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-xxxl $spacing-huge;
-  @include rise-in($delay: 0.32s);
+  display: none;
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: $spacing-xxxxl;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xxxl $spacing-huge;
+    @include rise-in($delay: 0.32s);
+  }
 }
 
 .stat {
@@ -294,6 +366,23 @@
     opacity: 1;
     transform: none;
   }
+}
+
+// Everything after the hero, as one opaque sheet — on mobile/tablet this is
+// what visually slides up and covers the sticky hero as the page scrolls.
+// Desktop doesn't need it (hero isn't sticky there), but it's harmless.
+.pageContent {
+  position: relative;
+  z-index: 1;
+  background-color: var(--color-background);
+  // Full-bleed like .hero (same breakout trick), so its background actually
+  // reaches the screen edges and fully occludes the sticky hero once
+  // scrolled past — otherwise a sliver of it stayed visible on both sides.
+  // Padded back in by the same amount so children still align with the
+  // normal container width (.marquee's own breakout below is unaffected —
+  // it's relative to this padded content box, same as before).
+  margin-inline: calc(-1 * $container-padding);
+  padding-inline: $container-padding;
 }
 
 // ---------- Marquee strip ----------
