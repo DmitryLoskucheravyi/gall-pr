@@ -1,5 +1,5 @@
 .wrap {
-  max-width: 900px;
+  max-width: 1100px;
 }
 
 .title {
@@ -10,35 +10,65 @@
   color: var(--color-text);
 }
 
-.sectionTitle {
-  margin-top: $spacing-xxxl;
-  margin-bottom: $spacing-sm;
-  font-family: $font-display;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--color-text);
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xl;
+
+  @include respond-up($breakpoint-md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  max-width: 400px;
+.card {
+  @include card;
+  padding: $spacing-xl;
+}
+
+.cardWide {
+  @include respond-up($breakpoint-md) {
+    grid-column: 1 / -1;
+  }
+}
+
+.standaloneCard {
+  margin-top: $spacing-xl;
+}
+
+.subGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+
+  @include respond-up($breakpoint-md) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.cardTitle {
+  margin-bottom: $spacing-lg;
+  font-family: $font-display;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .label {
   margin-top: $spacing-md;
   font-weight: 600;
+  font-size: 14px;
   color: var(--color-text);
 
-  &:first-child {
+  &:first-of-type {
     margin-top: 0;
   }
 }
 
 .hint {
+  margin-top: 2px;
   margin-bottom: $spacing-sm;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--color-text-secondary);
 }
 
@@ -53,7 +83,7 @@
 
 .saveButton {
   @include button-primary;
-  margin-top: $spacing-lg;
+  margin-top: $spacing-xl;
 }
 
 .telegramLinkedRow {

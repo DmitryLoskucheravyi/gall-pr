@@ -89,12 +89,11 @@ export default function AdminSettingsPage() {
     return (
       <div className={styles.wrap}>
         <h1 className={styles.title}>Налаштування</h1>
-        <div className={styles.form}>
-          <label className={styles.label}>Поточний автор</label>
-          <p className={styles.hint}>
-            Цей автор відображатиметься на всіх картинах у каталозі
-          </p>
-          <Skeleton className={styles.skeletonInput} />
+        <div className={styles.grid}>
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Бренд</h2>
+            <Skeleton className={styles.skeletonInput} />
+          </div>
         </div>
       </div>
     );
@@ -104,74 +103,92 @@ export default function AdminSettingsPage() {
     <div className={styles.wrap}>
       <h1 className={styles.title}>Налаштування</h1>
 
-      <form onSubmit={handleSave} className={styles.form}>
-        <label className={styles.label}>Поточний автор</label>
-        <p className={styles.hint}>
-          Цей автор відображатиметься на всіх картинах у каталозі
-        </p>
+      <form onSubmit={handleSave}>
+        <div className={styles.grid}>
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Бренд</h2>
 
-        <input
-          value={authorName}
-          onChange={(e) => setAuthorNameInput(e.target.value)}
-          placeholder="Ім'я автора"
-          className={styles.input}
-        />
+            <label className={styles.label}>Поточний автор</label>
+            <p className={styles.hint}>
+              Цей автор відображатиметься на всіх картинах у каталозі
+            </p>
 
-        <label className={styles.label}>IBAN для переказу на карту</label>
-        <p className={styles.hint}>
-          Показується покупцю, коли він обирає оплату "Переказ на карту"
-        </p>
+            <input
+              value={authorName}
+              onChange={(e) => setAuthorNameInput(e.target.value)}
+              placeholder="Ім'я автора"
+              className={styles.input}
+            />
+          </div>
 
-        <input
-          value={cardTransferIban}
-          onChange={(e) => setCardTransferIban(e.target.value)}
-          placeholder="UA00 0000 0000 0000 0000 0000 000"
-          className={styles.input}
-        />
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Оплата та доставка</h2>
 
-        <label className={styles.label}>Місто відправлення (Нова пошта)</label>
-        <p className={styles.hint}>
-          Звідки рахується вартість доставки й комісія за накладений платіж
-        </p>
+            <label className={styles.label}>IBAN для переказу на карту</label>
+            <p className={styles.hint}>
+              Показується покупцю, коли він обирає оплату "Переказ на карту"
+            </p>
 
-        <NovaPoshtaCityPicker value={senderCity} onChange={setSenderCity} />
+            <input
+              value={cardTransferIban}
+              onChange={(e) => setCardTransferIban(e.target.value)}
+              placeholder="UA00 0000 0000 0000 0000 0000 000"
+              className={styles.input}
+            />
 
-        <label className={styles.label}>Email підтримки</label>
-        <p className={styles.hint}>
-          Показується в чаті підтримки як додатковий спосіб зв'язку
-        </p>
+            <label className={styles.label}>
+              Місто відправлення (Нова пошта)
+            </label>
+            <p className={styles.hint}>
+              Звідки рахується вартість доставки й комісія за накладений
+              платіж
+            </p>
 
-        <input
-          type="email"
-          value={supportEmail}
-          onChange={(e) => setSupportEmail(e.target.value)}
-          placeholder="support@viktorumm.com"
-          className={styles.input}
-        />
+            <NovaPoshtaCityPicker value={senderCity} onChange={setSenderCity} />
+          </div>
 
-        <label className={styles.label}>Телефон підтримки</label>
-        <p className={styles.hint}>Показується в чаті підтримки</p>
+          <div className={`${styles.card} ${styles.cardWide}`}>
+            <h2 className={styles.cardTitle}>Контакти підтримки</h2>
+            <p className={styles.hint}>
+              Показуються в чаті підтримки як альтернативні способи звʼязку
+            </p>
 
-        <input
-          type="tel"
-          value={supportPhone}
-          onChange={(e) => setSupportPhone(e.target.value)}
-          placeholder="+380 00 000 0000"
-          className={styles.input}
-        />
+            <div className={styles.subGrid}>
+              <div>
+                <label className={styles.label}>Email</label>
+                <input
+                  type="email"
+                  value={supportEmail}
+                  onChange={(e) => setSupportEmail(e.target.value)}
+                  placeholder="support@viktorumm.com"
+                  className={styles.input}
+                />
+              </div>
 
-        <label className={styles.label}>Посилання на Telegram</label>
-        <p className={styles.hint}>
-          Наприклад, на Telegram-бота підтримки (https://t.me/…)
-        </p>
+              <div>
+                <label className={styles.label}>Телефон</label>
+                <input
+                  type="tel"
+                  value={supportPhone}
+                  onChange={(e) => setSupportPhone(e.target.value)}
+                  placeholder="+380 00 000 0000"
+                  className={styles.input}
+                />
+              </div>
 
-        <input
-          type="url"
-          value={supportTelegramUrl}
-          onChange={(e) => setSupportTelegramUrl(e.target.value)}
-          placeholder="https://t.me/viktorumm_bot"
-          className={styles.input}
-        />
+              <div>
+                <label className={styles.label}>Посилання на Telegram</label>
+                <input
+                  type="url"
+                  value={supportTelegramUrl}
+                  onChange={(e) => setSupportTelegramUrl(e.target.value)}
+                  placeholder="https://t.me/viktorumm_bot"
+                  className={styles.input}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
         <button
           type="submit"
@@ -182,55 +199,59 @@ export default function AdminSettingsPage() {
         </button>
       </form>
 
-      <h2 className={styles.sectionTitle}>Бот сповіщень</h2>
-      <p className={styles.hint}>
-        Сюди бот надсилатиме сповіщення про нові замовлення, скріни оплати й
-        повідомлення в підтримці.
-      </p>
+      <div className={`${styles.card} ${styles.standaloneCard}`}>
+        <h2 className={styles.cardTitle}>Бот сповіщень</h2>
+        <p className={styles.hint}>
+          Сюди бот надсилатиме сповіщення про нові замовлення, скріни оплати й
+          повідомлення в підтримці.
+        </p>
 
-      {settings?.adminTelegramChatId ? (
-        <div className={styles.telegramLinkedRow}>
-          <p className={styles.telegramLinked}>✓ Бот привʼязано</p>
-          <button
-            type="button"
-            onClick={handleResetAdminTelegramLink}
-            disabled={resetAdminTelegramLink.isPending}
-            className={styles.telegramResetButton}
-          >
-            Скинути
-          </button>
-        </div>
-      ) : !TELEGRAM_BOT_USERNAME ? (
-        <p className={styles.hint}>Незабаром</p>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={handleAdminTelegramLink}
-            disabled={adminTelegramLink.isPending}
-            className={styles.telegramButton}
-          >
-            {linkOpened
-              ? 'Відкрити ще раз'
-              : adminTelegramLink.isPending
-                ? 'Генеруємо…'
-                : "Привʼязати бота"}
-          </button>
-          {linkOpened && (
-            <p className={styles.hint}>
-              Натисніть Start у Telegram — бот звʼяжеться автоматично
-            </p>
-          )}
-        </>
-      )}
+        {settings?.adminTelegramChatId ? (
+          <div className={styles.telegramLinkedRow}>
+            <p className={styles.telegramLinked}>✓ Бот привʼязано</p>
+            <button
+              type="button"
+              onClick={handleResetAdminTelegramLink}
+              disabled={resetAdminTelegramLink.isPending}
+              className={styles.telegramResetButton}
+            >
+              Скинути
+            </button>
+          </div>
+        ) : !TELEGRAM_BOT_USERNAME ? (
+          <p className={styles.hint}>Незабаром</p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={handleAdminTelegramLink}
+              disabled={adminTelegramLink.isPending}
+              className={styles.telegramButton}
+            >
+              {linkOpened
+                ? 'Відкрити ще раз'
+                : adminTelegramLink.isPending
+                  ? 'Генеруємо…'
+                  : "Привʼязати бота"}
+            </button>
+            {linkOpened && (
+              <p className={styles.hint}>
+                Натисніть Start у Telegram — бот звʼяжеться автоматично
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
-      <h2 className={styles.sectionTitle}>FAQ</h2>
-      <p className={styles.hint}>
-        Питання й відповіді, що показуються в розділі підтримки. Перетягуйте
-        картки, щоб змінити порядок.
-      </p>
+      <div className={`${styles.card} ${styles.standaloneCard}`}>
+        <h2 className={styles.cardTitle}>FAQ</h2>
+        <p className={styles.hint}>
+          Питання й відповіді, що показуються в розділі підтримки. Перетягуйте
+          картки, щоб змінити порядок.
+        </p>
 
-      <FaqAdminEditor />
+        <FaqAdminEditor />
+      </div>
     </div>
   );
 }
