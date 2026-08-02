@@ -1,15 +1,6 @@
 @use 'variables' as *;
 
-@import '@fontsource/cormorant-garamond/500.css';
-@import '@fontsource/cormorant-garamond/600.css';
-@import '@fontsource/cormorant-garamond/700.css';
-@import '@fontsource/cormorant-garamond/500-italic.css';
-@import '@fontsource/cormorant-garamond/600-italic.css';
 @import '@fontsource/tenor-sans/400.css';
-@import '@fontsource/manrope/400.css';
-@import '@fontsource/manrope/500.css';
-@import '@fontsource/manrope/600.css';
-@import '@fontsource/manrope/700.css';
 
 :root {
   --color-background: #f6f4ef;
@@ -96,7 +87,11 @@ body {
   font-family: $font-sans;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  // Cormorant defaults to oldstyle figures; prices and counts need lining ones
+  // Tenor Sans ships one weight only (400), no bold cut — every existing accent
+  // usage of it already sticks to weight 400. Suppress only synthetic bold
+  // (muddy on a font this thin); synthetic italic still kicks in for the few
+  // <em>/font-style:italic accents, since Tenor Sans has no italic face either.
+  font-synthesis: weight;
   font-variant-numeric: lining-nums;
 }
 
