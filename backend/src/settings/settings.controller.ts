@@ -37,6 +37,13 @@ export class SettingsController {
     return this.settingsService.update(dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Post('telegram-link-code')
+  generateAdminTelegramLinkCode() {
+    return this.settingsService.generateAdminTelegramLinkCode();
+  }
+
   @Get('faq')
   getFaq() {
     return this.settingsService.getFaq();

@@ -42,10 +42,21 @@ export class AppSettings {
   supportTelegramUrl: string;
 
   // Telegram chat id the bot sends admin notifications to (new orders, payment
-  // proofs, new support messages). Obtained by messaging the bot with /start
-  // and pasting back the id it replies with.
+  // proofs, new support messages). Set exclusively via the "Прив'язати бота"
+  // deep-link flow on this settings page — never entered manually, and the
+  // bot never surfaces a chat id to anyone but the admin who triggered it.
   @Column({ name: 'admin_telegram_chat_id', default: '' })
   adminTelegramChatId: string;
+
+  @Column({ name: 'admin_telegram_link_code', type: 'varchar', nullable: true })
+  adminTelegramLinkCode: string | null;
+
+  @Column({
+    name: 'admin_telegram_link_code_expires_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  adminTelegramLinkCodeExpiresAt: Date | null;
 
   // Keyed by generated id rather than a plain array — drag-and-drop reorder
   // just rewrites each item's `order`, no array splicing/reindexing.

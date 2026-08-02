@@ -2,22 +2,30 @@ import { useEffect, useState } from 'react';
 
 import type { NovaPoshtaOption } from '../../types/novaPoshta.types';
 import { useSettings } from '../../hooks/queries/useSettings';
-import { useUpdateSettingsMutation } from '../../hooks/mutations/useSettingsMutation';
+import {
+  useUpdateSettingsMutation,
+  useAdminTelegramLinkMutation,
+} from '../../hooks/mutations/useSettingsMutation';
 import Skeleton from '../../components/ui/Skeleton';
 import NovaPoshtaCityPicker from '../../components/ui/NovaPoshtaCityPicker';
 import FaqAdminEditor from '../../components/admin/FaqAdminEditor';
 import styles from './AdminSettingsPage.module.scss';
 
+const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
+  | string
+  | undefined;
+
 export default function AdminSettingsPage() {
   const { data: settings, isLoading: loading } = useSettings();
   const updateSettings = useUpdateSettingsMutation();
+  const adminTelegramLink = useAdminTelegramLinkMutation();
   const [authorName, setAuthorNameInput] = useState('');
   const [cardTransferIban, setCardTransferIban] = useState('');
   const [senderCity, setSenderCity] = useState<NovaPoshtaOption | null>(null);
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportTelegramUrl, setSupportTelegramUrl] = useState('');
-  const [adminTelegramChatId, setAdminTelegramChatId] = useState('');
+  const [linkOpened, setLinkOpened] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -34,7 +42,6 @@ export default function AdminSettingsPage() {
       setSupportEmail(settings.supportEmail);
       setSupportPhone(settings.supportPhone);
       setSupportTelegramUrl(settings.supportTelegramUrl);
-      setAdminTelegramChatId(settings.adminTelegramChatId);
     }
   }, [settings]);
 
@@ -48,8 +55,17 @@ export default function AdminSettingsPage() {
       supportEmail: supportEmail.trim(),
       supportPhone: supportPhone.trim(),
       supportTelegramUrl: supportTelegramUrl.trim(),
-      adminTelegramChatId: adminTelegramChatId.trim(),
     });
+  };
+
+  const handleAdminTelegramLink = async () => {
+    const { code } = await adminTelegramLink.mutateAsync();
+    window.open(
+      `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${code}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
+    setLinkOpened(true);
   };
 
   if (loading) {
@@ -140,20 +156,6 @@ export default function AdminSettingsPage() {
           className={styles.input}
         />
 
-        <label className={styles.label}>Telegram чат адміна</label>
-        <p className={styles.hint}>
-          Сюди бот надсилатиме сповіщення про нові замовлення, скріни оплати й
-          повідомлення в підтримці. Напишіть боту /start — він відповість вашим
-          Chat ID, вставте його сюди.
-        </p>
-
-        <input
-          value={adminTelegramChatId}
-          onChange={(e) => setAdminTelegramChatId(e.target.value)}
-          placeholder="123456789"
-          className={styles.input}
-        />
-
         <button
           type="submit"
           disabled={updateSettings.isPending}
@@ -162,6 +164,38 @@ export default function AdminSettingsPage() {
           {updateSettings.isPending ? 'Зберігаємо…' : 'Зберегти'}
         </button>
       </form>
+
+      <h2 className={styles.sectionTitle}>Бот сповіщень</h2>
+      <p className={styles.hint}>
+        Сюди бот надсилатиме сповіщення про нові замовлення, скріни оплати й
+        повідомлення в підтримці.
+      </p>
+
+      {settings?.adminTelegramChatId ? (
+        <p className={styles.telegramLinked}>✓ Бот привʼязано</p>
+      ) : !TELEGRAM_BOT_USERNAME ? (
+        <p className={styles.hint}>Незабаром</p>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={handleAdminTelegramLink}
+            disabled={adminTelegramLink.isPending}
+            className={styles.telegramButton}
+          >
+            {linkOpened
+              ? 'Відкрити ще раз'
+              : adminTelegramLink.isPending
+                ? 'Генеруємо…'
+                : "Привʼязати бота"}
+          </button>
+          {linkOpened && (
+            <p className={styles.hint}>
+              Натисніть Start у Telegram — бот звʼяжеться автоматично
+            </p>
+          )}
+        </>
+      )}
 
       <h2 className={styles.sectionTitle}>FAQ</h2>
       <p className={styles.hint}>

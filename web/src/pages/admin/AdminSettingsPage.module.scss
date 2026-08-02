@@ -55,3 +55,13 @@
   @include button-primary;
   margin-top: $spacing-lg;
 }
+
+.telegramLinked {
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.telegramButton {
+  @include button-secondary;
+  padding: $spacing-sm $spacing-xl;
+}

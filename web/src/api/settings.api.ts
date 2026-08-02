@@ -11,6 +11,11 @@ class SettingsService {
     const response = await api.patch('/settings', dto);
     return response.data;
   }
+
+  async generateAdminTelegramLinkCode(): Promise<{ code: string; expiresAt: string }> {
+    const response = await api.post('/settings/telegram-link-code');
+    return response.data;
+  }
 }
 
 export const settingsService = new SettingsService();

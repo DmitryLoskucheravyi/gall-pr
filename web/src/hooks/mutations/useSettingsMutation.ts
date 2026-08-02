@@ -6,6 +6,20 @@ import type { UpdateSettingsDto } from '../../types/settings.types';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 
+export function useAdminTelegramLinkMutation() {
+  return useMutation({
+    mutationFn: () => settingsService.generateAdminTelegramLinkCode(),
+    onError: () => {
+      store.dispatch(
+        showToast({
+          message: 'Не вдалося згенерувати посилання. Спробуйте ще раз',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
 export function useUpdateSettingsMutation() {
   const queryClient = useQueryClient();
 

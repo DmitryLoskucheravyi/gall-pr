@@ -19,5 +19,4 @@ export type UpdateSettingsDto = {
   supportEmail: string;
   supportPhone: string;
   supportTelegramUrl: string;
-  adminTelegramChatId: string;
 };

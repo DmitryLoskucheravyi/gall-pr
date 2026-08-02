@@ -61,10 +61,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
       if (!payload) {
         // No linking code in the /start payload — the user opened the bot
-        // directly (e.g. via the support link) rather than the personalized
-        // deep link from their profile. Issue a one-time code they can type
-        // into the site themselves; the same reply also covers the admin
-        // setup case, since that's just this chat's id.
+        // directly (e.g. via the support link) rather than a personalized
+        // deep link. This is always a regular visitor: the admin's own
+        // linking always goes through the payload branch below via its own
+        // dedicated deep link, so there is nothing admin-related to mention
+        // here — a chat id means nothing to anyone but the admin.
         const code = String(Math.floor(100000 + Math.random() * 900000));
 
         await this.pendingLinkRepository.delete({ chatId });
@@ -77,27 +78,41 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         );
 
         await ctx.reply(
-          `Вітаємо в Viktorumm! 🎨\n\nВаш код підтвердження: ${code}\nВведіть його на сайті → Профіль → «Ввести код з Telegram» (діє 10 хв).\n\nЯкщо ви адміністратор і хочете отримувати сюди сповіщення — ваш Telegram Chat ID: ${chatId}. Вставте його в адмінці → Налаштування → "Telegram чат адміна".`,
+          `Вітаємо в Viktorumm! 🎨\n\nВаш код підтвердження: ${code}\nВведіть його на сайті → Профіль → «Ввести код з Telegram» (діє 10 хв).`,
         );
         return;
       }
 
+      // The payload can be either a regular user's linking code (from their
+      // profile page) or the admin's own linking code (from Settings) —
+      // try both, in that order, before giving up.
       const user = await this.usersService.findByTelegramLinkCode(payload);
-      if (!user) {
+      if (user) {
+        await this.usersService.update(user.id, {
+          telegramChatId: chatId,
+          telegramLinkCode: null,
+          telegramLinkCodeExpiresAt: null,
+        });
+
         await ctx.reply(
-          'Код недійсний або застарів. Згенеруйте нове посилання в профілі на сайті.',
+          `Готово, ${user.firstName || 'вітаємо'}! Акаунт звʼязано з Telegram — тепер надсилатимемо сюди статуси ваших замовлень.`,
         );
         return;
       }
 
-      await this.usersService.update(user.id, {
-        telegramChatId: chatId,
-        telegramLinkCode: null,
-        telegramLinkCodeExpiresAt: null,
-      });
+      const isAdminLink = await this.settingsService.redeemAdminTelegramLinkCode(
+        payload,
+        chatId,
+      );
+      if (isAdminLink) {
+        await ctx.reply(
+          'Готово! Тепер сюди надходитимуть сповіщення про нові замовлення, скріни оплати й повідомлення підтримки.',
+        );
+        return;
+      }
 
       await ctx.reply(
-        `Готово, ${user.firstName || 'вітаємо'}! Акаунт звʼязано з Telegram — тепер надсилатимемо сюди статуси ваших замовлень.`,
+        'Код недійсний або застарів. Згенеруйте нове посилання ще раз.',
       );
     });
 

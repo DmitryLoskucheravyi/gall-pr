@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 
 import { AppSettings, FaqMap } from './entities/app-settings.entity';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateFaqItemDto, UpdateFaqItemDto } from './dto/faq-item.dto';
+
+const ADMIN_LINK_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
 
 @Injectable()
 export class SettingsService {
@@ -31,6 +33,8 @@ export class SettingsService {
         supportPhone: '',
         supportTelegramUrl: '',
         adminTelegramChatId: '',
+        adminTelegramLinkCode: null,
+        adminTelegramLinkCodeExpiresAt: null,
         faq: {},
       }),
     );
@@ -45,6 +49,41 @@ export class SettingsService {
     Object.assign(settings, dto);
 
     return this.settingsRepository.save(settings);
+  }
+
+  // Site -> bot direction, admin-only mirror of the profile page's Telegram
+  // linking: generates a one-time code embedded in a t.me deep link. The
+  // bot's /start handler resolves it straight to adminTelegramChatId — the
+  // admin never needs to see or paste a raw chat id.
+  async generateAdminTelegramLinkCode(): Promise<{ code: string; expiresAt: Date }> {
+    const settings = await this.get();
+    const code = randomBytes(6).toString('hex');
+    const expiresAt = new Date(Date.now() + ADMIN_LINK_CODE_TTL_MS);
+
+    settings.adminTelegramLinkCode = code;
+    settings.adminTelegramLinkCodeExpiresAt = expiresAt;
+    await this.settingsRepository.save(settings);
+
+    return { code, expiresAt };
+  }
+
+  async redeemAdminTelegramLinkCode(code: string, chatId: string): Promise<boolean> {
+    const settings = await this.get();
+
+    const valid =
+      !!settings.adminTelegramLinkCode &&
+      settings.adminTelegramLinkCode === code &&
+      !!settings.adminTelegramLinkCodeExpiresAt &&
+      settings.adminTelegramLinkCodeExpiresAt.getTime() > Date.now();
+
+    if (!valid) return false;
+
+    settings.adminTelegramChatId = chatId;
+    settings.adminTelegramLinkCode = null;
+    settings.adminTelegramLinkCodeExpiresAt = null;
+    await this.settingsRepository.save(settings);
+
+    return true;
   }
 
   async getFaq(): Promise<FaqMap> {
