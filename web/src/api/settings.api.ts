@@ -16,6 +16,11 @@ class SettingsService {
     const response = await api.post('/settings/telegram-link-code');
     return response.data;
   }
+
+  async resetAdminTelegramLink(): Promise<AppSettings> {
+    const response = await api.delete('/settings/telegram-link');
+    return response.data;
+  }
 }
 
 export const settingsService = new SettingsService();

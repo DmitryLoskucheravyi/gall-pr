@@ -67,6 +67,16 @@ export class SettingsService {
     return { code, expiresAt };
   }
 
+  async resetAdminTelegramLink(): Promise<AppSettings> {
+    const settings = await this.get();
+
+    settings.adminTelegramChatId = '';
+    settings.adminTelegramLinkCode = null;
+    settings.adminTelegramLinkCodeExpiresAt = null;
+
+    return this.settingsRepository.save(settings);
+  }
+
   async redeemAdminTelegramLinkCode(code: string, chatId: string): Promise<boolean> {
     const settings = await this.get();
 

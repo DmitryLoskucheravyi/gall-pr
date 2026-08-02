@@ -20,6 +20,23 @@ export function useAdminTelegramLinkMutation() {
   });
 }
 
+export function useResetAdminTelegramLinkMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => settingsService.resetAdminTelegramLink(),
+    onSuccess: (settings) => {
+      queryClient.setQueryData(queryKeys.settings.all, settings);
+      store.dispatch(showToast({ message: "Прив'язку бота скинуто" }));
+    },
+    onError: () => {
+      store.dispatch(
+        showToast({ message: 'Не вдалося скинути прив\'язку', variant: 'error' }),
+      );
+    },
+  });
+}
+
 export function useUpdateSettingsMutation() {
   const queryClient = useQueryClient();
 

@@ -44,6 +44,16 @@ export class SettingsController {
     return this.settingsService.generateAdminTelegramLinkCode();
   }
 
+  // Clears adminTelegramChatId (e.g. the admin deleted/blocked the chat) so
+  // "Прив'язати бота" reappears — the only way back in, since the id itself
+  // is never editable by hand.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Delete('telegram-link')
+  resetAdminTelegramLink() {
+    return this.settingsService.resetAdminTelegramLink();
+  }
+
   @Get('faq')
   getFaq() {
     return this.settingsService.getFaq();

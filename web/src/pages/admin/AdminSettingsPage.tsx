@@ -5,10 +5,12 @@ import { useSettings } from '../../hooks/queries/useSettings';
 import {
   useUpdateSettingsMutation,
   useAdminTelegramLinkMutation,
+  useResetAdminTelegramLinkMutation,
 } from '../../hooks/mutations/useSettingsMutation';
 import Skeleton from '../../components/ui/Skeleton';
 import NovaPoshtaCityPicker from '../../components/ui/NovaPoshtaCityPicker';
 import FaqAdminEditor from '../../components/admin/FaqAdminEditor';
+import { useConfirm } from '../../components/ui/ConfirmDialog';
 import styles from './AdminSettingsPage.module.scss';
 
 const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
@@ -19,6 +21,8 @@ export default function AdminSettingsPage() {
   const { data: settings, isLoading: loading } = useSettings();
   const updateSettings = useUpdateSettingsMutation();
   const adminTelegramLink = useAdminTelegramLinkMutation();
+  const resetAdminTelegramLink = useResetAdminTelegramLinkMutation();
+  const confirm = useConfirm();
   const [authorName, setAuthorNameInput] = useState('');
   const [cardTransferIban, setCardTransferIban] = useState('');
   const [senderCity, setSenderCity] = useState<NovaPoshtaOption | null>(null);
@@ -66,6 +70,19 @@ export default function AdminSettingsPage() {
       'noopener,noreferrer',
     );
     setLinkOpened(true);
+  };
+
+  const handleResetAdminTelegramLink = async () => {
+    const ok = await confirm({
+      title: "Скинути прив'язку бота?",
+      message:
+        'Сповіщення адміну перестануть надходити, доки ви не привʼяжете бота знову.',
+      confirmLabel: 'Скинути',
+      danger: true,
+    });
+    if (!ok) return;
+    setLinkOpened(false);
+    resetAdminTelegramLink.mutate();
   };
 
   if (loading) {
@@ -172,7 +189,17 @@ export default function AdminSettingsPage() {
       </p>
 
       {settings?.adminTelegramChatId ? (
-        <p className={styles.telegramLinked}>✓ Бот привʼязано</p>
+        <div className={styles.telegramLinkedRow}>
+          <p className={styles.telegramLinked}>✓ Бот привʼязано</p>
+          <button
+            type="button"
+            onClick={handleResetAdminTelegramLink}
+            disabled={resetAdminTelegramLink.isPending}
+            className={styles.telegramResetButton}
+          >
+            Скинути
+          </button>
+        </div>
       ) : !TELEGRAM_BOT_USERNAME ? (
         <p className={styles.hint}>Незабаром</p>
       ) : (
