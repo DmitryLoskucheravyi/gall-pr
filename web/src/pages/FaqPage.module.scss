@@ -6,10 +6,75 @@
   color: var(--color-text);
 }
 
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+
+  @include respond-up($breakpoint-md) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
 .panel {
   @include card;
-  max-width: 720px;
   padding: $spacing-xl;
+  flex: 2 1 0;
+  min-width: 0;
+  max-width: 720px;
+}
+
+.botInfo {
+  width: 100%;
+
+  @include respond-up($breakpoint-md) {
+    flex: 1 1 0;
+    width: auto;
+    padding-top: $spacing-md;
+  }
+}
+
+.botInfoTitle {
+  font-family: $font-display;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.botInfoHint {
+  margin-top: $spacing-xs;
+  margin-bottom: $spacing-lg;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.botInfoSteps {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding-left: 1.2em;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+
+  a {
+    color: var(--color-accent);
+    font-weight: 600;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  code {
+    border-radius: $radius-sm;
+    background-color: var(--color-background-alt);
+    padding: 1px 6px;
+    font-family: $font-sans;
+    color: var(--color-text);
+  }
 }
 
 .skeletonList {
