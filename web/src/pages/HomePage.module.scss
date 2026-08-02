@@ -447,7 +447,7 @@
 
 .ctaBandButton {
   @include button-base;
-  @include pixel-fill(var(--color-accent), var(--color-on-accent));
+  @include button-fill(var(--color-accent), var(--color-on-accent));
   padding: $spacing-lg $spacing-xxxl;
   background-color: #f7f4ec;
   color: #16140f;
