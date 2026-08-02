@@ -101,6 +101,11 @@ export class Order {
   @Column({ name: 'payment_transaction_id', type: 'varchar', nullable: true })
   paymentTransactionId: string | null;
 
+  // Screenshot the buyer attaches as proof of a manual card transfer. Set via
+  // POST /orders/:id/payment-proof; forwarded to the admin's Telegram on upload.
+  @Column({ name: 'payment_proof_url', type: 'varchar', nullable: true })
+  paymentProofUrl: string | null;
+
   @Column('decimal', { precision: 10, scale: 2 })
   total: number;
 

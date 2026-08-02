@@ -14,6 +14,7 @@ import { SupportService } from './support.service';
 import { SupportPresenceService } from './support-presence.service';
 import { UserRole } from '../users/entities/user.entity';
 import { JwtPayload } from '../auth/types/jwt-payload.type';
+import { TelegramService } from '../telegram/telegram.service';
 
 type SocketData = {
   userId: number;
@@ -30,6 +31,7 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
     private readonly jwtService: JwtService,
     private readonly supportService: SupportService,
     private readonly presence: SupportPresenceService,
+    private readonly telegramService: TelegramService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -112,5 +114,12 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
     this.server
       .to('admins')
       .emit('support:chatUpdate', this.supportService.toChatSummary(chat, message));
+
+    if (data.role === UserRole.USER) {
+      const senderName = `${chat.user.firstName} ${chat.user.lastName}`.trim();
+      this.telegramService
+        .notifyAdmin(`💬 ${senderName || chat.user.email} у підтримці:\n${content}`)
+        .catch(() => {});
+    }
   }
 }

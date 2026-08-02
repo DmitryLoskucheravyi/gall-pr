@@ -4,6 +4,10 @@ export type AppSettings = {
   cardTransferIban: string;
   novaPoshtaSenderCityRef: string;
   novaPoshtaSenderCityName: string;
+  supportEmail: string;
+  supportPhone: string;
+  supportTelegramUrl: string;
+  adminTelegramChatId: string;
   updatedAt: string;
 };
 
@@ -12,4 +16,8 @@ export type UpdateSettingsDto = {
   cardTransferIban: string;
   novaPoshtaSenderCityRef: string;
   novaPoshtaSenderCityName: string;
+  supportEmail: string;
+  supportPhone: string;
+  supportTelegramUrl: string;
+  adminTelegramChatId: string;
 };

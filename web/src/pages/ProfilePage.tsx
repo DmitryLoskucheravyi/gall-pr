@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useLikedPaintings } from '../hooks/queries/useLikedPaintings';
 import { useMyOrders } from '../hooks/queries/useOrders';
+import { useTelegramLinkMutation } from '../hooks/mutations/useUserMutations';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import OrderPreviewCard from '../components/OrderPreviewCard';
@@ -10,13 +12,28 @@ import { useAppSelector } from '../store/hooks';
 import styles from './ProfilePage.module.scss';
 
 const FAVORITES_PREVIEW_LIMIT = 6;
+const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
+  | string
+  | undefined;
 
 export default function ProfilePage() {
   const user = useAppSelector((state) => state.auth.user);
   const { data: likedPaintings = [], isLoading: likedLoading } = useLikedPaintings();
   const { data: orders = [], isLoading: ordersLoading } = useMyOrders();
+  const telegramLink = useTelegramLinkMutation();
+  const [linkOpened, setLinkOpened] = useState(false);
 
   if (!user) return null;
+
+  const handleTelegramLink = async () => {
+    const { code } = await telegramLink.mutateAsync();
+    window.open(
+      `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${code}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
+    setLinkOpened(true);
+  };
 
   const lastOrder = orders[0] ?? null;
 
@@ -51,6 +68,40 @@ export default function ProfilePage() {
             <div className={styles.statCard}>
               <p className={styles.infoLabel}>Телефон</p>
               <p className={styles.infoValue}>{user.phone || '—'}</p>
+            </div>
+
+            <div className={`${styles.statCard} ${styles.telegramCard}`}>
+              <p className={styles.infoLabel}>Telegram</p>
+              {user.telegramLinked ? (
+                <p className={styles.telegramLinked}>
+                  ✓ Звʼязано — сповіщення про замовлення приходять у Telegram
+                </p>
+              ) : !TELEGRAM_BOT_USERNAME ? (
+                <p className={styles.infoValue}>Незабаром</p>
+              ) : (
+                <>
+                  <p className={styles.telegramHint}>
+                    Отримуйте статуси замовлень у Telegram
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleTelegramLink}
+                    disabled={telegramLink.isPending}
+                    className={styles.telegramButton}
+                  >
+                    {linkOpened
+                      ? 'Відкрити ще раз'
+                      : telegramLink.isPending
+                        ? 'Генеруємо…'
+                        : "Прив'язати Telegram"}
+                  </button>
+                  {linkOpened && (
+                    <p className={styles.telegramHint}>
+                      Натисніть Start у Telegram — акаунт звʼяжеться автоматично
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

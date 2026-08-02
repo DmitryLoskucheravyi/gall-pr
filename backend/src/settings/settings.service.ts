@@ -27,6 +27,10 @@ export class SettingsService {
         cardTransferIban: '',
         novaPoshtaSenderCityRef: '',
         novaPoshtaSenderCityName: '',
+        supportEmail: '',
+        supportPhone: '',
+        supportTelegramUrl: '',
+        adminTelegramChatId: '',
         faq: {},
       }),
     );

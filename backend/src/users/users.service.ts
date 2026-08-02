@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, MoreThan, Repository } from 'typeorm';
+import { randomBytes } from 'crypto';
 
 import { User } from './entities/user.entity';
 import { Order } from '../orders/entities/order.entity';
@@ -9,6 +10,8 @@ import { CartItem } from '../cart/entities/cart-item.entity';
 import { SupportChat } from '../support/entities/support-chat.entity';
 import { SupportMessage } from '../support/entities/support-message.entity';
 import { GiveawayParticipant } from '../giveaways/entities/giveaway-participant.entity';
+
+const TELEGRAM_LINK_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
 
 @Injectable()
 export class UsersService {
@@ -42,6 +45,29 @@ export class UsersService {
 
   async update(userId: number, data: Partial<User>): Promise<void> {
     await this.usersRepository.update(userId, data);
+  }
+
+  // Short-lived code behind the t.me deep link shown on the profile page —
+  // the bot's /start handler resolves it back to this user and stores the
+  // resulting chat id.
+  async generateTelegramLinkCode(
+    userId: number,
+  ): Promise<{ code: string; expiresAt: Date }> {
+    const code = randomBytes(6).toString('hex');
+    const expiresAt = new Date(Date.now() + TELEGRAM_LINK_CODE_TTL_MS);
+
+    await this.usersRepository.update(userId, {
+      telegramLinkCode: code,
+      telegramLinkCodeExpiresAt: expiresAt,
+    });
+
+    return { code, expiresAt };
+  }
+
+  async findByTelegramLinkCode(code: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { telegramLinkCode: code, telegramLinkCodeExpiresAt: MoreThan(new Date()) },
+    });
   }
 
   // Admin listing — never exposes password/refresh/verification secrets.

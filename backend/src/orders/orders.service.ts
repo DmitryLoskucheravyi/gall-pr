@@ -21,7 +21,23 @@ import { Identity } from '../common/identity.util';
 import { PaymentsService } from '../payments/payments.service';
 import { NovaPoshtaService } from '../nova-poshta/nova-poshta.service';
 import { UsersService } from '../users/users.service';
+import { TelegramService } from '../telegram/telegram.service';
+import { UploadsService } from '../uploads/uploads.service';
 import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
+
+const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
+  [PaymentProvider.LIQPAY]: 'LiqPay',
+  [PaymentProvider.WAYFORPAY]: 'WayForPay',
+  [PaymentProvider.CASH_ON_DELIVERY]: 'Оплата при отриманні',
+  [PaymentProvider.CARD_TRANSFER]: 'Переказ на карту',
+};
+
+const ORDER_STATUS_MESSAGE: Record<OrderStatus, string> = {
+  [OrderStatus.PENDING]: 'очікує на обробку',
+  [OrderStatus.CONFIRMED]: 'підтверджено. Ми готуємо його до відправки',
+  [OrderStatus.CANCELLED]: 'скасовано',
+  [OrderStatus.COMPLETED]: 'виконано. Дякуємо за покупку!',
+};
 
 // Shared by both CartItem and Order lookups — both entities key guest rows
 // by the same guestToken column, so one where-clause builder covers both.
@@ -46,6 +62,8 @@ export class OrdersService {
     private readonly paymentsService: PaymentsService,
     private readonly novaPoshtaService: NovaPoshtaService,
     private readonly usersService: UsersService,
+    private readonly telegramService: TelegramService,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   async checkout(
@@ -173,10 +191,74 @@ export class OrdersService {
       return savedOrder;
     });
 
+    this.notifyAdminOfNewOrder(savedOrder.id).catch(() => {});
+
     return {
       ...savedOrder,
       paymentForm: this.paymentsService.createPayment(savedOrder),
     };
+  }
+
+  // Re-fetches by id (rather than using the freshly-saved entity) so eager
+  // relations — items → painting — are actually populated: save() returns
+  // what you gave it, it doesn't hydrate eager relations the way find() does.
+  private async notifyAdminOfNewOrder(orderId: number) {
+    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    if (!order) return;
+
+    let buyer: string;
+    if (order.userId) {
+      const user = await this.usersService.findById(order.userId);
+      buyer = user
+        ? `${user.firstName} ${user.lastName}\n📧 ${user.email}\n📞 ${user.phone}`
+        : `Користувач #${order.userId}`;
+    } else {
+      buyer = [
+        `${order.guestName} (гість)`,
+        order.guestPhone ? `📞 ${order.guestPhone}` : null,
+        order.guestEmail ? `📧 ${order.guestEmail}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    const itemsList = order.items
+      .map((item) => {
+        const title = item.painting?.title ?? `Картина #${item.paintingId}`;
+        const lineTotal = (Number(item.price) * item.quantity).toLocaleString('uk-UA');
+        return `• ${title} × ${item.quantity} — ${lineTotal} ₴`;
+      })
+      .join('\n');
+
+    const deliveryCost = Number(order.deliveryCost);
+    const codFee = Number(order.codFee);
+
+    const deliveryLine =
+      order.deliveryMethod === DeliveryMethod.NOVA_POSHTA
+        ? `Нова пошта, ${order.novaPoshtaCity ?? '—'} — ${order.novaPoshtaWarehouse ?? '—'}`
+        : order.deliveryMethod;
+
+    const lines = [
+      `🛒 Нове замовлення №${order.id}`,
+      '',
+      buyer,
+      order.guestAddress ? `🏠 ${order.guestAddress}` : null,
+      '',
+      itemsList,
+      '',
+      `Доставка: ${deliveryLine}`,
+      deliveryCost > 0 ? `Вартість доставки: ${deliveryCost.toLocaleString('uk-UA')} ₴` : null,
+      codFee > 0
+        ? `Комісія за накладений платіж: ${codFee.toLocaleString('uk-UA')} ₴`
+        : null,
+      `Оплата: ${PAYMENT_PROVIDER_LABEL[order.paymentProvider]}`,
+      order.callMeRequested ? '☎️ Просив(ла) зателефонувати' : null,
+      order.comment ? `Коментар: ${order.comment}` : null,
+      '',
+      `Сума: ${Number(order.total).toLocaleString('uk-UA')} ₴`,
+    ].filter((line): line is string => line !== null);
+
+    await this.telegramService.notifyAdmin(lines.join('\n'));
   }
 
   async cancel(identity: Identity, id: number): Promise<Order> {
@@ -213,6 +295,43 @@ export class OrdersService {
 
       return manager.save(order);
     });
+  }
+
+  async uploadPaymentProof(
+    identity: Identity,
+    id: number,
+    file: Express.Multer.File,
+  ): Promise<Order> {
+    const order = await this.ordersRepository.findOne({
+      where: { id, ...identityWhere(identity) },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.paymentProvider !== PaymentProvider.CARD_TRANSFER) {
+      throw new BadRequestException(
+        'Скріншот оплати можна додати лише для переказу на карту',
+      );
+    }
+
+    const { url } = await this.uploadsService.uploadImage(file);
+    order.paymentProofUrl = url;
+    const updated = await this.ordersRepository.save(order);
+
+    const buyer = order.userId
+      ? (await this.usersService.findById(order.userId))?.email ?? `Користувач #${order.userId}`
+      : `${order.guestName} (гість)`;
+
+    this.telegramService
+      .notifyAdmin(
+        `💳 Скріншот оплати до замовлення №${order.id}\n${buyer}\nСума: ${Number(order.total).toLocaleString('uk-UA')} ₴`,
+        url,
+      )
+      .catch(() => {});
+
+    return updated;
   }
 
   findAllForIdentity(identity: Identity): Promise<Order[]> {
@@ -266,7 +385,17 @@ export class OrdersService {
 
     order.paymentStatus = paymentStatus;
 
-    return this.ordersRepository.save(order);
+    const updated = await this.ordersRepository.save(order);
+
+    if (updated.userId && paymentStatus !== PaymentStatus.PENDING) {
+      const text =
+        paymentStatus === PaymentStatus.PAID
+          ? `✅ Оплату замовлення №${updated.id} підтверджено. Дякуємо!`
+          : `⚠️ Оплата замовлення №${updated.id} не пройшла. Зв'яжіться з підтримкою.`;
+      this.telegramService.notifyUser(updated.userId, text).catch(() => {});
+    }
+
+    return updated;
   }
 
   async updateStatusAdmin(id: number, status: OrderStatus): Promise<Order> {
@@ -284,7 +413,7 @@ export class OrdersService {
     const willBeCancelled = status === OrderStatus.CANCELLED;
 
     if (!wasCancelled && willBeCancelled) {
-      return this.dataSource.transaction(async (manager) => {
+      const updated = await this.dataSource.transaction(async (manager) => {
         for (const item of order.items) {
           const painting = await manager.findOne(Painting, {
             where: { id: item.paintingId },
@@ -301,10 +430,13 @@ export class OrdersService {
 
         return manager.save(order);
       });
+
+      this.notifyUserOfStatusChange(updated).catch(() => {});
+      return updated;
     }
 
     if (wasCancelled && !willBeCancelled) {
-      return this.dataSource.transaction(async (manager) => {
+      const updated = await this.dataSource.transaction(async (manager) => {
         const paintings = new Map<number, Painting>();
 
         for (const item of order.items) {
@@ -337,11 +469,25 @@ export class OrdersService {
 
         return manager.save(order);
       });
+
+      this.notifyUserOfStatusChange(updated).catch(() => {});
+      return updated;
     }
 
     order.status = status;
 
-    return this.ordersRepository.save(order);
+    const updated = await this.ordersRepository.save(order);
+    this.notifyUserOfStatusChange(updated).catch(() => {});
+    return updated;
+  }
+
+  private async notifyUserOfStatusChange(order: Order) {
+    if (!order.userId) return;
+
+    await this.telegramService.notifyUser(
+      order.userId,
+      `📦 Замовлення №${order.id} ${ORDER_STATUS_MESSAGE[order.status]}`,
+    );
   }
 
   async removeAdmin(id: number) {

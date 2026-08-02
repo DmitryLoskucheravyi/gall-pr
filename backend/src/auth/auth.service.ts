@@ -50,6 +50,7 @@ export class AuthService {
       phone: user.phone,
       role: user.role,
       isVerified: user.isVerified,
+      telegramLinked: !!user.telegramChatId,
     };
   }
 

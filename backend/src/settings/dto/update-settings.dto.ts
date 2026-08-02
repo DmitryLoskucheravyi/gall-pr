@@ -16,4 +16,20 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   novaPoshtaSenderCityName?: string;
+
+  @IsOptional()
+  @IsString()
+  supportEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  supportPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  supportTelegramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  adminTelegramChatId?: string;
 }

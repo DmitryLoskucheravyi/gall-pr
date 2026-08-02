@@ -3,6 +3,7 @@ import {
   Delete,
   Get,
   Param,
+  Post,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -27,5 +28,13 @@ export class UsersController {
   @Delete(':id')
   remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.usersService.remove(Number(id), req.user.id);
+  }
+
+  // Any authenticated user (not just admins) may link their own Telegram —
+  // overrides the class-level admin-only role restriction.
+  @Roles('USER', 'ADMIN')
+  @Post('me/telegram-link-code')
+  generateTelegramLinkCode(@Request() req: AuthenticatedRequest) {
+    return this.usersService.generateTelegramLinkCode(req.user.id);
   }
 }

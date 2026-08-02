@@ -5,6 +5,20 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 
+export function useTelegramLinkMutation() {
+  return useMutation({
+    mutationFn: () => usersService.generateTelegramLinkCode(),
+    onError: () => {
+      store.dispatch(
+        showToast({
+          message: 'Не вдалося згенерувати посилання. Спробуйте ще раз',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
 export function useDeleteUserMutation() {
   const queryClient = useQueryClient();
 

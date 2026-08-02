@@ -74,6 +74,28 @@
   color: var(--color-primary);
 }
 
+.proofSection {
+  margin-top: $spacing-lg;
+}
+
+.proofInput {
+  display: none;
+}
+
+.proofButton {
+  @include button-secondary;
+  width: 100%;
+  padding: $spacing-sm;
+  font-size: 14px;
+}
+
+.proofSent {
+  margin-top: $spacing-lg;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
 .cancelButton {
   @include button-base;
   margin-top: $spacing-lg;

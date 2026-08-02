@@ -7,8 +7,12 @@ import {
   Patch,
   Post,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 import { OrdersService } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -57,6 +61,23 @@ export class OrdersController {
   @Patch(':id/cancel')
   cancel(@Request() req: OptionalAuthenticatedRequest, @Param('id') id: string) {
     return this.ordersService.cancel(resolveIdentity(req), Number(id));
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
+  @Post(':id/payment-proof')
+  @UseInterceptors(
+    FileInterceptor('image', { storage: diskStorage({ destination: './temp' }) }),
+  )
+  uploadPaymentProof(
+    @Request() req: OptionalAuthenticatedRequest,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.ordersService.uploadPaymentProof(
+      resolveIdentity(req),
+      Number(id),
+      file,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

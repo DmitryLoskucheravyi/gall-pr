@@ -38,6 +38,7 @@ export type Order = {
   status: OrderStatus;
   paymentProvider: PaymentProvider;
   paymentStatus: PaymentStatus;
+  paymentProofUrl?: string | null;
   deliveryMethod: DeliveryMethod;
   callMeRequested: boolean;
   novaPoshtaCity?: string | null;

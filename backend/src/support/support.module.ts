@@ -8,6 +8,7 @@ import { SupportService } from './support.service';
 import { SupportController } from './support.controller';
 import { SupportGateway } from './support.gateway';
 import { SupportPresenceService } from './support-presence.service';
+import { TelegramModule } from '../telegram/telegram.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SupportPresenceService } from './support-presence.service';
       secret: 'SUPER_SECRET_KEY',
       signOptions: { expiresIn: '15m' },
     }),
+    TelegramModule,
   ],
   providers: [SupportService, SupportGateway, SupportPresenceService],
   controllers: [SupportController],

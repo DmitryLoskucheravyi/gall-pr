@@ -139,6 +139,16 @@
   }
 }
 
+.paymentProofLink {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .itemsList {
   margin-top: $spacing-md;
   padding-top: $spacing-md;

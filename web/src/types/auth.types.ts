@@ -6,6 +6,7 @@ export type User = {
   phone: string;
   role: string;
   isVerified: boolean;
+  telegramLinked: boolean;
 };
 
 export type RegisterDto = {

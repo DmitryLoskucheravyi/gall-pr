@@ -191,6 +191,16 @@ export default function AdminOrdersPage() {
                             ? 'Скасувати позначку'
                             : 'Позначити оплаченим'}
                         </button>
+                        {order.paymentProofUrl && (
+                          <a
+                            href={order.paymentProofUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.paymentProofLink}
+                          >
+                            Скрін оплати
+                          </a>
+                        )}
                       </span>
                     </div>
                   )}

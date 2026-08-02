@@ -128,6 +128,31 @@
   color: var(--color-text);
 }
 
+.telegramCard {
+  @include respond-up($breakpoint-sm) {
+    grid-column: 1 / -1;
+  }
+}
+
+.telegramLinked {
+  margin-top: $spacing-xs;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.telegramHint {
+  margin-top: $spacing-xs;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.telegramButton {
+  @include button-secondary;
+  margin-top: $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  font-size: 14px;
+}
+
 .favoritesSection {
   @include respond-up($breakpoint-lg) {
     position: sticky;

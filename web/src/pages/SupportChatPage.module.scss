@@ -6,12 +6,82 @@
   color: var(--color-text);
 }
 
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+
+  @include respond-up($breakpoint-md) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
 .panel {
   @include card;
   display: flex;
   flex-direction: column;
   height: 640px;
-  max-width: 720px;
+  flex: 2 1 0;
+  min-width: 0;
+}
+
+.contacts {
+  width: 100%;
+
+  @include respond-up($breakpoint-md) {
+    flex: 1 1 0;
+    width: auto;
+    padding-top: $spacing-md;
+  }
+}
+
+.contactsTitle {
+  font-family: $font-display;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.contactsHint {
+  margin-top: $spacing-xs;
+  margin-bottom: $spacing-lg;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.contactsList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  list-style: none;
+}
+
+.contactItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contactLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.contactValue {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+  word-break: break-word;
+  transition: color $duration-fast ease;
+
+  &:hover {
+    color: var(--color-accent);
+  }
 }
 
 .messages {

@@ -10,6 +10,7 @@ import { Giveaway } from './entities/giveaway.entity';
 import { GiveawayParticipant } from './entities/giveaway-participant.entity';
 import { CreateGiveawayDto } from './dto/create-giveaway.dto';
 import { UpdateGiveawayDto } from './dto/update-giveaway.dto';
+import { TelegramService } from '../telegram/telegram.service';
 
 @Injectable()
 export class GiveawaysService {
@@ -19,6 +20,8 @@ export class GiveawaysService {
 
     @InjectRepository(GiveawayParticipant)
     private readonly participantsRepository: Repository<GiveawayParticipant>,
+
+    private readonly telegramService: TelegramService,
   ) {}
 
   private async getEntityOrThrow(id: number): Promise<Giveaway> {
@@ -131,6 +134,13 @@ export class GiveawaysService {
     const participantsCount = await this.participantsRepository.count({
       where: { giveawayId },
     });
+
+    this.telegramService
+      .notifyUser(
+        userId,
+        `🎁 Ви приєднались до розіграшу «${giveaway.title}»! Переможця оберемо ${giveaway.deadline.toLocaleDateString('uk-UA')}.`,
+      )
+      .catch(() => {});
 
     return { joined: true, participantsCount };
   }

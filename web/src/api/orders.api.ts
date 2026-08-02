@@ -52,6 +52,15 @@ class OrdersService {
     });
     return response.data;
   }
+
+  async uploadPaymentProof(id: number, file: File): Promise<Order> {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await api.post(`/orders/${id}/payment-proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
 }
 
 export const ordersService = new OrdersService();

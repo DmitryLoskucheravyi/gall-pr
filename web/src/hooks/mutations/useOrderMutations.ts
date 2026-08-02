@@ -70,6 +70,30 @@ export function useUpdatePaymentStatusMutation() {
   });
 }
 
+export function useUploadPaymentProofMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) =>
+      ordersService.uploadPaymentProof(id, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+      store.dispatch(
+        showToast({ message: 'Скрін оплати надіслано, очікуйте підтвердження' }),
+      );
+    },
+    onError: (error: any) => {
+      store.dispatch(
+        showToast({
+          message:
+            error?.response?.data?.message ?? 'Не вдалося надіслати скрін оплати',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
 export function useDeleteOrderMutation() {
   const queryClient = useQueryClient();
 

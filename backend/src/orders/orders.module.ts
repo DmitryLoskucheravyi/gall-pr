@@ -8,6 +8,8 @@ import { Painting } from '../paintings/entities/painting.entity';
 import { PaymentsModule } from '../payments/payments.module';
 import { NovaPoshtaModule } from '../nova-poshta/nova-poshta.module';
 import { UsersModule } from '../users/users.module';
+import { TelegramModule } from '../telegram/telegram.module';
+import { UploadsModule } from '../uploads/uploads.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
@@ -17,6 +19,8 @@ import { OrdersService } from './orders.service';
     PaymentsModule,
     NovaPoshtaModule,
     UsersModule,
+    TelegramModule,
+    UploadsModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],
