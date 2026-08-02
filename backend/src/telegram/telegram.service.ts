@@ -19,6 +19,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramService.name);
   private bot: Bot | null = null;
 
+  // Chats currently in "talking to support" mode after /support. In-memory
+  // and reset on restart — low stakes, worst case someone types /support
+  // again, and persisting a live chat session to the DB buys nothing here.
+  private readonly supportModeChats = new Set<string>();
+
   constructor(
     private readonly settingsService: SettingsService,
     private readonly usersService: UsersService,
@@ -95,6 +100,50 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         `Готово, ${user.firstName || 'вітаємо'}! Акаунт звʼязано з Telegram — тепер надсилатимемо сюди статуси ваших замовлень.`,
       );
     });
+
+    bot.command('support', async (ctx) => {
+      this.supportModeChats.add(String(ctx.chat.id));
+      await ctx.reply(
+        'Слухаю вас! Напишіть повідомлення — і ми відповімо якнайшвидше.',
+      );
+    });
+
+    // Any plain-text message that isn't a recognized command: nudge toward
+    // /support if the chat hasn't opted in yet, otherwise relay it straight
+    // to the admin with whatever contact info we have for this chat.
+    bot.on('message:text', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+
+      if (!this.supportModeChats.has(chatId)) {
+        await ctx.reply(
+          'Бажаєте звернутись в підтримку? Скористайтесь командою /support',
+        );
+        return;
+      }
+
+      const contact = await this.buildContactLine(chatId, ctx.from);
+      await this.notifyAdmin(
+        `💬 Повідомлення з бота\n${contact}\n\n${ctx.message.text}`,
+      );
+      await ctx.reply('Надіслано ✓');
+    });
+  }
+
+  // Prefer the linked site account (real name/email/phone) when we have one;
+  // otherwise fall back to whatever Telegram itself hands us for this chat.
+  private async buildContactLine(
+    chatId: string,
+    from?: { first_name: string; last_name?: string; username?: string },
+  ): Promise<string> {
+    const linkedUser = await this.usersService.findByTelegramChatId(chatId);
+    if (linkedUser) {
+      return `${linkedUser.firstName} ${linkedUser.lastName} · ${linkedUser.email}${linkedUser.phone ? ` · ${linkedUser.phone}` : ''}`;
+    }
+
+    const name = `${from?.first_name ?? ''} ${from?.last_name ?? ''}`.trim() || 'Невідомий';
+    const handle = from?.username ? `@${from.username}` : `Telegram id ${chatId} (без username)`;
+
+    return `${name} · ${handle}`;
   }
 
   // Sends a plain-text message, or a photo with the text as caption when
