@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { usePaintings } from '../hooks/queries/usePaintings';
@@ -33,7 +34,11 @@ export default function HomePage() {
 
   const paintings = paintingsResponse?.data ?? [];
   const featured = paintings.filter((p) => p.isFeatured);
+  // Desktop collage has exactly 3 fixed card slots (heroCardA/B/C) — keep
+  // this at 3. The mobile/tablet background rhythm below uses every featured
+  // painting instead, uncapped.
   const heroArt = (featured.length >= 3 ? featured : paintings).slice(0, 3);
+  const heroBgSlides = featured.length > 0 ? featured : paintings;
   const totalWorks = paintingsResponse?.total ?? 0;
 
   const giveaway =
@@ -44,6 +49,52 @@ export default function HomePage() {
       )[0] ?? null;
 
   const latestNews = news?.[0] ?? null;
+
+  // Mobile/tablet-only background slideshow behind the hero (desktop keeps
+  // the layered card collage instead — see .heroBg's display:none above
+  // $breakpoint-lg). The rhythm itself (6 quick beats, then 1 slower hold)
+  // stays fixed — only which photo lands on which beat is randomized, via a
+  // shuffled queue, so it isn't always the same photo sitting on the pause.
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    if (heroBgSlides.length <= 1) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const RHYTHM = [120, 120, 120, 120, 120, 120, 1000];
+
+    // "Shuffle bag": a random-order queue of every photo, refilled once
+    // drained, so each full pass shows every photo exactly once with no
+    // fixed sequence, and (mostly) no immediate repeat across a reshuffle.
+    const shuffledQueue = (avoidFirst: number | null) => {
+      const indexes = Array.from({ length: heroBgSlides.length }, (_, i) => i);
+      for (let i = indexes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
+      }
+      if (indexes.length > 1 && indexes[0] === avoidFirst) {
+        [indexes[0], indexes[1]] = [indexes[1], indexes[0]];
+      }
+      return indexes;
+    };
+
+    let queue = shuffledQueue(null);
+    let lastShown: number | null = null;
+    let step = 0;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const tick = () => {
+      if (queue.length === 0) queue = shuffledQueue(lastShown);
+      lastShown = queue.shift()!;
+      setActiveSlide(lastShown);
+      step = (step + 1) % RHYTHM.length;
+      timeoutId = setTimeout(tick, RHYTHM[step]);
+    };
+
+    timeoutId = setTimeout(tick, RHYTHM[step]);
+
+    return () => clearTimeout(timeoutId);
+  }, [heroBgSlides.length]);
 
   const marqueeContent = (
     <>
@@ -59,6 +110,24 @@ export default function HomePage() {
   return (
     <div>
       <section className={styles.hero}>
+        {!loading && heroBgSlides.length > 0 && (
+          <div className={styles.heroBg} aria-hidden="true">
+            {heroBgSlides.map((painting, index) => (
+              <img
+                key={painting.id}
+                src={painting.cardImage}
+                alt=""
+                className={
+                  index === activeSlide
+                    ? `${styles.heroBgImage} ${styles.heroBgImageActive}`
+                    : styles.heroBgImage
+                }
+              />
+            ))}
+            <div className={styles.heroOverlay} />
+          </div>
+        )}
+
         <div className={styles.heroText}>
           <span className={styles.eyebrow}>Галерея сучасного мистецтва</span>
           <h1 className={styles.title}>

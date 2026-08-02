@@ -2,13 +2,25 @@
 
 .hero {
   position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 1fr;
   gap: $spacing-xxxl;
   align-items: center;
-  padding: $spacing-xl 0 $spacing-huge;
+  align-content: center;
+  // Full-bleed, full-screen on mobile/tablet: escape .main's container
+  // padding (same trick as .marquee below) and the page's own top padding,
+  // so the background sits flush against the header with no gap on any
+  // side. 100dvh (not vh/%) accounts for mobile browser chrome correctly.
+  margin-inline: calc(-1 * $container-padding);
+  margin-top: calc(-1 * $spacing-xxxxl);
+  min-height: 100dvh;
+  padding: $spacing-xxxl $spacing-xl $spacing-huge;
 
   @include respond-up($breakpoint-lg) {
+    overflow: visible;
+    margin-inline: 0;
+    margin-top: 0;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
     gap: $spacing-huge;
     min-height: 560px;
@@ -16,10 +28,54 @@
   }
 }
 
+// Mobile/tablet: featured paintings cycle as a full-bleed background behind
+// the text, instead of sitting in their own collage below it. Desktop keeps
+// the layered card collage (.heroArt below) and never renders this.
+.heroBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  @include respond-up($breakpoint-lg) {
+    display: none;
+  }
+}
+
+.heroBgImage {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.heroBgImageActive {
+  opacity: 1;
+}
+
+// Theme-aware wash so the text stays legible over a busy photo: lightens in
+// light mode, darkens in dark mode, using the theme's own background color.
+// Kept light on purpose — the photo should still read clearly — so the text
+// itself (--hero-photo-text + a shadow) carries the actual contrast.
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--color-background) 30%, transparent);
+}
+
+// Hidden on mobile/tablet for now — the hero there is just the full-screen
+// cycling background, no overlaid copy yet.
 .heroText {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: none;
+
+  @include respond-up($breakpoint-lg) {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .eyebrow {
@@ -53,12 +109,21 @@
   font-size: clamp(42px, 6vw, 72px);
   line-height: 1.04;
   letter-spacing: -0.02em;
-  color: var(--color-text);
+  // Forced high-contrast color on mobile/tablet, where this sits over the
+  // cycling photo background — var(--color-text) alone isn't reliably
+  // legible there. Desktop (no photo bg) reverts to the normal token below.
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   @include rise-in($delay: 0.08s);
 
   em {
     font-style: italic;
     color: var(--color-accent);
+  }
+
+  @include respond-up($breakpoint-lg) {
+    color: var(--color-text);
+    text-shadow: none;
   }
 }
 
@@ -67,8 +132,14 @@
   max-width: 480px;
   font-size: 17px;
   line-height: 1.65;
-  color: var(--color-text-secondary);
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   @include rise-in($delay: 0.16s);
+
+  @include respond-up($breakpoint-lg) {
+    color: var(--color-text-secondary);
+    text-shadow: none;
+  }
 }
 
 .actions {
@@ -111,32 +182,39 @@
   font-size: 34px;
   font-weight: 600;
   line-height: 1;
-  color: var(--color-text);
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+
+  @include respond-up($breakpoint-lg) {
+    color: var(--color-text);
+    text-shadow: none;
+  }
 }
 
 .statLabel {
   font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-// Collage: three layered, slightly rotated painting cards
-.heroArt {
-  position: relative;
-  height: 380px;
-  margin-inline: auto;
-  width: 100%;
-  max-width: 420px;
-  @include rise-in($duration: 0.8s, $delay: 0.2s);
-
-  @include respond-up($breakpoint-md) {
-    height: 480px;
-    max-width: 560px;
-  }
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 
   @include respond-up($breakpoint-lg) {
+    color: var(--color-text-muted);
+    text-shadow: none;
+  }
+}
+
+// Collage: three layered, slightly rotated painting cards — desktop only,
+// mobile/tablet uses .heroBg (the cycling background) instead.
+.heroArt {
+  display: none;
+
+  @include respond-up($breakpoint-lg) {
+    display: block;
+    position: relative;
     height: 560px;
+    width: 100%;
     max-width: none;
     margin-inline: 0;
+    @include rise-in($duration: 0.8s, $delay: 0.2s);
   }
 }
 
