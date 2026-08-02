@@ -15,6 +15,7 @@ import { OrderItem } from './order-item.entity';
 export enum OrderStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
+  SHIPPED = 'SHIPPED',
   CANCELLED = 'CANCELLED',
   COMPLETED = 'COMPLETED',
 }
@@ -105,6 +106,12 @@ export class Order {
   // POST /orders/:id/payment-proof; forwarded to the admin's Telegram on upload.
   @Column({ name: 'payment_proof_url', type: 'varchar', nullable: true })
   paymentProofUrl: string | null;
+
+  // Soft-hide for the admin's default order list. Only settable once an
+  // order reaches COMPLETED — the order itself is never deleted, it just
+  // stops cluttering the active view and only shows under the Completed tab.
+  @Column({ name: 'is_archived', type: 'boolean', default: false })
+  isArchived: boolean;
 
   @Column('decimal', { precision: 10, scale: 2 })
   total: number;

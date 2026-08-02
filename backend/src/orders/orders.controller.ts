@@ -109,4 +109,11 @@ export class OrdersController {
   removeAdmin(@Param('id') id: string) {
     return this.ordersService.removeAdmin(Number(id));
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch(':id/archive')
+  archiveAdmin(@Param('id') id: string) {
+    return this.ordersService.archiveAdmin(Number(id));
+  }
 }

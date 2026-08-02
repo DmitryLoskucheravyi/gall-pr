@@ -38,6 +38,11 @@ class OrdersService {
     return response.data;
   }
 
+  async archiveOrder(id: number): Promise<Order> {
+    const response = await api.patch(`/orders/${id}/archive`);
+    return response.data;
+  }
+
   async updateStatus(id: number, status: OrderStatus): Promise<Order> {
     const response = await api.patch(`/orders/${id}/status`, { status });
     return response.data;

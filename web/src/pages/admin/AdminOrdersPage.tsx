@@ -1,5 +1,8 @@
+import { useState } from 'react';
+
 import { useAdminOrders } from '../../hooks/queries/useOrders';
 import {
+  useArchiveOrderMutation,
   useDeleteOrderMutation,
   useUpdateOrderStatusMutation,
   useUpdatePaymentStatusMutation,
@@ -18,6 +21,7 @@ import styles from './AdminOrdersPage.module.scss';
 const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: 'Очікує',
   CONFIRMED: 'Підтверджено',
+  SHIPPED: 'Відправлено',
   CANCELLED: 'Скасовано',
   COMPLETED: 'Виконано',
 };
@@ -25,6 +29,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 const STATUS_OPTIONS: OrderStatus[] = [
   'PENDING',
   'CONFIRMED',
+  'SHIPPED',
   'CANCELLED',
   'COMPLETED',
 ];
@@ -56,12 +61,20 @@ function formatDateTime(value: string) {
   });
 }
 
+type Tab = 'active' | 'completed';
+
 export default function AdminOrdersPage() {
   const { data: orders = [], isLoading: loading } = useAdminOrders();
   const updateStatus = useUpdateOrderStatusMutation();
   const updatePaymentStatus = useUpdatePaymentStatusMutation();
   const deleteOrder = useDeleteOrderMutation();
+  const archiveOrder = useArchiveOrderMutation();
   const confirm = useConfirm();
+  const [tab, setTab] = useState<Tab>('active');
+
+  const activeOrders = orders.filter((order) => !order.isArchived);
+  const completedOrders = orders.filter((order) => order.status === 'COMPLETED');
+  const visibleOrders = tab === 'active' ? activeOrders : completedOrders;
 
   const handleStatusChange = (order: Order, status: OrderStatus) => {
     if (status === order.status) return;
@@ -82,6 +95,17 @@ export default function AdminOrdersPage() {
     });
     if (!ok) return;
     deleteOrder.mutate(order.id);
+  };
+
+  const handleArchive = async (order: Order) => {
+    const ok = await confirm({
+      title: `Прибрати замовлення №${order.id} з перегляду?`,
+      message:
+        'Воно зникне зі списку активних, але залишиться доступним у вкладці "Виконані".',
+      confirmLabel: 'Прибрати з перегляду',
+    });
+    if (!ok) return;
+    archiveOrder.mutate(order.id);
   };
 
   if (loading) {
@@ -116,11 +140,32 @@ export default function AdminOrdersPage() {
     <div>
       <h1 className={styles.title}>Замовлення</h1>
 
+      <div className={styles.tabs}>
+        <button
+          type="button"
+          onClick={() => setTab('active')}
+          className={tab === 'active' ? styles.tabActive : styles.tab}
+        >
+          Активні ({activeOrders.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('completed')}
+          className={tab === 'completed' ? styles.tabActive : styles.tab}
+        >
+          Виконані ({completedOrders.length})
+        </button>
+      </div>
+
       {orders.length === 0 ? (
         <p className={styles.muted}>Замовлень поки немає</p>
+      ) : visibleOrders.length === 0 ? (
+        <p className={styles.muted}>
+          {tab === 'active' ? 'Активних замовлень немає' : 'Виконаних замовлень немає'}
+        </p>
       ) : (
         <div className={styles.list}>
-          {orders.map((order) => {
+          {visibleOrders.map((order) => {
             const deliveryCost = Number(order.deliveryCost);
             const codFee = Number(order.codFee);
             const itemsSubtotal = order.items.reduce(
@@ -277,6 +322,15 @@ export default function AdminOrdersPage() {
                     className={styles.deleteButton}
                   >
                     Видалити замовлення
+                  </button>
+                )}
+
+                {order.status === 'COMPLETED' && !order.isArchived && (
+                  <button
+                    onClick={() => handleArchive(order)}
+                    className={styles.archiveButton}
+                  >
+                    Прибрати з перегляду
                   </button>
                 )}
               </div>

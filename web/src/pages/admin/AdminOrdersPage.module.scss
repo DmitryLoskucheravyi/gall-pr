@@ -10,6 +10,20 @@
   color: var(--color-text-secondary);
 }
 
+.tabs {
+  margin-bottom: $spacing-xl;
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.tab {
+  @include chip;
+}
+
+.tabActive {
+  @include chip($active: true);
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -233,6 +247,12 @@
 
 .deleteButton {
   @include button-danger;
+  margin-top: $spacing-lg;
+  padding: $spacing-sm $spacing-lg;
+}
+
+.archiveButton {
+  @include button-secondary;
   margin-top: $spacing-lg;
   padding: $spacing-sm $spacing-lg;
 }

@@ -36,6 +36,7 @@ const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
 const ORDER_STATUS_MESSAGE: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]: 'очікує на обробку',
   [OrderStatus.CONFIRMED]: 'підтверджено. Ми готуємо його до відправки',
+  [OrderStatus.SHIPPED]: 'відправлено! Перевірте статус посилки в застосунку Нової пошти',
   [OrderStatus.CANCELLED]: 'скасовано',
   [OrderStatus.COMPLETED]: 'виконано. Дякуємо за покупку!',
 };
@@ -509,5 +510,24 @@ export class OrdersService {
     await this.ordersRepository.remove(order);
 
     return { message: 'Order deleted' };
+  }
+
+  // "Delete from view" for completed orders — hides it from the admin's
+  // default list without touching the record. It still shows up under the
+  // Completed tab, which ignores this flag entirely.
+  async archiveAdmin(id: number): Promise<Order> {
+    const order = await this.ordersRepository.findOne({ where: { id } });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status !== OrderStatus.COMPLETED) {
+      throw new BadRequestException('Тільки виконані замовлення можна прибрати з перегляду');
+    }
+
+    order.isArchived = true;
+
+    return this.ordersRepository.save(order);
   }
 }

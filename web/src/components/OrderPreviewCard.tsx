@@ -7,6 +7,7 @@ import styles from './OrderPreviewCard.module.scss';
 const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: 'Очікує',
   CONFIRMED: 'Підтверджено',
+  SHIPPED: 'Відправлено',
   CANCELLED: 'Скасовано',
   COMPLETED: 'Виконано',
 };
@@ -14,6 +15,7 @@ const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 function statusClass(status: OrderStatus) {
   switch (status) {
     case 'CONFIRMED':
+    case 'SHIPPED':
     case 'COMPLETED':
       return `${styles.status} ${styles.statusConfirmed}`;
     case 'CANCELLED':

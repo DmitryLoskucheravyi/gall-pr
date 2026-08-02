@@ -94,6 +94,27 @@ export function useUploadPaymentProofMutation() {
   });
 }
 
+export function useArchiveOrderMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: number) => ordersService.archiveOrder(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+      store.dispatch(showToast({ message: 'Прибрано з активного перегляду' }));
+    },
+    onError: (error: any) => {
+      store.dispatch(
+        showToast({
+          message:
+            error?.response?.data?.message ?? 'Не вдалося прибрати замовлення',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
 export function useDeleteOrderMutation() {
   const queryClient = useQueryClient();
 

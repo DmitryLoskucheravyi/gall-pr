@@ -1,6 +1,11 @@
 import type { Painting } from './painting.types';
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type OrderStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'SHIPPED'
+  | 'CANCELLED'
+  | 'COMPLETED';
 export type PaymentProvider =
   | 'LIQPAY'
   | 'WAYFORPAY'
@@ -39,6 +44,7 @@ export type Order = {
   paymentProvider: PaymentProvider;
   paymentStatus: PaymentStatus;
   paymentProofUrl?: string | null;
+  isArchived: boolean;
   deliveryMethod: DeliveryMethod;
   callMeRequested: boolean;
   novaPoshtaCity?: string | null;
