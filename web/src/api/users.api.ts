@@ -21,6 +21,11 @@ class UsersService {
     const response = await api.post('/users/me/telegram-link-code/redeem', { code });
     return response.data;
   }
+
+  async resetTelegramLink(): Promise<User> {
+    const response = await api.delete('/users/me/telegram-link');
+    return response.data;
+  }
 }
 
 export const usersService = new UsersService();

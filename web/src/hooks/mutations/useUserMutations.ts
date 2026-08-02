@@ -38,6 +38,21 @@ export function useRedeemTelegramLinkCodeMutation() {
   });
 }
 
+export function useResetTelegramLinkMutation() {
+  return useMutation({
+    mutationFn: () => usersService.resetTelegramLink(),
+    onSuccess: (user) => {
+      store.dispatch(setUser(user));
+      store.dispatch(showToast({ message: "Прив'язку Telegram скинуто" }));
+    },
+    onError: () => {
+      store.dispatch(
+        showToast({ message: 'Не вдалося скинути прив\'язку', variant: 'error' }),
+      );
+    },
+  });
+}
+
 export function useDeleteUserMutation() {
   const queryClient = useQueryClient();
 

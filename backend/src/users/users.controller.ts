@@ -11,6 +11,7 @@ import {
 
 import { UsersService } from './users.service';
 import { RedeemTelegramCodeDto } from './dto/redeem-telegram-code.dto';
+import { User } from './entities/user.entity';
 import { TelegramService } from '../telegram/telegram.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -64,15 +65,32 @@ export class UsersController {
       )
       .catch(() => {});
 
+    return this.toAuthUserShape(user!);
+  }
+
+  // Clears a stale/dead chat link (e.g. the user deleted or blocked the bot)
+  // so they can go through the linking flow again from a clean state.
+  @Roles('USER', 'ADMIN')
+  @Delete('me/telegram-link')
+  async resetTelegramLink(@Request() req: AuthenticatedRequest) {
+    await this.usersService.resetTelegramLink(req.user.id);
+    const user = await this.usersService.findById(req.user.id);
+
+    return this.toAuthUserShape(user!);
+  }
+
+  // Matches AuthService.buildUserResponse's shape so the frontend can drop
+  // the result straight into Redux via setUser.
+  private toAuthUserShape(user: User) {
     return {
-      id: user!.id,
-      email: user!.email,
-      firstName: user!.firstName,
-      lastName: user!.lastName,
-      phone: user!.phone,
-      role: user!.role,
-      isVerified: user!.isVerified,
-      telegramLinked: !!user!.telegramChatId,
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      role: user.role,
+      isVerified: user.isVerified,
+      telegramLinked: !!user.telegramChatId,
     };
   }
 }

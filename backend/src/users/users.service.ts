@@ -93,6 +93,16 @@ export class UsersService {
     await this.telegramPendingLinkRepository.delete({ id: pending.id });
   }
 
+  // Clears a stale link (e.g. the user deleted/blocked the chat with the
+  // bot) so the profile page's "Прив'язати Telegram" button reappears.
+  async resetTelegramLink(userId: number): Promise<void> {
+    await this.usersRepository.update(userId, {
+      telegramChatId: null,
+      telegramLinkCode: null,
+      telegramLinkCodeExpiresAt: null,
+    });
+  }
+
   // Admin listing — never exposes password/refresh/verification secrets.
   async findAllAdmin() {
     return this.usersRepository.find({

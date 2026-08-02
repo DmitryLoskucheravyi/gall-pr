@@ -6,12 +6,14 @@ import { useMyOrders } from '../hooks/queries/useOrders';
 import {
   useTelegramLinkMutation,
   useRedeemTelegramLinkCodeMutation,
+  useResetTelegramLinkMutation,
 } from '../hooks/mutations/useUserMutations';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import OrderPreviewCard from '../components/OrderPreviewCard';
 import Skeleton from '../components/ui/Skeleton';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useAppSelector } from '../store/hooks';
 import styles from './ProfilePage.module.scss';
 
@@ -26,6 +28,8 @@ export default function ProfilePage() {
   const { data: orders = [], isLoading: ordersLoading } = useMyOrders();
   const telegramLink = useTelegramLinkMutation();
   const redeemCode = useRedeemTelegramLinkCodeMutation();
+  const resetTelegramLink = useResetTelegramLinkMutation();
+  const confirm = useConfirm();
   const [linkOpened, setLinkOpened] = useState(false);
   const [codeModalOpen, setCodeModalOpen] = useState(false);
   const [pendingCode, setPendingCode] = useState('');
@@ -50,6 +54,18 @@ export default function ProfilePage() {
       'noopener,noreferrer',
     );
     setLinkOpened(true);
+  };
+
+  const handleResetTelegramLink = async () => {
+    const ok = await confirm({
+      title: "Скинути прив'язку Telegram?",
+      message: 'Сповіщення про замовлення перестануть приходити, доки ви не привʼяжете акаунт знову.',
+      confirmLabel: 'Скинути',
+      danger: true,
+    });
+    if (!ok) return;
+    setLinkOpened(false);
+    resetTelegramLink.mutate();
   };
 
   const openCodeModal = () => {
@@ -106,9 +122,19 @@ export default function ProfilePage() {
             <div className={`${styles.statCard} ${styles.telegramCard}`}>
               <p className={styles.infoLabel}>Telegram</p>
               {user.telegramLinked ? (
-                <p className={styles.telegramLinked}>
-                  ✓ Звʼязано — сповіщення про замовлення приходять у Telegram
-                </p>
+                <div className={styles.telegramLinkedRow}>
+                  <p className={styles.telegramLinked}>
+                    ✓ Звʼязано — сповіщення про замовлення приходять у Telegram
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResetTelegramLink}
+                    disabled={resetTelegramLink.isPending}
+                    className={styles.telegramResetButton}
+                  >
+                    Скинути
+                  </button>
+                </div>
               ) : !TELEGRAM_BOT_USERNAME ? (
                 <p className={styles.infoValue}>Незабаром</p>
               ) : (
