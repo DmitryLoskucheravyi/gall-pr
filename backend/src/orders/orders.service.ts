@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { readFile } from 'fs/promises';
 
 import {
   DeliveryMethod,
@@ -316,6 +317,10 @@ export class OrdersService {
       );
     }
 
+    // Read the temp file into memory before uploadImage deletes it — the
+    // Telegram send below needs the raw bytes, not just the Cloudinary URL.
+    const proofBuffer = await readFile(file.path);
+
     const { url } = await this.uploadsService.uploadImage(file);
     order.paymentProofUrl = url;
     const updated = await this.ordersRepository.save(order);
@@ -327,7 +332,7 @@ export class OrdersService {
     this.telegramService
       .notifyAdmin(
         `💳 Скріншот оплати до замовлення №${order.id}\n${buyer}\nСума: ${Number(order.total).toLocaleString('uk-UA')} ₴`,
-        url,
+        proofBuffer,
       )
       .catch(() => {});
 

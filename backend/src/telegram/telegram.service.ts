@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Bot } from 'grammy';
+import { Bot, InputFile } from 'grammy';
 
 import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
@@ -75,33 +75,38 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Sends a plain-text message, or a photo with the text as caption when
-  // photoUrl is given (used for payment-proof screenshots).
-  async notifyAdmin(text: string, photoUrl?: string) {
+  // photo is given (used for payment-proof screenshots). Photos go out as an
+  // uploaded buffer rather than a remote URL — Telegram fetching a Cloudinary
+  // URL itself is flaky ("failed to get HTTP URL content"), while pushing the
+  // bytes directly always works.
+  async notifyAdmin(text: string, photo?: Buffer) {
     if (!this.bot) return;
 
     const settings = await this.settingsService.get();
     const chatId = settings.adminTelegramChatId?.trim();
     if (!chatId) return;
 
-    await this.send(chatId, text, photoUrl);
+    await this.send(chatId, text, photo);
   }
 
-  async notifyUser(userId: number, text: string, photoUrl?: string) {
+  async notifyUser(userId: number, text: string, photo?: Buffer) {
     if (!this.bot) return;
 
     const user = await this.usersService.findById(userId);
     const chatId = user?.telegramChatId;
     if (!chatId) return;
 
-    await this.send(chatId, text, photoUrl);
+    await this.send(chatId, text, photo);
   }
 
-  private async send(chatId: string, text: string, photoUrl?: string) {
+  private async send(chatId: string, text: string, photo?: Buffer) {
     if (!this.bot) return;
 
     try {
-      if (photoUrl) {
-        await this.bot.api.sendPhoto(chatId, photoUrl, { caption: text });
+      if (photo) {
+        await this.bot.api.sendPhoto(chatId, new InputFile(photo), {
+          caption: text,
+        });
       } else {
         await this.bot.api.sendMessage(chatId, text);
       }
