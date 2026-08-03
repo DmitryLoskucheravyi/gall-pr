@@ -28,20 +28,37 @@
   border-radius: $radius-md;
   background-color: var(--color-surface);
   padding: $spacing-md;
-  cursor: grab;
 
   &.dragging {
     opacity: 0.5;
   }
 }
 
+// The only thing that starts a reorder. A real button so it takes focus and
+// the arrow-key fallback has somewhere to land.
 .dragHandle {
   flex-shrink: 0;
-  padding-top: $spacing-sm;
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: $spacing-sm $spacing-xs;
   color: var(--color-text-muted);
   font-size: 16px;
   line-height: 1;
   cursor: grab;
+  user-select: none;
+  // Without this the browser claims the gesture and scrolls the page instead
+  // of sending pointermove — which is the whole reason touch reordering
+  // never worked here.
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover {
+    color: var(--color-text-secondary);
+  }
 }
 
 .fields {

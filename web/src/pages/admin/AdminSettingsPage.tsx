@@ -10,6 +10,7 @@ import {
 } from '../../hooks/mutations/useSettingsMutation';
 import Skeleton from '../../components/ui/Skeleton';
 import NovaPoshtaCityPicker from '../../components/ui/NovaPoshtaCityPicker';
+import Select from '../../components/ui/Select';
 import FaqAdminEditor from '../../components/admin/FaqAdminEditor';
 import { useConfirm } from '../../components/ui/ConfirmDialog';
 import styles from './AdminSettingsPage.module.scss';
@@ -160,31 +161,29 @@ export default function AdminSettingsPage() {
 
             <div className={styles.heroSlots}>
               {heroPaintingIds.map((selected, slot) => (
-                <select
+                <Select
                   key={slot}
-                  value={selected ?? ''}
-                  onChange={(e) =>
+                  value={selected === null ? '' : String(selected)}
+                  onChange={(next) =>
                     setHeroPaintingIds((prev) =>
                       prev.map((value, i) =>
-                        i === slot
-                          ? e.target.value
-                            ? Number(e.target.value)
-                            : null
-                          : value,
+                        i === slot ? (next ? Number(next) : null) : value,
                       ),
                     )
                   }
-                  className={styles.input}
+                  // "Автоматично" is a real option rather than the
+                  // placeholder, so a slot that's been set can be cleared
+                  // back to it.
+                  options={[
+                    { value: '', label: 'Автоматично' },
+                    ...heroOptions.map((painting) => ({
+                      value: String(painting.id),
+                      label: painting.title,
+                    })),
+                  ]}
                   disabled={paintingsLoading}
-                  aria-label={`Картина ${slot + 1}`}
-                >
-                  <option value="">Автоматично</option>
-                  {heroOptions.map((painting) => (
-                    <option key={painting.id} value={painting.id}>
-                      {painting.title}
-                    </option>
-                  ))}
-                </select>
+                  ariaLabel={`Картина ${slot + 1}`}
+                />
               ))}
             </div>
 

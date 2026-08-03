@@ -13,6 +13,10 @@ type Props = {
   options: SelectOption[];
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
+  // For the cases where the visible label lives outside the control — a row
+  // of identical pickers, say, where only their position tells them apart.
+  ariaLabel?: string;
 };
 
 export default function Select({
@@ -21,10 +25,14 @@ export default function Select({
   options,
   placeholder = 'Оберіть…',
   className,
+  disabled = false,
+  ariaLabel,
 }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Nothing to close if it can't be opened; also drops the listeners the
+  // moment the control is disabled while open.
   useEffect(() => {
     if (!open) return;
 
@@ -53,6 +61,10 @@ export default function Select({
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={styles.trigger}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
         <span className={selected ? styles.value : styles.placeholder}>
           {selected ? selected.label : placeholder}
@@ -72,7 +84,7 @@ export default function Select({
         </svg>
       </button>
 
-      {open && (
+      {open && !disabled && (
         <ul className={styles.menu} role="listbox">
           {options.map((option) => (
             <li key={option.value}>

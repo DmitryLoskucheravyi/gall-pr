@@ -6,9 +6,16 @@ import type {
 } from '../types/support.types';
 
 class SupportService {
+  // Note this marks the chat read server-side. For a plain count, use
+  // getMyUnreadCount instead.
   async getMyChat(): Promise<MyChatResponse> {
     const response = await api.get('/support/my-chat');
     return response.data;
+  }
+
+  async getMyUnreadCount(): Promise<number> {
+    const response = await api.get('/support/my-chat/unread');
+    return response.data.unread as number;
   }
 
   async getChats(): Promise<SupportChatSummary[]> {

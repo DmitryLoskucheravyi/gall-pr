@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { FaqEntry } from '../../types/faq.types';
 import { useFaqEntries } from '../../hooks/queries/useFaq';
@@ -17,17 +17,19 @@ function FaqEditorItem({
   onSave,
   onDelete,
   isDragging,
-  onDragStart,
-  onDragEnter,
-  onDragEnd,
+  onHandlePointerDown,
+  onHandlePointerMove,
+  onHandlePointerUp,
+  onHandleKeyDown,
 }: {
   entry: FaqEntry;
   onSave: (id: string, dto: { title: string; text: string }) => void;
   onDelete: (id: string) => void;
   isDragging: boolean;
-  onDragStart: () => void;
-  onDragEnter: () => void;
-  onDragEnd: () => void;
+  onHandlePointerDown: (event: React.PointerEvent<HTMLButtonElement>) => void;
+  onHandlePointerMove: (event: React.PointerEvent<HTMLButtonElement>) => void;
+  onHandlePointerUp: (event: React.PointerEvent<HTMLButtonElement>) => void;
+  onHandleKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
 }) {
   const [title, setTitle] = useState(entry.title);
   const [text, setText] = useState(entry.text);
@@ -35,16 +37,25 @@ function FaqEditorItem({
 
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnter={onDragEnter}
-      onDragEnd={onDragEnd}
-      onDragOver={(event) => event.preventDefault()}
+      // Read back off the pointer position during a drag to work out which
+      // row is under the finger — see handlePointerMove.
+      data-faq-id={entry.id}
       className={`${styles.item} ${isDragging ? styles.dragging : ''}`}
     >
-      <span className={styles.dragHandle} aria-hidden="true">
+      {/* Dragging starts here rather than anywhere on the row: with pointer
+          events the whole row would fight the text fields for the gesture. */}
+      <button
+        type="button"
+        onPointerDown={onHandlePointerDown}
+        onPointerMove={onHandlePointerMove}
+        onPointerUp={onHandlePointerUp}
+        onPointerCancel={onHandlePointerUp}
+        onKeyDown={onHandleKeyDown}
+        aria-label={`Перемістити «${entry.title}»`}
+        className={styles.dragHandle}
+      >
         ⠿
-      </span>
+      </button>
 
       <div className={styles.fields}>
         <input
@@ -97,6 +108,11 @@ export default function FaqAdminEditor() {
   const [newText, setNewText] = useState('');
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  // The order as it stands right now. The pointer handlers commit on release
+  // and would otherwise read whatever the closure captured when the drag
+  // began, i.e. the order before any of the moves.
+  const orderedIdsRef = useRef<string[]>([]);
+  orderedIdsRef.current = orderedIds;
 
   useEffect(() => {
     setOrderedIds(entries.map((entry) => entry.id));
@@ -129,24 +145,86 @@ export default function FaqAdminEditor() {
     deleteItem.mutate(id);
   };
 
-  const handleDragEnter = (overId: string) => {
-    if (!draggingId || draggingId === overId) return;
+  // Pointer events rather than the HTML5 drag API, which mobile browsers
+  // never implemented: `draggable` does nothing on touch, so reordering was
+  // impossible from a phone. These work the same for mouse, touch and pen.
+  const moveOver = (draggedId: string, overId: string) => {
+    if (draggedId === overId) return;
 
     setOrderedIds((prev) => {
       const next = [...prev];
-      const from = next.indexOf(draggingId);
+      const from = next.indexOf(draggedId);
       const to = next.indexOf(overId);
       if (from === -1 || to === -1) return prev;
       next.splice(from, 1);
-      next.splice(to, 0, draggingId);
+      next.splice(to, 0, draggedId);
       return next;
     });
   };
 
-  const handleDragEnd = () => {
+  // Takes the list explicitly where the caller already knows it: the ref is
+  // only refreshed on render, so a caller that reorders and commits in the
+  // same tick would otherwise send the order from before its own move.
+  const commitOrder = (ids: string[] = orderedIdsRef.current) => {
+    reorder.mutate(Object.fromEntries(ids.map((id, index) => [id, index])));
+  };
+
+  const handlePointerDown = (
+    id: string,
+    event: React.PointerEvent<HTMLButtonElement>,
+  ) => {
+    // Stops the press turning into a text selection or a page scroll before
+    // the first move even arrives.
+    event.preventDefault();
+    // Capture keeps every later move and the release aimed at this handle,
+    // even once the rows have shuffled out from under the finger.
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggingId(id);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!draggingId) return;
+
+    // Capture means the events no longer report what's under the pointer,
+    // so ask the document directly.
+    const under = document.elementFromPoint(event.clientX, event.clientY);
+    const overId = under
+      ?.closest<HTMLElement>('[data-faq-id]')
+      ?.dataset.faqId;
+    if (overId) moveOver(draggingId, overId);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!draggingId) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     setDraggingId(null);
-    const order = Object.fromEntries(orderedIds.map((id, index) => [id, index]));
-    reorder.mutate(order);
+    commitOrder();
+  };
+
+  // The handle is a real button, so it takes focus — these give it something
+  // to do there, and are the only way to reorder without a pointer at all.
+  const handleHandleKeyDown = (
+    id: string,
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    const step =
+      event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+    if (step === 0) return;
+
+    event.preventDefault();
+    const current = orderedIdsRef.current;
+    const from = current.indexOf(id);
+    const to = from + step;
+    if (from === -1 || to < 0 || to >= current.length) return;
+
+    const next = [...current];
+    next.splice(from, 1);
+    next.splice(to, 0, id);
+    setOrderedIds(next);
+    commitOrder(next);
   };
 
   return (
@@ -161,9 +239,12 @@ export default function FaqAdminEditor() {
                 onSave={handleSaveItem}
                 onDelete={handleDelete}
                 isDragging={draggingId === entry.id}
-                onDragStart={() => setDraggingId(entry.id)}
-                onDragEnter={() => handleDragEnter(entry.id)}
-                onDragEnd={handleDragEnd}
+                onHandlePointerDown={(event) =>
+                  handlePointerDown(entry.id, event)
+                }
+                onHandlePointerMove={handlePointerMove}
+                onHandlePointerUp={handlePointerUp}
+                onHandleKeyDown={(event) => handleHandleKeyDown(entry.id, event)}
               />
             ))}
           </div>

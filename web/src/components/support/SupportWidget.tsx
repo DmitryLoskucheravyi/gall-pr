@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { supportService } from '../../api/support.api';
+import type { SupportMessage } from '../../types/support.types';
+import { useSupportSocket } from '../../hooks/useSupportSocket';
 import { useAppSelector } from '../../store/hooks';
 import styles from './SupportWidget.module.scss';
 
@@ -46,6 +48,10 @@ export default function SupportWidget() {
   const location = useLocation();
 
   const [unread, setUnread] = useState(0);
+  // The chat page renders in place of this widget and owns the socket while
+  // it's open, so the badge only listens when the user is somewhere else.
+  const onSupportPage = location.pathname.startsWith('/support');
+  const socket = useSupportSocket(!!userId && !onSupportPage);
   const [dock, setDock] = useState<Dock>(
     () =>
       readDock() ?? {
@@ -66,14 +72,30 @@ export default function SupportWidget() {
   // button somewhere doesn't also open the chat.
   const suppressClickRef = useRef(false);
 
+  // Runs again on the way back from the chat, where the count has just been
+  // zeroed by reading it.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || onSupportPage) return;
 
     supportService
-      .getMyChat()
-      .then(({ chat }) => setUnread(chat.unreadByUser))
+      .getMyUnreadCount()
+      .then(setUnread)
       .catch(() => {});
-  }, [userId]);
+  }, [userId, onSupportPage]);
+
+  // Keeps the badge live while the user browses the rest of the site.
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessage = (message: SupportMessage) => {
+      if (message.senderRole === 'ADMIN') setUnread((prev) => prev + 1);
+    };
+
+    socket.on('support:message', handleMessage);
+    return () => {
+      socket.off('support:message', handleMessage);
+    };
+  }, [socket]);
 
   // Keep the launcher on-screen when the viewport resizes or rotates. The
   // new object also re-renders it, so the docked x (derived from
@@ -84,7 +106,7 @@ export default function SupportWidget() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  if (!userId || location.pathname.startsWith('/support')) return null;
+  if (!userId || onSupportPage) return null;
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -159,7 +181,9 @@ export default function SupportWidget() {
         }
         navigate('/support');
       }}
-      aria-label="Підтримка"
+      aria-label={
+        unread > 0 ? `Підтримка, ${unread} нових повідомлень` : 'Підтримка'
+      }
       className={`${styles.launcher} ${drag ? styles.dragging : ''}`}
       style={{
         left: drag ? drag.x : dockedX,
@@ -167,7 +191,11 @@ export default function SupportWidget() {
         transition: drag ? 'none' : undefined,
       }}
     >
-      {unread > 0 && <span className={styles.badge}>{unread}</span>}
+      {unread > 0 && (
+        <span className={styles.badge} aria-hidden="true">
+          {unread > 99 ? '99+' : unread}
+        </span>
+      )}
       <svg viewBox="0 0 24 24" fill="none">
         <path
           d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z"

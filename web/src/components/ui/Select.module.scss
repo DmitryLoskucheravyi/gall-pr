@@ -10,6 +10,11 @@
   gap: $spacing-sm;
   cursor: pointer;
   text-align: left;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 }
 
 // min-width:0 is the whole fix for the runaway width. A flex item defaults

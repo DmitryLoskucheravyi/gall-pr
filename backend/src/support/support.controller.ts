@@ -20,6 +20,17 @@ export class SupportController {
     return { chat, messages };
   }
 
+  // Read-only counterpart to my-chat, for the floating widget's badge.
+  // Fetching the chat itself marks it read, so asking that route for a count
+  // would clear the very thing it just reported — the badge showed up once
+  // and was gone on the next page load.
+  @Get('my-chat/unread')
+  async getMyUnreadCount(@Request() req: AuthenticatedRequest) {
+    const chat = await this.supportService.getOrCreateChatForUser(req.user.id);
+
+    return { unread: chat.unreadByUser };
+  }
+
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
   @Get('chats')
