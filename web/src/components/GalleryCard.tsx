@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Painting } from '../types/painting.types';
 import LikeButton from './ui/LikeButton';
 import styles from './GalleryCard.module.scss';
+import { cdnImage } from '../utils/imageUrl';
 
 type Props = {
   painting: Painting;
@@ -16,7 +17,7 @@ export default function GalleryCard({ painting, natural = false }: Props) {
     <article className={styles.card}>
       <Link to={`/painting/${painting.id}`} className={styles.linkArea}>
         <img
-          src={painting.cardImage}
+          src={cdnImage(painting.cardImage, 600)}
           alt={painting.title}
           loading="lazy"
           decoding="async"

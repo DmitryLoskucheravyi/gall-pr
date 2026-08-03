@@ -1,6 +1,12 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class UpdateSettingsDto {
+  // @IsOptional() waves through null as well as undefined, which is what
+  // clears the hero back to the automatic pick.
+  @IsOptional()
+  @IsInt()
+  heroPaintingId?: number | null;
+
   @IsOptional()
   @IsString()
   authorName?: string;

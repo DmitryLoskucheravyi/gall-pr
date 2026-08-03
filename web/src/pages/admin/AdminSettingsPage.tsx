@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { NovaPoshtaOption } from '../../types/novaPoshta.types';
 import { useSettings } from '../../hooks/queries/useSettings';
+import { usePaintings } from '../../hooks/queries/usePaintings';
 import {
   useUpdateSettingsMutation,
   useAdminTelegramLinkMutation,
@@ -29,7 +30,17 @@ export default function AdminSettingsPage() {
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportTelegramUrl, setSupportTelegramUrl] = useState('');
+  const [heroPaintingId, setHeroPaintingId] = useState<number | null>(null);
   const [linkOpened, setLinkOpened] = useState(false);
+
+  // Same filter the home page uses to build its own fallback, so the list
+  // here can't offer a painting the hero would refuse to show.
+  const { data: paintingsResponse, isLoading: paintingsLoading } = usePaintings({
+    page: 1,
+    limit: 200,
+    isAvailable: true,
+  });
+  const heroOptions = paintingsResponse?.data ?? [];
 
   useEffect(() => {
     if (settings) {
@@ -46,6 +57,7 @@ export default function AdminSettingsPage() {
       setSupportEmail(settings.supportEmail);
       setSupportPhone(settings.supportPhone);
       setSupportTelegramUrl(settings.supportTelegramUrl);
+      setHeroPaintingId(settings.heroPaintingId);
     }
   }, [settings]);
 
@@ -59,6 +71,7 @@ export default function AdminSettingsPage() {
       supportEmail: supportEmail.trim(),
       supportPhone: supportPhone.trim(),
       supportTelegramUrl: supportTelegramUrl.trim(),
+      heroPaintingId,
     });
   };
 
@@ -119,6 +132,44 @@ export default function AdminSettingsPage() {
               placeholder="Ім'я автора"
               className={styles.input}
             />
+          </div>
+
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Головна сторінка</h2>
+
+            <label className={styles.label}>Картина на головному екрані</label>
+            <p className={styles.hint}>
+              Показується фоном у шапці головної сторінки на телефонах і
+              планшетах. Якщо не обрано — береться перша рекомендована робота.
+            </p>
+
+            <select
+              value={heroPaintingId ?? ''}
+              onChange={(e) =>
+                setHeroPaintingId(e.target.value ? Number(e.target.value) : null)
+              }
+              className={styles.input}
+              disabled={paintingsLoading}
+            >
+              <option value="">Автоматично</option>
+              {heroOptions.map((painting) => (
+                <option key={painting.id} value={painting.id}>
+                  {painting.title}
+                </option>
+              ))}
+            </select>
+
+            {/* The saved painting can go missing later — it may have been
+                deleted, sold or hidden. Say so instead of silently snapping
+                the select back to "Автоматично". */}
+            {heroPaintingId !== null &&
+              !paintingsLoading &&
+              !heroOptions.some((painting) => painting.id === heroPaintingId) && (
+                <p className={styles.hint}>
+                  Обрана раніше картина більше недоступна — зараз показується
+                  перша рекомендована. Оберіть іншу.
+                </p>
+              )}
           </div>
 
           <div className={styles.card}>

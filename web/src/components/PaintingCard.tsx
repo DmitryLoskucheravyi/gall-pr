@@ -4,6 +4,7 @@ import type { Painting } from '../types/painting.types';
 import { useAuthorName } from '../hooks/queries/useSettings';
 import LikeButton from './ui/LikeButton';
 import styles from './PaintingCard.module.scss';
+import { cdnImage } from '../utils/imageUrl';
 
 type Props = {
   painting: Painting;
@@ -30,7 +31,7 @@ export default function PaintingCard({
       <div className={styles.imageWrap}>
         <Link to={`/painting/${painting.id}`} className={styles.imageLink}>
           <img
-            src={painting.cardImage}
+            src={cdnImage(painting.cardImage, 600)}
             alt={painting.title}
             loading="lazy"
             decoding="async"

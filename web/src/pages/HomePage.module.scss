@@ -1,8 +1,5 @@
 // ---------- Hero: asymmetric split with layered painting collage ----------
 
-// Kept in sync with PAN_DURATION_MS in HomePage.tsx.
-$hero-pan-duration: 12s;
-
 // Mobile hero title only — see .title below. Imported in global.scss.
 $hero-title-font: 'Rubik', sans-serif;
 // Italic serif accent word inside the mobile hero title — the editorial
@@ -48,8 +45,8 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   }
 }
 
-// Mobile/tablet: three "slot machine" shards cycling paintings behind the
-// hero copy. Desktop keeps the layered card collage (.heroArt below) and
+// Mobile/tablet: one painting behind the hero copy, Ken Burns panning across
+// it on a loop. Desktop keeps the layered card collage (.heroArt below) and
 // never renders any of this.
 .heroBg {
   // Fixed, not absolute: the hero (and its text) scrolls with the page,
@@ -68,97 +65,18 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   }
 }
 
-// Every band is a full-size layer holding a complete painting; what makes it
-// a shard is the clip-path below. Because all three layers share identical
-// geometry, the moment they land on the same painting their crops line up
-// into one seamless picture with no offset math at all.
-.heroBand {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.heroBandImage {
+.heroBgImage {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   filter: blur(4px);
-  // Always slightly overscanned, for two reasons: blur() fades the outermost
-  // pixels to transparent, so at scale 1 a pale fringe shows along the hero's
-  // edges during the spin; and matching the pan's first and last keyframe
-  // means adding or dropping .heroBandImagePanning never snaps the photo.
+  // Always slightly overscanned: blur() fades the outermost pixels to
+  // transparent, so at scale 1 a pale fringe shows along the hero's edges.
+  // HERO_PAN_REST in HomePage.tsx mirrors this value, so the camera's first
+  // move picks up from exactly here without a jump.
   transform: scale(1.08);
-}
-
-// Two slanted cuts across the hero split it into three uneven shards —
-// roughly 24% / 31% / 45% of the area — instead of equal horizontal strips.
-// The cuts tilt opposite ways, so the middle shard is a wedge: wide on the
-// left, narrow on the right. Neighbours overlap by 0.8% so no antialiased
-// hairline shows along a shared edge; the overlap is invisible because both
-// sides carry the same painting once assembled.
-.heroBandTop {
-  clip-path: polygon(0 0, 100% 0, 100% 30.4%, 0 18.4%);
-}
-
-.heroBandMiddle {
-  clip-path: polygon(0 17.6%, 100% 29.6%, 100% 47.4%, 0 63.4%);
-}
-
-.heroBandBottom {
-  clip-path: polygon(0 62.6%, 100% 46.6%, 100% 100%, 0 100%);
-}
-
-// Once all three shards land on the same painting, tour across it in sync —
-// every shard gets the identical keyframe on an identically-sized box, which
-// (since they're windows onto the same reconstructed image) reads as one
-// continuous camera move rather than three separate ones. A push in to the
-// first corner, a slow drift around the painting easing back out the whole
-// way, then a pull back to wide. The two big moves — in and out — share one
-// curve; the three corner hops keep the gentler sine below. Which corner is
-// visited when is re-drawn per cycle (see the --pan-x*/--pan-y* custom
-// properties set from HomePage.tsx), so the tour never reads as scripted.
-//
-// Waypoints sit at 18/38/58/78, which gives the opening a longer 18% of the
-// timeline to cover its much larger change (a 0.40 zoom plus a corner move)
-// while leaving the three hops an even 20% each.
-@keyframes hero-band-pan {
-  0% {
-    // Matches .heroBandImage's resting scale, so starting and ending the
-    // animation never snaps the photo.
-    transform: scale(1.08) translate(0%, 0%);
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); // ease in, settle
-  }
-  // The zoom eases out continuously across the tour instead of jumping in
-  // and then holding — a camera that keeps breathing rather than freezing.
-  18% {
-    transform: scale(1.48) translate(var(--pan-x1, -11%), var(--pan-y1, -11%));
-  }
-  38% {
-    transform: scale(1.45) translate(var(--pan-x2, 11%), var(--pan-y2, -11%));
-  }
-  58% {
-    transform: scale(1.42) translate(var(--pan-x3, 11%), var(--pan-y3, 11%));
-  }
-  78% {
-    transform: scale(1.39) translate(var(--pan-x4, -11%), var(--pan-y4, 11%));
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); // settle back out
-  }
-  100% {
-    transform: scale(1.08) translate(0%, 0%); // pull back out, wide
-  }
-}
-
-.heroBandImagePanning {
-  @media (prefers-reduced-motion: no-preference) {
-    // The default curve governs the three corner-to-corner hops. A gentle,
-    // symmetric sine ease: enough to round off the direction change at each
-    // corner, but without the long stall the previous curve's late-loaded
-    // deceleration produced.
-    animation: hero-band-pan $hero-pan-duration cubic-bezier(0.37, 0, 0.63, 1)
-      both;
-  }
 }
 
 // Scrim that keeps the copy legible over a busy photo. Darkens in both
@@ -179,7 +97,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   );
 }
 
-// Mobile/tablet shows the kicker/title/subtitle/actions over the slot-machine
+// Mobile/tablet shows the kicker/title/subtitle/actions over the photo
 // background — only the stats stay hidden there (see .stats below) and
 // reappear at desktop's split layout.
 .heroText {
@@ -285,7 +203,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   letter-spacing: -0.01em;
   text-transform: uppercase;
   // Forced high-contrast color on mobile/tablet, where this sits over the
-  // cycling photo background — var(--color-text) alone isn't reliably
+  // photo background — var(--color-text) alone isn't reliably
   // legible there. Desktop (no photo bg) reverts to the normal token below.
   color: var(--hero-photo-text);
   font-weight: 900;

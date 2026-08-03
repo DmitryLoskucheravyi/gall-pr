@@ -8,6 +8,8 @@ export type AppSettings = {
   supportPhone: string;
   supportTelegramUrl: string;
   adminTelegramChatId: string;
+  // Painting behind the home hero. Null means "pick automatically".
+  heroPaintingId: number | null;
   updatedAt: string;
 };
 
@@ -19,4 +21,5 @@ export type UpdateSettingsDto = {
   supportEmail: string;
   supportPhone: string;
   supportTelegramUrl: string;
+  heroPaintingId: number | null;
 };

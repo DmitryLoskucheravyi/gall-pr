@@ -58,6 +58,12 @@ export class AppSettings {
   })
   adminTelegramLinkCodeExpiresAt: Date | null;
 
+  // Painting shown behind the home page hero. Null (or an id that no longer
+  // resolves — the painting may have been deleted or hidden since) means the
+  // frontend falls back to the first featured work on its own.
+  @Column({ name: 'hero_painting_id', type: 'int', nullable: true })
+  heroPaintingId: number | null;
+
   // Keyed by generated id rather than a plain array — drag-and-drop reorder
   // just rewrites each item's `order`, no array splicing/reindexing.
   @Column('simple-json', { default: '{}' })

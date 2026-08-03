@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 import type { Giveaway } from '../types/giveaway.types';
 import styles from './GiveawayHighlight.module.scss';
+import { cdnImage } from '../utils/imageUrl';
 
 function formatDeadline(iso: string) {
   return new Date(iso).toLocaleString('uk-UA', {
@@ -32,7 +33,7 @@ export default function GiveawayHighlight({
     <Link to={`/giveaways/${giveaway.id}`} className={styles.banner}>
       <div className={styles.imageWrap}>
         <img
-          src={giveaway.painting.cardImage}
+          src={cdnImage(giveaway.painting.cardImage, 900)}
           alt={giveaway.painting.title}
           className={styles.image}
         />

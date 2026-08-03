@@ -35,6 +35,7 @@ export class SettingsService {
         adminTelegramChatId: '',
         adminTelegramLinkCode: null,
         adminTelegramLinkCodeExpiresAt: null,
+        heroPaintingId: null,
         faq: {},
       }),
     );

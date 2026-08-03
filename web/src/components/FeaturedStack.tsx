@@ -7,6 +7,7 @@ import { useInView } from '../hooks/useInView';
 import LikeButton from './ui/LikeButton';
 import Skeleton from './ui/Skeleton';
 import styles from './FeaturedStack.module.scss';
+import { cdnImage } from '../utils/imageUrl';
 
 const BASE_ROTATE = -22;
 const SPREAD_X = 58;
@@ -79,7 +80,7 @@ export default function FeaturedStack({ paintings }: Props) {
         >
           <Link to={`/painting/${painting.id}`} className={styles.imageLink}>
             <img
-              src={painting.cardImage}
+              src={cdnImage(painting.cardImage, 900)}
               alt={painting.title}
               loading="lazy"
               decoding="async"

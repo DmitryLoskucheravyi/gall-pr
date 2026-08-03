@@ -1,15 +1,10 @@
-import {
-  Fragment,
-  useEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { usePaintings } from '../hooks/queries/usePaintings';
 import { useGiveaways } from '../hooks/queries/useGiveaways';
 import { useNews } from '../hooks/queries/useNews';
+import { useSettings } from '../hooks/queries/useSettings';
 import FeaturedStack, {
   FeaturedStackSkeleton,
 } from '../components/FeaturedStack';
@@ -19,47 +14,119 @@ import GiveawayHighlight, {
 import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
 import Skeleton from '../components/ui/Skeleton';
 import Reveal from '../components/ui/Reveal';
+import { cdnImage } from '../utils/imageUrl';
 import styles from './HomePage.module.scss';
 
 const MARQUEE_QUOTE = 'Мистецтво - це лінія навколо твоїх думок';
 const MARQUEE_AUTHOR = 'Густав Клімт';
 
-// Which shard each hero band is cut into — see the clip-paths in
-// HomePage.module.scss. Top to bottom.
-const HERO_BAND_SHAPES = [
-  styles.heroBandTop,
-  styles.heroBandMiddle,
-  styles.heroBandBottom,
-];
-
-// The four corners the hero's Ken Burns tour visits, in %-of-image-box units
-// (see --pan-x*/--pan-y* in HomePage.module.scss). Listed around the
-// perimeter, so neighbours in this list are always edge-adjacent.
+// ---------- Hero camera ----------
 //
-// 11% is close to the ceiling: the image is scaled to at least 1.39, which
-// overhangs the box by (1.39-1)/2, and the pan shifts it by 1.39x the value
-// here — so anything past ~14% would drag a bare edge into view. The
-// remaining slack absorbs the blur fringe. Keep these in sync with the
-// keyframe fallbacks in HomePage.module.scss.
-const HERO_CORNERS: Array<[string, string]> = [
-  ['-11%', '-11%'],
-  ['11%', '-11%'],
-  ['11%', '11%'],
-  ['-11%', '11%'],
-];
+// The Ken Burns move is generated per pass rather than written as fixed
+// keyframes: a stylesheet can't vary how far the camera travels, how long it
+// takes or whether it pushes in or pulls back, and a loop that repeats the
+// same envelope reads as a loop within a minute or two.
 
-// A fresh tour each pan cycle: random starting corner, random direction —
-// eight variants, so it never reads as a scripted top-left-then-clockwise
-// sweep. It walks the perimeter rather than shuffling freely, because the
-// keyframes give every hop the same slice of the timeline: a free shuffle
-// would sometimes pair diagonally opposite corners, and that hop covers 41%
-// more ground in the same time, lurching across the painting.
-function tourCorners(): Array<[string, string]> {
-  const start = Math.floor(Math.random() * HERO_CORNERS.length);
-  const step = Math.random() < 0.5 ? 1 : HERO_CORNERS.length - 1;
-  return HERO_CORNERS.map(
-    (_, i) => HERO_CORNERS[(start + i * step) % HERO_CORNERS.length],
+// How far the photo may shift at a given zoom before its own edge swings
+// into frame. The scaled image overhangs the box by (scale-1)/2 per side and
+// a translate of t% moves it by scale*t, so t tops out at (scale-1)/(2*scale).
+// Held to 82% of that so the blur fringe stays out of frame as well. Note how
+// steeply this shrinks as the camera pulls wide: at 1.45 there's ~12.7% of
+// room, at 1.10 barely 3.7% — a wide shot is necessarily a centred one.
+function panReach(scale: number) {
+  return ((scale - 1) / (2 * scale)) * 100 * 0.82;
+}
+
+type PanPoint = { scale: number; x: number; y: number };
+
+// Matches .heroBgImage's resting transform in the stylesheet, so the first
+// move picks up exactly where the still frame sat.
+const HERO_PAN_REST: PanPoint = { scale: 1.08, x: 0, y: 0 };
+
+// A pass covers the same ground either way, so this is what sets the
+// camera's speed — both the drift and the zoom ride the same timeline.
+const HERO_PAN_MIN_MS = 8000;
+const HERO_PAN_MAX_MS = 12500;
+// The arc is handed to the browser as sampled points; this many keeps the
+// straight interpolation between them from reading as a series of facets.
+const HERO_PAN_SAMPLES = 8;
+
+// Pulls a point back onto the safe disc for its zoom. Radial rather than
+// per-axis: the disc sits inside the square of allowed offsets, so this
+// satisfies both axes at once.
+function clampToReach(x: number, y: number, scale: number) {
+  const reach = panReach(scale);
+  const distance = Math.hypot(x, y);
+  if (distance <= reach) return { x, y };
+  return { x: (x / distance) * reach, y: (y / distance) * reach };
+}
+
+// One continuous camera move, beginning exactly where the previous one
+// stopped so the tour never cuts. Picks a fresh heading, a zoom that may
+// push in, pull back or barely change, and bows the path sideways so the
+// camera arcs across the canvas instead of sliding down a straight line.
+function nextPanMove(from: PanPoint) {
+  const close = 1.32 + Math.random() * 0.18;
+  const wide = 1.08 + Math.random() * 0.12;
+
+  // Most passes commit to a real push in or pull back; only the occasional
+  // one holds its zoom and just drifts.
+  const roll = Math.random();
+  const toScale =
+    roll < 0.46
+      ? close
+      : roll < 0.92
+        ? wide
+        : Math.min(1.5, Math.max(1.08, from.scale + (Math.random() - 0.5) * 0.12));
+
+  // Aim across the frame, not at some bearing measured from the centre.
+  // A bearing alone says nothing about where the camera already is, so it
+  // can land the next stop right beside the current one — those passes
+  // crawl, and roughly one in eighteen of them barely moved at all.
+  // Heading back through the middle guarantees every pass covers ground.
+  const across =
+    Math.hypot(from.x, from.y) > 0.5
+      ? Math.atan2(-from.y, -from.x)
+      : Math.random() * Math.PI * 2;
+  const heading = across + (Math.random() - 0.5) * Math.PI * 0.6;
+
+  const spread = panReach(toScale) * (0.7 + Math.random() * 0.3);
+  const end = clampToReach(
+    Math.cos(heading) * spread,
+    Math.sin(heading) * spread,
+    toScale,
   );
+
+  // Control point of a quadratic bow, pushed off the straight line between
+  // the two ends — this is what turns a slide into a drift.
+  const bow = (Math.random() - 0.5) * panReach((from.scale + toScale) / 2) * 0.9;
+  const control = {
+    x: (from.x + end.x) / 2 + Math.cos(heading + Math.PI / 2) * bow,
+    y: (from.y + end.y) / 2 + Math.sin(heading + Math.PI / 2) * bow,
+  };
+
+  const frames: Keyframe[] = [];
+  for (let i = 0; i <= HERO_PAN_SAMPLES; i++) {
+    const t = i / HERO_PAN_SAMPLES;
+    const inv = 1 - t;
+    const scale = from.scale + (toScale - from.scale) * t;
+    const point = clampToReach(
+      inv * inv * from.x + 2 * inv * t * control.x + t * t * end.x,
+      inv * inv * from.y + 2 * inv * t * control.y + t * t * end.y,
+      scale,
+    );
+    frames.push({
+      offset: t,
+      transform: `scale(${scale.toFixed(4)}) translate(${point.x.toFixed(3)}%, ${point.y.toFixed(3)}%)`,
+    });
+  }
+
+  return {
+    frames,
+    durationMs:
+      HERO_PAN_MIN_MS + Math.random() * (HERO_PAN_MAX_MS - HERO_PAN_MIN_MS),
+    end: { scale: toScale, ...end },
+  };
 }
 
 // The hero headline, as lines of parts — the mobile hero stacks and staggers
@@ -240,10 +307,11 @@ export default function HomePage() {
   });
   const { data: giveaways, isLoading: giveawayLoading } = useGiveaways();
   const { data: news, isLoading: newsLoading } = useNews();
+  const { data: settings } = useSettings();
 
-  // Memoized so heroBgSlides keeps a stable identity between renders — the
-  // slot-machine effect below depends on it, and react-query's structural
-  // sharing means a refetch of unchanged data won't restart the animation.
+  // Memoized so heroSlide below keeps a stable identity between renders —
+  // the pan effect depends on it, and react-query's structural sharing means
+  // a refetch of unchanged data won't restart the animation.
   const paintings = useMemo(
     () => paintingsResponse?.data ?? [],
     [paintingsResponse],
@@ -253,13 +321,8 @@ export default function HomePage() {
     [paintings],
   );
   // Desktop collage has exactly 3 fixed card slots (heroCardA/B/C) — keep
-  // this at 3. The mobile/tablet background rhythm below uses every featured
-  // painting instead, uncapped.
+  // this at 3.
   const heroArt = (featured.length >= 3 ? featured : paintings).slice(0, 3);
-  const heroBgSlides = useMemo(
-    () => (featured.length > 0 ? featured : paintings),
-    [featured, paintings],
-  );
   const totalWorks = paintingsResponse?.total ?? 0;
 
   const giveaway =
@@ -272,156 +335,109 @@ export default function HomePage() {
 
   const latestNews = news?.[0] ?? null;
 
-  // Mobile/tablet-only "slot machine" behind the hero (desktop keeps the
-  // layered card collage instead — see .heroBg's display:none above
-  // $breakpoint-lg). Three horizontal bands, each showing a third of a
-  // painting (top/middle/bottom). Bands spin through random decoys one at a
-  // time, top to bottom, each guaranteed to settle on the same target
-  // painting's matching third — so the three always reassemble into one
-  // complete picture. The target never appears mid-spin (that would spoil
-  // the reveal) and no band repeats a decoy on consecutive beats. Once
-  // assembled, pans/zooms across it for a couple of seconds (see
-  // .heroBandImagePanning), then reshuffles and repeats.
-  const [bandImages, setBandImages] = useState<[number, number, number]>([
-    0, 0, 0,
-  ]);
-  const [assembled, setAssembled] = useState(false);
-  const [panCorners, setPanCorners] = useState(HERO_CORNERS);
-  // Gates the hero copy's entrance: nothing animates until the first
-  // painting is actually on screen (see .heroTextWaiting).
+  // The single painting behind the mobile/tablet hero, Ken Burns panning
+  // across it on a loop (desktop shows the layered card collage instead —
+  // see .heroBg's display:none above $breakpoint-lg). The admin picks it on
+  // the settings page; if that's unset, or points at a work that's since
+  // been removed or hidden, fall back to the first featured one.
+  const heroSlide = useMemo(() => {
+    const chosen = paintings.find(
+      (painting) => painting.id === settings?.heroPaintingId,
+    );
+    return chosen ?? (featured[0] ?? paintings[0] ?? null);
+  }, [paintings, featured, settings?.heroPaintingId]);
+
+  // Gates the hero copy's entrance: nothing animates until the painting is
+  // actually on screen (see .heroTextWaiting).
   const [heroReady, setHeroReady] = useState(false);
+  const heroImageRef = useRef<HTMLImageElement | null>(null);
+  // Exactly the URL the <img> renders, so waiting on it warms the same cache
+  // entry the browser will use rather than fetching the photo twice.
+  const heroImageSrc = heroSlide ? cdnImage(heroSlide.cardImage, 1400) : null;
 
   useEffect(() => {
-    if (heroBgSlides.length === 0) {
-      // No painting to wait for — once the request has settled, release the
-      // copy rather than leaving the hero blank forever.
+    if (!heroImageSrc) {
+      // Nothing to wait for — once the request has settled, release the copy
+      // rather than leaving the hero blank forever.
       if (!loading) setHeroReady(true);
       return;
     }
 
-    const reducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches;
+    let cancelled = false;
 
-    if (reducedMotion) {
-      setBandImages([0, 0, 0]);
-      setAssembled(true);
+    // Wait for the photo to decode before revealing anything: an <img> that
+    // hasn't decoded yet paints nothing, so the copy would otherwise animate
+    // over an empty screen. Capped so a broken image still releases the copy
+    // instead of stalling the hero forever.
+    const decoded = (async () => {
+      try {
+        const img = new Image();
+        img.src = heroImageSrc;
+        await img.decode();
+      } catch {
+        // Undecodable — show it anyway and let the browser deal.
+      }
+    })();
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 5000));
+
+    void Promise.race([decoded, timeout]).then(() => {
+      if (cancelled) return;
       setHeroReady(true);
-      return;
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [heroImageSrc, loading]);
+
+  // The camera itself. Each move is generated when the previous one lands and
+  // starts from that exact frame, so the drift is continuous rather than a
+  // fixed loop that visibly restarts. Driven through the Web Animations API
+  // because the shape of every pass differs — a CSS keyframe set can't vary
+  // its own distance, duration or zoom direction.
+  useEffect(() => {
+    const image = heroImageRef.current;
+    if (!heroReady || !image || prefersReducedMotion()) return;
 
     let cancelled = false;
-    const sleep = (ms: number) =>
-      new Promise<void>((resolve) => setTimeout(resolve, ms));
-    const randomIndex = () => Math.floor(Math.random() * heroBgSlides.length);
-
-    const setBand = (band: 0 | 1 | 2, index: number) => {
-      setBandImages((prev) => {
-        const next: [number, number, number] = [...prev];
-        next[band] = index;
-        return next;
-      });
-    };
-
-    // Pause is as long as the Ken Burns pan needs to read as smooth (see
-    // $hero-pan-duration in HomePage.module.scss — keep both in sync) rather
-    // than a fixed short beat like the spin.
-    const PAN_DURATION_MS = 12000;
-
-    // Fetch+decode a slide before any band settles on it — an <img> whose
-    // src changes to a not-yet-decoded image keeps showing its previous
-    // frame, so without this a band (the bottom one has the least lead time)
-    // can sit on its last decoy through the whole pan. Capped so a broken
-    // image degrades to that old lag rather than stalling the loop.
-    const preloadSlide = (index: number) =>
-      Promise.race([
-        (async () => {
-          try {
-            const img = new Image();
-            img.src = heroBgSlides[index].cardImage;
-            await img.decode();
-          } catch {
-            // Undecodable — carry on and show it anyway.
-          }
-        })(),
-        sleep(5000),
-      ]);
+    let running: Animation | null = null;
 
     const run = async () => {
-      // Local mirror of what each band currently shows — the spin needs it
-      // to avoid repeating a decoy on consecutive beats, and state isn't
-      // readable from inside this loop.
-      const shown: [number, number, number] = [0, 0, 0];
-
-      // Intro: the first painting arrives already whole across all three
-      // bands, so the hero opens on a Ken Burns tour of it while the kicker
-      // and headline animate in. The slot machine only takes over afterwards
-      // — and starts from this painting, so its first reveal lands on a
-      // different one.
-      let target = 0;
-      await preloadSlide(0);
-      if (cancelled) return;
-      // The photo is decoded and about to paint — let the copy animate in
-      // alongside the opening pan.
-      setHeroReady(true);
-      setPanCorners(tourCorners());
-      setAssembled(true);
-      await sleep(PAN_DURATION_MS);
+      let from = HERO_PAN_REST;
 
       while (!cancelled) {
-        setAssembled(false);
+        const move = nextPanMove(from);
+        const next = image.animate(move.frames, {
+          duration: move.durationMs,
+          // Nearly linear through the middle, with only mild smoothing at
+          // the ends. A full ease-in-out would drop the camera to a dead
+          // stop at every junction between passes, and on passes this short
+          // that reads as move-pause-move rather than one continuous drift.
+          easing: 'cubic-bezier(0.4, 0.1, 0.6, 0.9)',
+          fill: 'forwards',
+        });
 
-        // Fresh painting every cycle (when there's more than one to pick).
-        const previous = target;
-        do {
-          target = randomIndex();
-        } while (heroBgSlides.length > 1 && target === previous);
+        // The outgoing pass held its last frame, which is where this one
+        // begins — so dropping it now changes nothing on screen.
+        running?.cancel();
+        running = next;
 
-        // Start the fetch now so it overlaps the spin below.
-        const targetReady = preloadSlide(target);
-
-        for (const band of [0, 1, 2] as const) {
-          const beats = 6 + Math.floor(Math.random() * 4); // 6-9 decoys
-          for (let i = 0; i < beats; i++) {
-            if (cancelled) return;
-            // Never flash the target mid-spin, never hold the same decoy two
-            // beats in a row. With ≤2 paintings there's no room for both
-            // rules — fall back to whatever single alternative exists.
-            let decoy = randomIndex();
-            if (heroBgSlides.length > 2) {
-              while (decoy === target || decoy === shown[band]) {
-                decoy = randomIndex();
-              }
-            } else if (heroBgSlides.length === 2) {
-              decoy = target === 0 ? 1 : 0;
-            }
-            shown[band] = decoy;
-            setBand(band, decoy);
-            await sleep(140);
-          }
-          if (cancelled) return;
-          await targetReady;
-          if (cancelled) return;
-          shown[band] = target;
-          setBand(band, target);
+        try {
+          await next.finished;
+        } catch {
+          return; // cancelled mid-pass
         }
-
-        if (cancelled) return;
-        // Let the freshly assembled picture register as a whole for a beat
-        // before the camera starts moving.
-        await sleep(700);
-        if (cancelled) return;
-        setPanCorners(tourCorners());
-        setAssembled(true);
-        await sleep(PAN_DURATION_MS);
+        from = move.end;
       }
     };
 
     void run();
+
     return () => {
       cancelled = true;
+      running?.cancel();
     };
-  }, [heroBgSlides, loading]);
+  }, [heroReady, heroImageSrc]);
 
   // Each half of the two-copy track (see .marqueeTrack's -50% scroll) has to
   // be wider than the viewport or a gap opens up mid-loop — one quote isn't,
@@ -441,44 +457,21 @@ export default function HomePage() {
   return (
     <div>
       <section className={styles.hero}>
-        {!loading && heroBgSlides.length > 0 && (
+        {!loading && heroSlide && (
           <div
             className={styles.heroBg}
             aria-hidden="true"
-            style={
-              {
-                '--pan-x1': panCorners[0][0],
-                '--pan-y1': panCorners[0][1],
-                '--pan-x2': panCorners[1][0],
-                '--pan-y2': panCorners[1][1],
-                '--pan-x3': panCorners[2][0],
-                '--pan-y3': panCorners[2][1],
-                '--pan-x4': panCorners[3][0],
-                '--pan-y4': panCorners[3][1],
-              } as CSSProperties
-            }
           >
-            {([0, 1, 2] as const).map((band) => {
-              const painting = heroBgSlides[bandImages[band]];
-              if (!painting) return null;
-
-              return (
-                <div
-                  key={band}
-                  className={`${styles.heroBand} ${HERO_BAND_SHAPES[band]}`}
-                >
-                  <img
-                    src={painting.cardImage}
-                    alt=""
-                    className={
-                      assembled
-                        ? `${styles.heroBandImage} ${styles.heroBandImagePanning}`
-                        : styles.heroBandImage
-                    }
-                  />
-                </div>
-              );
-            })}
+            <img
+              ref={heroImageRef}
+              src={heroImageSrc ?? undefined}
+              alt=""
+              // The largest thing on a phone's first screen — tell the
+              // browser to fetch it ahead of everything else below the fold.
+              fetchPriority="high"
+              decoding="async"
+              className={styles.heroBgImage}
+            />
             <div className={styles.heroOverlay} />
           </div>
         )}
