@@ -1,9 +1,16 @@
+// Hidden on phones, where the chat is an app screen and every pixel of
+// height goes to the conversation.
 .title {
-  margin-bottom: $spacing-xxl;
-  font-family: $font-display;
-  font-size: clamp(30px, 4vw, 40px);
-  letter-spacing: -0.01em;
-  color: var(--color-text);
+  display: none;
+
+  @include respond-up($breakpoint-md) {
+    display: block;
+    margin-bottom: $spacing-xxl;
+    font-family: $font-display;
+    font-size: clamp(30px, 4vw, 40px);
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+  }
 }
 
 .layout {
@@ -17,13 +24,70 @@
   }
 }
 
+// The conversation's box. On phones it escapes the container padding and
+// fills everything under the header, so the composer sits on the bottom edge
+// of the screen and only the transcript scrolls — the old fixed 640px was
+// taller than the viewport itself once the header and page padding were
+// counted, which is what squashed the whole thing.
 .panel {
-  @include card;
   display: flex;
+  min-height: 0;
   flex-direction: column;
-  height: 640px;
-  flex: 2 1 0;
-  min-width: 0;
+  margin-inline: calc(-1 * $container-padding);
+  margin-top: calc(-1 * $spacing-xxxxl);
+  height: calc(100dvh - var(--header-height, 64px));
+
+  @include respond-up($breakpoint-md) {
+    @include card;
+    margin-inline: 0;
+    margin-top: 0;
+    // Still bounded by the viewport, just with room for the page's own
+    // chrome around it.
+    height: min(640px, calc(100dvh - 220px));
+    flex: 2 1 0;
+    min-width: 0;
+  }
+}
+
+// Phone-only chat bar: the page's <h1> is hidden at this width, so this
+// carries the title and the way back out. Above $breakpoint-md the heading
+// is back and the chat sits in a card, so this would only duplicate it.
+.chatHeader {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: $spacing-xs;
+  border-bottom: 1px solid var(--color-border);
+  padding: $spacing-sm $spacing-md;
+
+  @include respond-up($breakpoint-md) {
+    display: none;
+  }
+}
+
+.backButton {
+  display: flex;
+  height: 36px;
+  width: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+
+  svg {
+    height: 22px;
+    width: 22px;
+  }
+}
+
+.chatHeaderTitle {
+  font-family: $font-display;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .contacts {
@@ -82,59 +146,4 @@
   &:hover {
     color: var(--color-accent);
   }
-}
-
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  padding: $spacing-xl;
-}
-
-.empty {
-  margin: auto;
-  max-width: 320px;
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-.bubbleRow {
-  display: flex;
-
-  &.own {
-    justify-content: flex-end;
-  }
-}
-
-.bubble {
-  max-width: 75%;
-  padding: $spacing-sm $spacing-md;
-  font-size: 14px;
-  line-height: 1.4;
-  background-color: var(--color-background-alt);
-  color: var(--color-text);
-}
-
-.bubbleRow.own .bubble {
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.form {
-  display: flex;
-  gap: $spacing-md;
-  border-top: 1px solid var(--color-border);
-  padding: $spacing-lg;
-}
-
-.input {
-  @include input-base;
-  flex: 1;
-}
-
-.sendButton {
-  @include button-primary;
-  padding: $spacing-sm $spacing-xxl;
 }

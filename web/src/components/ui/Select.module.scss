@@ -12,14 +12,31 @@
   text-align: left;
 }
 
+// min-width:0 is the whole fix for the runaway width. A flex item defaults
+// to min-width:auto, i.e. it refuses to shrink below its min-content size —
+// and for nowrap text that's the entire string. The ellipsis never got a
+// chance to apply: instead the label pushed the trigger past its own 100%
+// width and dragged the page into horizontal scroll. Nova Poshta warehouse
+// names ("Відділення №5 (до 30 кг на одне місце): вул. …") are long enough
+// to do it every time.
+//
+// Given two lines rather than one because the useful part of those names —
+// the street — sits at the end, and a single clipped line hides exactly
+// that. Short labels elsewhere still occupy one line.
 .value {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  min-width: 0;
   overflow: hidden;
   color: var(--color-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  // A single unbroken token can't force the box wide either.
+  overflow-wrap: anywhere;
 }
 
 .placeholder {
+  min-width: 0;
   overflow: hidden;
   color: var(--color-text-muted);
   text-overflow: ellipsis;
@@ -73,6 +90,8 @@
 .option {
   display: block;
   width: 100%;
+  // Long labels wrap inside the menu instead of widening it.
+  overflow-wrap: anywhere;
   padding: $spacing-sm $spacing-md;
   border-radius: $radius-sm;
   color: var(--color-text);

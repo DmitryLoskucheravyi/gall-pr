@@ -2,14 +2,41 @@
   color: var(--color-text-secondary);
 }
 
+// Sits over the artwork's top-left corner rather than above it, matching
+// .navArrow's treatment — but always visible, since it's the way out of the
+// page and a touch device never triggers the hover that reveals those.
 .backButton {
-  margin-bottom: $spacing-xl;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  position: absolute;
+  top: $spacing-lg;
+  left: $spacing-lg;
+  z-index: 3;
+  display: flex;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: $radius-pill;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 
   &:hover {
-    color: var(--color-primary);
+    background-color: var(--color-primary);
+    transform: scale(1.08);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+
+  svg {
+    height: 20px;
+    width: 20px;
   }
 }
 
@@ -33,23 +60,33 @@
 
 .imageWrap {
   position: relative;
+  // Mobile/tablet: the artwork runs the full width of the screen and sits
+  // flush under the header — no container padding, no gap above it. Desktop
+  // leaves it inside its grid column, where full-bleed would make no sense.
+  margin-inline: calc(-1 * $container-padding);
+  margin-top: calc(-1 * $spacing-xxxxl);
+
+  @include respond-up($breakpoint-lg) {
+    margin-inline: 0;
+    margin-top: 0;
+  }
 }
 
+// No card chrome around the artwork — no frame, no radius, no shadow. The
+// painting is the page.
 .mainImageButton {
   display: block;
   width: 100%;
-  overflow: hidden;
-  border-radius: $radius-xl;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-background-alt);
-  box-shadow: var(--shadow-sm);
   cursor: zoom-in;
 }
 
+// Its own proportions, at full width. The square box this used to be forced
+// into letterboxed every painting that wasn't square, and with the container
+// gone those bars would just be bare page.
 .mainImage {
-  aspect-ratio: 1 / 1;
+  display: block;
   width: 100%;
-  object-fit: contain;
+  height: auto;
 }
 
 .navArrow {

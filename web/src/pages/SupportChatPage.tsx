@@ -1,19 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { supportService } from '../api/support.api';
 import type { SupportMessage } from '../types/support.types';
 import { useSupportSocket } from '../hooks/useSupportSocket';
 import { useSettings } from '../hooks/queries/useSettings';
+import ChatThread from '../components/support/ChatThread';
 import styles from './SupportChatPage.module.scss';
 
 export default function SupportChatPage() {
   const [messages, setMessages] = useState<SupportMessage[]>([]);
-  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
 
   const socket = useSupportSocket(true);
-  const messagesRef = useRef<HTMLDivElement>(null);
   const { data: settings } = useSettings();
+  const navigate = useNavigate();
 
   const hasContacts =
     !!settings?.supportEmail ||
@@ -41,20 +42,8 @@ export default function SupportChatPage() {
     };
   }, [socket]);
 
-  // Scroll only the messages container, never the page. scrollIntoView would
-  // bubble up and yank the whole window down to the footer on each new message.
-  useEffect(() => {
-    const el = messagesRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages]);
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const content = input.trim();
-    if (!content || !socket) return;
-
-    socket.emit('support:message', { content });
-    setInput('');
+  const handleSend = (content: string) => {
+    socket?.emit('support:message', { content });
   };
 
   return (
@@ -63,38 +52,38 @@ export default function SupportChatPage() {
 
       <div className={styles.layout}>
         <div className={styles.panel}>
-          <div ref={messagesRef} className={styles.messages}>
-            {loading ? (
-              <p className={styles.empty}>Завантаження…</p>
-            ) : messages.length === 0 ? (
-              <p className={styles.empty}>
-                Напишіть нам, якщо виникли питання — ми відповімо якнайшвидше
-              </p>
-            ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`${styles.bubbleRow} ${
-                    message.senderRole === 'USER' ? styles.own : ''
-                  }`}
+          <ChatThread
+            messages={messages}
+            loading={loading}
+            ownRole="USER"
+            onSend={handleSend}
+            disabled={!socket}
+            emptyText="Напишіть нам, якщо виникли питання — ми відповімо якнайшвидше"
+            header={
+              // Phone-only: there the chat is a full screen with no page
+              // heading above it, so this carries both the title and the way
+              // out. From $breakpoint-md up the page's own <h1> takes over.
+              <div className={styles.chatHeader}>
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className={styles.backButton}
+                  aria-label="Назад"
                 >
-                  <div className={styles.bubble}>{message.content}</div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Повідомлення…"
-              className={styles.input}
-            />
-            <button type="submit" className={styles.sendButton}>
-              Надіслати
-            </button>
-          </form>
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M19 12H5M11 6l-6 6 6 6"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <span className={styles.chatHeaderTitle}>Підтримка</span>
+              </div>
+            }
+          />
         </div>
 
         {hasContacts && (

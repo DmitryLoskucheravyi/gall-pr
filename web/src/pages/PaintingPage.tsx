@@ -47,12 +47,24 @@ export default function PaintingPage() {
   if (loading) {
     return (
       <div>
-        <button onClick={() => navigate(-1)} className={styles.backButton}>
-          ← Назад
-        </button>
-
         <div className={styles.grid}>
-          <div>
+          <div className={styles.imageWrap}>
+            <button
+              onClick={() => navigate(-1)}
+              className={styles.backButton}
+              aria-label="Назад"
+            >
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M19 12H5M11 6l-6 6 6 6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
             <Skeleton className={styles.skeletonImage} />
           </div>
 
@@ -100,13 +112,25 @@ export default function PaintingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
 
-      <button onClick={() => navigate(-1)} className={styles.backButton}>
-        ← Назад
-      </button>
-
       <div className={styles.grid}>
         <div>
           <div className={styles.imageWrap}>
+            <button
+              onClick={() => navigate(-1)}
+              className={styles.backButton}
+              aria-label="Назад"
+            >
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M19 12H5M11 6l-6 6 6 6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
             <button
               onClick={() => setLightboxOpen(true)}
               className={styles.mainImageButton}

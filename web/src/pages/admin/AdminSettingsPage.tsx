@@ -15,8 +15,7 @@ import { useConfirm } from '../../components/ui/ConfirmDialog';
 import styles from './AdminSettingsPage.module.scss';
 
 const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
-  | string
-  | undefined;
+  string | undefined;
 
 export default function AdminSettingsPage() {
   const { data: settings, isLoading: loading } = useSettings();
@@ -30,16 +29,24 @@ export default function AdminSettingsPage() {
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportTelegramUrl, setSupportTelegramUrl] = useState('');
-  const [heroPaintingId, setHeroPaintingId] = useState<number | null>(null);
+  // Three hero slots, held as one array so the picker below is a loop rather
+  // than three near-identical blocks.
+  const [heroPaintingIds, setHeroPaintingIds] = useState<Array<number | null>>([
+    null,
+    null,
+    null,
+  ]);
   const [linkOpened, setLinkOpened] = useState(false);
 
   // Same filter the home page uses to build its own fallback, so the list
   // here can't offer a painting the hero would refuse to show.
-  const { data: paintingsResponse, isLoading: paintingsLoading } = usePaintings({
-    page: 1,
-    limit: 200,
-    isAvailable: true,
-  });
+  const { data: paintingsResponse, isLoading: paintingsLoading } = usePaintings(
+    {
+      page: 1,
+      limit: 200,
+      isAvailable: true,
+    },
+  );
   const heroOptions = paintingsResponse?.data ?? [];
 
   useEffect(() => {
@@ -57,7 +64,11 @@ export default function AdminSettingsPage() {
       setSupportEmail(settings.supportEmail);
       setSupportPhone(settings.supportPhone);
       setSupportTelegramUrl(settings.supportTelegramUrl);
-      setHeroPaintingId(settings.heroPaintingId);
+      setHeroPaintingIds([
+        settings.heroPaintingId1,
+        settings.heroPaintingId2,
+        settings.heroPaintingId3,
+      ]);
     }
   }, [settings]);
 
@@ -71,7 +82,9 @@ export default function AdminSettingsPage() {
       supportEmail: supportEmail.trim(),
       supportPhone: supportPhone.trim(),
       supportTelegramUrl: supportTelegramUrl.trim(),
-      heroPaintingId,
+      heroPaintingId1: heroPaintingIds[0],
+      heroPaintingId2: heroPaintingIds[1],
+      heroPaintingId3: heroPaintingIds[2],
     });
   };
 
@@ -137,37 +150,56 @@ export default function AdminSettingsPage() {
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Головна сторінка</h2>
 
-            <label className={styles.label}>Картина на головному екрані</label>
+            <label className={styles.label}>Картини на головному екрані</label>
             <p className={styles.hint}>
-              Показується фоном у шапці головної сторінки на телефонах і
-              планшетах. Якщо не обрано — береться перша рекомендована робота.
+              Три роботи для шапки головної сторінки. На комп'ютері камера
+              обходить їх по черзі, на телефоні показується одна з трьох, обрана
+              випадково. Порожній слот заповнюється рекомендованою роботою
+              автоматично.
             </p>
 
-            <select
-              value={heroPaintingId ?? ''}
-              onChange={(e) =>
-                setHeroPaintingId(e.target.value ? Number(e.target.value) : null)
-              }
-              className={styles.input}
-              disabled={paintingsLoading}
-            >
-              <option value="">Автоматично</option>
-              {heroOptions.map((painting) => (
-                <option key={painting.id} value={painting.id}>
-                  {painting.title}
-                </option>
+            <div className={styles.heroSlots}>
+              {heroPaintingIds.map((selected, slot) => (
+                <select
+                  key={slot}
+                  value={selected ?? ''}
+                  onChange={(e) =>
+                    setHeroPaintingIds((prev) =>
+                      prev.map((value, i) =>
+                        i === slot
+                          ? e.target.value
+                            ? Number(e.target.value)
+                            : null
+                          : value,
+                      ),
+                    )
+                  }
+                  className={styles.input}
+                  disabled={paintingsLoading}
+                  aria-label={`Картина ${slot + 1}`}
+                >
+                  <option value="">Автоматично</option>
+                  {heroOptions.map((painting) => (
+                    <option key={painting.id} value={painting.id}>
+                      {painting.title}
+                    </option>
+                  ))}
+                </select>
               ))}
-            </select>
+            </div>
 
-            {/* The saved painting can go missing later — it may have been
-                deleted, sold or hidden. Say so instead of silently snapping
-                the select back to "Автоматично". */}
-            {heroPaintingId !== null &&
-              !paintingsLoading &&
-              !heroOptions.some((painting) => painting.id === heroPaintingId) && (
+            {/* A saved painting can go missing later — deleted, sold or
+                hidden. Say so instead of silently snapping that slot back to
+                "Автоматично". */}
+            {!paintingsLoading &&
+              heroPaintingIds.some(
+                (selected) =>
+                  selected !== null &&
+                  !heroOptions.some((painting) => painting.id === selected),
+              ) && (
                 <p className={styles.hint}>
-                  Обрана раніше картина більше недоступна — зараз показується
-                  перша рекомендована. Оберіть іншу.
+                  Одна з обраних раніше картин більше недоступна — замість неї
+                  показується рекомендована. Оберіть іншу.
                 </p>
               )}
           </div>
@@ -191,8 +223,7 @@ export default function AdminSettingsPage() {
               Місто відправлення (Нова пошта)
             </label>
             <p className={styles.hint}>
-              Звідки рахується вартість доставки й комісія за накладений
-              платіж
+              Звідки рахується вартість доставки й комісія за накладений платіж
             </p>
 
             <NovaPoshtaCityPicker value={senderCity} onChange={setSenderCity} />
@@ -283,7 +314,7 @@ export default function AdminSettingsPage() {
                 ? 'Відкрити ще раз'
                 : adminTelegramLink.isPending
                   ? 'Генеруємо…'
-                  : "Привʼязати бота"}
+                  : 'Привʼязати бота'}
             </button>
             {linkOpened && (
               <p className={styles.hint}>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { supportService } from '../../api/support.api';
 import type {
@@ -6,6 +6,7 @@ import type {
   SupportMessage,
 } from '../../types/support.types';
 import { useSupportSocket } from '../../hooks/useSupportSocket';
+import ChatThread from '../../components/support/ChatThread';
 import styles from './AdminSupportPage.module.scss';
 
 function initialsOf(chat: SupportChatSummary) {
@@ -27,17 +28,8 @@ export default function AdminSupportPage() {
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [input, setInput] = useState('');
 
   const socket = useSupportSocket(true);
-  const messagesRef = useRef<HTMLDivElement>(null);
-
-  // Scroll only the messages container, never the page. scrollIntoView would
-  // bubble up and yank the whole window down to the footer.
-  const scrollMessagesToBottom = () => {
-    const el = messagesRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  };
 
   useEffect(() => {
     supportService
@@ -69,16 +61,13 @@ export default function AdminSupportPage() {
       online: boolean;
     }) => {
       setChats((prev) =>
-        prev.map((c) =>
-          c.user.id === userId ? { ...c, isOnline: online } : c,
-        ),
+        prev.map((c) => (c.user.id === userId ? { ...c, isOnline: online } : c)),
       );
     };
 
     const handleMessage = (message: SupportMessage) => {
       if (message.chatId === selectedChatId) {
         setMessages((prev) => [...prev, message]);
-        scrollMessagesToBottom();
       }
     };
 
@@ -112,13 +101,9 @@ export default function AdminSupportPage() {
     socket?.emit('support:joinChat', { chatId: chat.id });
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const content = input.trim();
-    if (!content || !socket || !selectedChatId) return;
-
-    socket.emit('support:message', { chatId: selectedChatId, content });
-    setInput('');
+  const handleSend = (content: string) => {
+    if (!selectedChatId) return;
+    socket?.emit('support:message', { chatId: selectedChatId, content });
   };
 
   const selectedChat = chats.find((c) => c.id === selectedChatId) ?? null;
@@ -127,8 +112,14 @@ export default function AdminSupportPage() {
     <div>
       <h1 className={styles.title}>Підтримка</h1>
 
-      <div className={styles.layout}>
-        <div className={styles.sidebar}>
+      {/* Messenger navigation: on a phone the list and the conversation are
+          two screens and this class decides which one is showing. Both panes
+          are on screen at once from $breakpoint-md up, where the class stops
+          meaning anything. */}
+      <div
+        className={`${styles.layout} ${selectedChat ? styles.viewingChat : ''}`}
+      >
+        <div className={styles.listPane}>
           {loadingChats ? (
             <p className={styles.muted}>Завантаження…</p>
           ) : chats.length === 0 ? (
@@ -173,58 +164,56 @@ export default function AdminSupportPage() {
           )}
         </div>
 
-        <div className={styles.thread}>
+        <div className={styles.threadPane}>
           {!selectedChat ? (
-            <div className={styles.threadEmpty}>
-              Оберіть чат зі списку зліва
-            </div>
+            <div className={styles.threadEmpty}>Оберіть чат зі списку</div>
           ) : (
-            <>
-              <div className={styles.threadHeader}>
-                <div className={styles.avatar}>{initialsOf(selectedChat)}</div>
-                <div>
-                  <div className={styles.threadHeaderName}>
-                    {selectedChat.user.firstName} {selectedChat.user.lastName}
-                  </div>
-                  <div
-                    className={`${styles.threadHeaderStatus} ${
-                      selectedChat.isOnline ? styles.online : ''
-                    }`}
+            <ChatThread
+              messages={messages}
+              loading={loadingMessages}
+              ownRole="ADMIN"
+              onSend={handleSend}
+              disabled={!socket}
+              emptyText="Повідомлень поки немає"
+              header={
+                <div className={styles.threadHeader}>
+                  {/* Phone-only way back to the list; the desktop layout
+                      keeps both panes visible, so it has nothing to do
+                      there. */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChatId(null)}
+                    className={styles.backButton}
+                    aria-label="До списку чатів"
                   >
-                    {selectedChat.isOnline ? 'Онлайн' : 'Офлайн'}
-                  </div>
-                </div>
-              </div>
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M19 12H5M11 6l-6 6 6 6"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
 
-              <div ref={messagesRef} className={styles.threadMessages}>
-                {loadingMessages ? (
-                  <p className={styles.muted}>Завантаження…</p>
-                ) : (
-                  messages.map((message) => (
+                  <div className={styles.avatar}>{initialsOf(selectedChat)}</div>
+
+                  <div className={styles.threadHeaderText}>
+                    <div className={styles.threadHeaderName}>
+                      {selectedChat.user.firstName} {selectedChat.user.lastName}
+                    </div>
                     <div
-                      key={message.id}
-                      className={`${styles.bubbleRow} ${
-                        message.senderRole === 'ADMIN' ? styles.own : ''
+                      className={`${styles.threadHeaderStatus} ${
+                        selectedChat.isOnline ? styles.online : ''
                       }`}
                     >
-                      <div className={styles.bubble}>{message.content}</div>
+                      {selectedChat.isOnline ? 'Онлайн' : 'Офлайн'}
                     </div>
-                  ))
-                )}
-              </div>
-
-              <form onSubmit={handleSubmit} className={styles.threadForm}>
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Повідомлення…"
-                  className={styles.input}
-                />
-                <button type="submit" className={styles.sendButton}>
-                  →
-                </button>
-              </form>
-            </>
+                  </div>
+                </div>
+              }
+            />
           )}
         </div>
       </div>

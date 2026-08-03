@@ -1,30 +1,84 @@
+// Hidden on phones, where the list and the conversation are full screens of
+// their own and the heading would only eat into them.
 .title {
-  margin-bottom: $spacing-xxl;
-  font-family: $font-display;
-  font-size: clamp(30px, 4vw, 40px);
-  letter-spacing: -0.01em;
-  color: var(--color-text);
-}
-
-.layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: $spacing-xl;
-  height: 640px;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  display: none;
 
   @include respond-up($breakpoint-md) {
-    grid-template-columns: 300px 1fr;
-    gap: 0;
+    display: block;
+    margin-bottom: $spacing-xxl;
+    font-family: $font-display;
+    font-size: clamp(30px, 4vw, 40px);
+    letter-spacing: -0.01em;
+    color: var(--color-text);
   }
 }
 
-.sidebar {
+// Phones get one pane at a time, messenger style — see .viewingChat below.
+// From $breakpoint-md up both sit side by side and the switching class stops
+// doing anything.
+//
+// On phones this escapes the container padding and fills everything under
+// the header: the old fixed 640px was taller than the viewport once the
+// header and page padding were counted, which squashed both panes.
+.layout {
   display: flex;
+  min-height: 0;
+  flex-direction: column;
+  margin-inline: calc(-1 * $container-padding);
+  margin-top: calc(-1 * $spacing-xxxxl);
+  height: calc(100dvh - var(--header-height, 64px));
+  background-color: var(--color-surface);
+
+  @include respond-up($breakpoint-md) {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    margin-inline: 0;
+    margin-top: 0;
+    height: min(640px, calc(100dvh - 220px));
+    border: 1px solid var(--color-border);
+  }
+}
+
+.listPane {
+  display: flex;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   overflow-y: auto;
-  border-right: 1px solid var(--color-border);
+  overscroll-behavior: contain;
+
+  @include respond-up($breakpoint-md) {
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+.threadPane {
+  display: none;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+
+  @include respond-up($breakpoint-md) {
+    display: flex;
+  }
+}
+
+// The phone-only swap: once a chat is open the list steps aside.
+.viewingChat {
+  .listPane {
+    display: none;
+  }
+
+  .threadPane {
+    display: flex;
+  }
+
+  @include respond-up($breakpoint-md) {
+    .listPane {
+      display: flex;
+    }
+  }
 }
 
 .muted {
@@ -36,6 +90,7 @@
   position: relative;
   display: flex;
   width: 100%;
+  flex-shrink: 0;
   align-items: center;
   gap: $spacing-md;
   border: none;
@@ -64,6 +119,7 @@
   display: flex;
   height: 40px;
   width: 40px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   background-color: var(--color-primary);
@@ -123,22 +179,56 @@
   color: var(--color-on-primary);
 }
 
-.thread {
+.threadEmpty {
   display: flex;
-  flex-direction: column;
-  min-height: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
 }
 
 .threadHeader {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: $spacing-md;
   border-bottom: 1px solid var(--color-border);
-  padding: $spacing-lg;
+  padding: $spacing-md $spacing-lg;
+}
+
+.backButton {
+  display: flex;
+  height: 36px;
+  width: 36px;
+  flex-shrink: 0;
+  margin-left: calc(-1 * $spacing-sm);
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+
+  // Both panes are visible from here up, so there's nowhere to go back to.
+  @include respond-up($breakpoint-md) {
+    display: none;
+  }
+
+  svg {
+    height: 22px;
+    width: 22px;
+  }
+}
+
+.threadHeaderText {
+  min-width: 0;
 }
 
 .threadHeaderName {
+  overflow: hidden;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text);
 }
 
@@ -149,60 +239,4 @@
   &.online {
     color: var(--color-success);
   }
-}
-
-.threadEmpty {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-secondary);
-}
-
-.threadMessages {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  padding: $spacing-lg;
-}
-
-.bubbleRow {
-  display: flex;
-
-  &.own {
-    justify-content: flex-end;
-  }
-}
-
-.bubble {
-  max-width: 70%;
-  padding: $spacing-sm $spacing-md;
-  font-size: 14px;
-  line-height: 1.4;
-  background-color: var(--color-background-alt);
-  color: var(--color-text);
-}
-
-.bubbleRow.own .bubble {
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.threadForm {
-  display: flex;
-  gap: $spacing-sm;
-  border-top: 1px solid var(--color-border);
-  padding: $spacing-md;
-}
-
-.input {
-  @include input-base;
-  flex: 1;
-}
-
-.sendButton {
-  @include button-primary;
-  padding: $spacing-sm $spacing-lg;
 }

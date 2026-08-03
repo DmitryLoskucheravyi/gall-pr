@@ -58,11 +58,19 @@ export class AppSettings {
   })
   adminTelegramLinkCodeExpiresAt: Date | null;
 
-  // Painting shown behind the home page hero. Null (or an id that no longer
-  // resolves — the painting may have been deleted or hidden since) means the
-  // frontend falls back to the first featured work on its own.
-  @Column({ name: 'hero_painting_id', type: 'int', nullable: true })
-  heroPaintingId: number | null;
+  // The three paintings behind the home page hero. Desktop tours all three
+  // in turn; a phone shows one of them, picked at random per visit. Any slot
+  // left null — or holding an id that no longer resolves, the painting having
+  // been deleted or hidden since — is filled from the featured works by the
+  // frontend, so the hero always has three to work with.
+  @Column({ name: 'hero_painting_id_1', type: 'int', nullable: true })
+  heroPaintingId1: number | null;
+
+  @Column({ name: 'hero_painting_id_2', type: 'int', nullable: true })
+  heroPaintingId2: number | null;
+
+  @Column({ name: 'hero_painting_id_3', type: 'int', nullable: true })
+  heroPaintingId3: number | null;
 
   // Keyed by generated id rather than a plain array — drag-and-drop reorder
   // just rewrites each item's `order`, no array splicing/reindexing.

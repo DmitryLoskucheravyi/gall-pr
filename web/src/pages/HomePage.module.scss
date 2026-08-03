@@ -1,4 +1,4 @@
-// ---------- Hero: asymmetric split with layered painting collage ----------
+// ---------- Hero: one full-screen painting, copy anchored bottom-left ----------
 
 // Mobile hero title only — see .title below. Imported in global.scss.
 $hero-title-font: 'Rubik', sans-serif;
@@ -7,21 +7,20 @@ $hero-title-font: 'Rubik', sans-serif;
 $hero-title-serif: 'Cormorant Garamond', serif;
 
 .hero {
-  // Mobile/tablet: the hero itself stays in normal flow — its text scrolls
-  // away with the page like any other content — while the photo backdrop
-  // (.heroBg below) is position:fixed and stays frozen behind it until the
-  // opaque .pageContent slides up and covers it.
+  // The hero itself stays in normal flow — its text scrolls away with the
+  // page like any other content — while the photo backdrop (.heroBg below)
+  // is position:fixed and stays frozen behind it until the opaque
+  // .pageContent slides up and covers it.
   position: relative;
   z-index: 0;
   overflow: hidden;
   display: grid;
   grid-template-columns: 1fr;
   gap: $spacing-xxxl;
-  // Mobile/tablet: pin the text block to the bottom edge of the first
-  // screen. Desktop reverts to the split layout's vertical centering.
+  // Pin the text block to the bottom edge of the first screen.
   align-items: end;
   align-content: end;
-  // Full-bleed, full-screen on mobile/tablet: escape .main's container
+  // Full-bleed, full-screen: escape .main's container
   // padding (same trick as .marquee below) and the page's own top padding,
   // so the background sits flush against the header with no gap on any
   // side. 100dvh (not vh/%) accounts for mobile browser chrome correctly.
@@ -33,21 +32,13 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   padding: $spacing-xxxl $spacing-xl $spacing-xl;
 
   @include respond-up($breakpoint-lg) {
-    overflow: visible;
-    margin-inline: 0;
-    margin-top: 0;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    gap: $spacing-huge;
-    align-items: center;
-    align-content: center;
-    min-height: 560px;
-    padding: $spacing-xxxl 0 72px;
+    padding: $spacing-xxxl $spacing-huge $spacing-xxxl;
   }
 }
 
-// Mobile/tablet: one painting behind the hero copy, Ken Burns panning across
-// it on a loop. Desktop keeps the layered card collage (.heroArt below) and
-// never renders any of this.
+// The paintings behind the hero copy, Ken Burns panning across them. A wide
+// screen stacks all three and crossfades between passes; a phone renders
+// only the one it drew (see HomePage.tsx), so it downloads only that one.
 .heroBg {
   // Fixed, not absolute: the hero (and its text) scrolls with the page,
   // but this backdrop stays pinned below the sticky header. It lives inside
@@ -59,15 +50,16 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   right: 0;
   height: calc(100dvh - var(--header-height, 64px));
   z-index: 0;
-
-  @include respond-up($breakpoint-lg) {
-    display: none;
-  }
 }
 
+// Every painting is a full-size layer; only the one on show is opaque, and
+// the handover between passes is this transition. Well short of a pass, so
+// the fade is always finished long before the next swap.
 .heroBgImage {
   position: absolute;
   inset: 0;
+  opacity: 0;
+  transition: opacity 1.4s ease;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -77,6 +69,10 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   // HERO_PAN_REST in HomePage.tsx mirrors this value, so the camera's first
   // move picks up from exactly here without a jump.
   transform: scale(1.08);
+}
+
+.heroBgImageActive {
+  opacity: 1;
 }
 
 // Scrim that keeps the copy legible over a busy photo. Darkens in both
@@ -97,9 +93,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   );
 }
 
-// Mobile/tablet shows the kicker/title/subtitle/actions over the photo
-// background — only the stats stay hidden there (see .stats below) and
-// reappear at desktop's split layout.
+// Kicker, headline, lede and the CTA bar, stacked over the photograph.
 .heroText {
   position: relative;
   z-index: 2;
@@ -113,8 +107,8 @@ $hero-title-serif: 'Cormorant Garamond', serif;
 // of visibility, so the entrances would silently play out and the copy would
 // just pop in fully formed. Pausing holds every one of them at its first
 // frame instead, delays included, so they all start for real on reveal.
-// Kept mounted rather than unrendered: on desktop this is a grid column, and
-// removing it would slide the painting collage across.
+// Kept mounted rather than unrendered so the hero's height doesn't shift
+// under the copy as it appears.
 .heroTextWaiting {
   visibility: hidden;
 
@@ -125,9 +119,8 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   }
 }
 
-// Mobile/tablet: a bare editorial kicker over the photo — tiny, widely
-// letterspaced, no chrome, just the accent dot. Desktop swaps back to the
-// bordered pill badge of the split layout.
+// A bare editorial kicker over the photo — tiny, widely letterspaced, no
+// chrome, just the accent dot.
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -141,14 +134,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   text-transform: uppercase;
 
   @include respond-up($breakpoint-lg) {
-    border-radius: $radius-pill;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    padding: 6px $spacing-lg;
     font-size: 12px;
-    letter-spacing: 0.14em;
-    color: var(--color-text-secondary);
-    text-shadow: none;
   }
 
   // The letters carry their own entrance (see .eyebrowLetter), so the accent
@@ -197,14 +183,14 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   margin-top: $spacing-lg;
   font-family: $hero-title-font;
   // Sized against ~11.5vw so "МИСТЕЦТВО," always fills one line edge to
-  // edge on phones without wrapping.
+  // edge on phones without wrapping; the ceiling lifts on wide screens
+  // below so it keeps that presence there too.
   font-size: clamp(38px, 11.5vw, 64px);
   line-height: 1;
   letter-spacing: -0.01em;
   text-transform: uppercase;
-  // Forced high-contrast color on mobile/tablet, where this sits over the
-  // photo background — var(--color-text) alone isn't reliably
-  // legible there. Desktop (no photo bg) reverts to the normal token below.
+  // Forced high-contrast color: this always sits over a photograph, and
+  // var(--color-text) alone isn't reliably legible there.
   color: var(--hero-photo-text);
   font-weight: 900;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
@@ -223,24 +209,11 @@ $hero-title-serif: 'Cormorant Garamond', serif;
     text-transform: none;
     letter-spacing: 0;
 
-    @include respond-up($breakpoint-lg) {
-      font-family: inherit;
-      font-weight: inherit;
-      font-size: inherit;
-      line-height: inherit;
-    }
   }
 
   @include respond-up($breakpoint-lg) {
     margin-top: $spacing-xl;
-    font-family: $font-display;
-    font-size: clamp(42px, 6vw, 72px);
-    line-height: 1.04;
-    letter-spacing: -0.02em;
-    text-transform: none;
-    color: var(--color-text);
-    font-weight: 600;
-    text-shadow: none;
+    font-size: clamp(64px, 6.6vw, 104px);
   }
 }
 
@@ -266,28 +239,18 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   transform: translateX(-50%);
 }
 
-// Mobile/tablet: each half of the headline is its own stacked line, the
-// second one nudged right for an editorial stagger. Desktop flows them back
-// inline as one sentence.
+// Each half of the headline is its own stacked line, the second one nudged
+// right for an editorial stagger.
 .titleLine {
   display: block;
 
   &:last-child {
-    padding-left: clamp(20px, 8vw, 56px);
-  }
-
-  @include respond-up($breakpoint-lg) {
-    display: inline;
-
-    &:last-child {
-      padding-left: 0;
-    }
+    padding-left: clamp(20px, 8vw, 96px);
   }
 }
 
-// Mobile/tablet: a quiet aside off the loud headline — smaller, tucked
-// behind a thin vertical rule, mirroring the stagger of the title's second
-// line. Desktop reverts to the split layout's plain lede.
+// A quiet aside off the loud headline — smaller, tucked behind a thin
+// vertical rule, mirroring the stagger of the title's second line.
 .subtitle {
   margin-top: $spacing-xl;
   max-width: 300px;
@@ -301,19 +264,14 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   @include rise-in($delay: 0.16s);
 
   @include respond-up($breakpoint-lg) {
-    max-width: 480px;
-    border-left: none;
-    padding-left: 0;
+    max-width: 420px;
     font-size: 17px;
-    line-height: 1.65;
-    color: var(--color-text-secondary);
-    text-shadow: none;
   }
 }
 
-// Mobile/tablet: a full-width baseline bar — hairline on top, links pushed
-// to opposite edges — closing the hero composition like a caption strip.
-// Desktop reverts to the normal inline button row.
+// A full-width baseline bar — hairline on top, links pushed to opposite
+// edges — closing the hero composition like a caption strip. Capped on wide
+// screens so it doesn't stretch the two links to opposite ends of a monitor.
 .actions {
   margin-top: $spacing-xxl;
   width: 100%;
@@ -329,16 +287,12 @@ $hero-title-serif: 'Cormorant Garamond', serif;
 
   @include respond-up($breakpoint-lg) {
     margin-top: $spacing-xxxl;
-    width: auto;
-    justify-content: flex-start;
-    border-top: none;
-    padding-top: 0;
+    max-width: 420px;
   }
 }
 
-// Mobile/tablet: bare uppercase letterspaced links (no button chrome) in the
-// forced high-contrast color — desktop reverts to the site's normal filled
-// buttons below.
+// Bare uppercase letterspaced links, no button chrome, in the forced
+// high-contrast colour the rest of the hero copy uses.
 .ctaButton,
 .ctaGhost {
   display: inline-flex;
@@ -358,15 +312,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   }
 
   @include respond-up($breakpoint-lg) {
-    display: inline-block;
-    letter-spacing: 0.02em;
-    text-transform: none;
-    text-shadow: none;
-    font-size: 16px;
-
-    &:hover {
-      opacity: 1;
-    }
+    font-size: 14px;
   }
 }
 
@@ -378,203 +324,48 @@ $hero-title-serif: 'Cormorant Garamond', serif;
     width: 15px;
   }
 
-  @include respond-up($breakpoint-lg) {
-    @include button-primary;
-    padding: $spacing-lg $spacing-xxxl;
-
-    // Desktop turns this back into a filled button, which carries no icon.
-    svg {
-      display: none;
-    }
-  }
 }
 
 .ctaGhost {
   opacity: 0.8;
-
-  @include respond-up($breakpoint-lg) {
-    @include button-secondary;
-    padding: $spacing-lg $spacing-xxxl;
-    opacity: 1;
-  }
 }
 
-.stats {
-  display: none;
-
-  @include respond-up($breakpoint-lg) {
-    margin-top: $spacing-xxxxl;
-    display: flex;
-    flex-wrap: wrap;
-    gap: $spacing-xxxl $spacing-huge;
-    @include rise-in($delay: 0.32s);
-  }
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-}
-
-.statValue {
-  font-family: $font-display;
-  font-size: 34px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--hero-photo-text);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-
-  @include respond-up($breakpoint-lg) {
-    color: var(--color-text);
-    text-shadow: none;
-  }
-}
-
-.statLabel {
-  font-size: 13px;
-  color: var(--hero-photo-text);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-
-  @include respond-up($breakpoint-lg) {
-    color: var(--color-text-muted);
-    text-shadow: none;
-  }
-}
-
-// Collage: three layered, slightly rotated painting cards — desktop only,
-// mobile/tablet uses .heroBg (the cycling background) instead.
-.heroArt {
-  display: none;
-
-  @include respond-up($breakpoint-lg) {
-    display: block;
-    position: relative;
-    height: 560px;
-    width: 100%;
-    max-width: none;
-    margin-inline: 0;
-    @include rise-in($duration: 0.8s, $delay: 0.2s);
-  }
-}
-
-.heroCard {
-  position: absolute;
-  display: block;
-  overflow: hidden;
-  border-radius: $radius-lg;
-  border: 6px solid var(--color-surface);
-  background-color: var(--color-background-alt);
-  box-shadow: var(--shadow-lg);
-  transition:
-    transform 0.5s $ease-spring,
-    box-shadow 0.4s ease,
-    z-index 0s;
-
-  &:hover {
-    z-index: 5;
-    transform: rotate(0deg) scale(1.04) !important;
-  }
-}
-
-.heroCardA {
-  top: 4%;
-  left: 0;
-  width: 62%;
-  aspect-ratio: 3 / 4;
-  transform: rotate(-4deg);
-  z-index: 2;
-}
-
-.heroCardB {
-  top: 0;
-  right: 2%;
-  width: 46%;
-  aspect-ratio: 3 / 4;
-  transform: rotate(5deg);
-  z-index: 1;
-}
-
-.heroCardC {
-  bottom: 0;
-  right: 12%;
-  width: 42%;
-  aspect-ratio: 4 / 3;
-  transform: rotate(-3deg);
-  z-index: 3;
-}
-
-.heroImage {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-}
-
-.heroSkeleton {
-  height: 100%;
-  width: 100%;
-}
-
-.heroCaption {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: $spacing-xxl $spacing-md $spacing-sm;
-  background: linear-gradient(to top, rgba(10, 8, 6, 0.72), transparent);
-  font-family: $font-display;
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-  opacity: 0;
-  transform: translateY(6px);
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-
-  .heroCard:hover & {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-// Everything after the hero, as one opaque sheet — on mobile/tablet this is
-// what visually slides up and covers the fixed hero backdrop (.heroBg) as
-// the page scrolls. Desktop doesn't need it (no fixed backdrop there), but
-// it's harmless.
+// Everything after the hero, as one opaque sheet — this is what visually
+// slides up and covers the fixed hero backdrop (.heroBg) as the page
+// scrolls.
 .pageContent {
   position: relative;
   z-index: 1;
   background-color: var(--color-background);
-  // Full-bleed like .hero (same breakout trick), so its background actually
-  // reaches the screen edges and fully occludes the fixed backdrop once
-  // scrolled past — otherwise a sliver of it stayed visible on both sides.
-  // Padded back in by the same amount so children still align with the
-  // normal container width (.marquee's own breakout below is unaffected —
-  // it's relative to this padded content box, same as before).
-  margin-inline: calc(-1 * $container-padding);
-  padding-inline: $container-padding;
+  // Full-bleed to the screen edges, because the backdrop it has to cover is
+  // fixed to the viewport. Escaping .main's padding isn't enough: .main is
+  // also capped at $container-max-width and centred, so past that width the
+  // photo showed through the gap on either side.
+  //
+  // 50% here is half of .main's content box, 50vw half the viewport, so the
+  // difference is exactly that gap plus the padding — correct both below and
+  // above the cap. Padded back in by the same amount so children keep the
+  // container's alignment (.marquee's own breakout is relative to this
+  // padded box, so it's unaffected).
+  //
+  // 100vw counts the scrollbar gutter, which leaves a few pixels of
+  // overhang; .page clips that off (see Layout.module.scss).
+  margin-inline: calc(50% - 50vw);
+  padding-inline: calc(50vw - 50%);
 }
 
-// Mobile/tablet: a deliberate transparent gap between the opaque sheets —
-// the fixed hero backdrop (still animating behind the page) shows through
-// it like a window as you scroll past. The .ctaBand's collapsed margin-top
-// adds its usual spacing on top of this height. Desktop has no backdrop, so
-// the window would just be dead space — hidden there.
+// A deliberate transparent gap between the opaque sheets — the fixed hero
+// backdrop, still panning behind the page, shows through it like a window as
+// you scroll past. The .ctaBand's retained margin-top adds its usual spacing
+// on top of this height.
 .heroPeek {
   height: clamp(200px, 38vh, 380px);
-
-  @include respond-up($breakpoint-lg) {
-    display: none;
-  }
 }
 
 // Opaque breathing room between the last section and the top of the window,
 // so the content doesn't run straight into the cutout.
 .pageContentOpen {
   padding-bottom: $spacing-huge * 2;
-
-  @include respond-up($breakpoint-lg) {
-    padding-bottom: 0;
-  }
 }
 
 // The closing sheet (everything after the window, up to the footer). Two
@@ -584,8 +375,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
 // through this sheet's top edge and land in the transparent window, reading
 // as a bigger cutout instead of a gap below it. A block formatting context
 // keeps that margin inside, so the band's normal spacing becomes the opaque
-// breathing room under the window (and stays untouched on desktop, where
-// the window is hidden and the color is the same either way).
+// breathing room under the window.
 //
 // The padding/margin pair extends the sheet's background down through
 // .main's bottom padding (40px) and the footer's margin-top (48px), so the
@@ -598,10 +388,6 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   padding-top: $spacing-huge;
   padding-bottom: 88px;
   margin-bottom: -88px;
-
-  @include respond-up($breakpoint-lg) {
-    padding-top: 0;
-  }
 }
 
 // ---------- Marquee strip ----------

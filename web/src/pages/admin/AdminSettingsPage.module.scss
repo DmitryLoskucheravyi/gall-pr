@@ -76,6 +76,14 @@
   @include input-base;
 }
 
+// The three hero slots stack directly on top of each other, so they need a
+// gap of their own — .input carries no vertical margin.
+.heroSlots {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
 .skeletonInput {
   height: 46px;
   width: 100%;

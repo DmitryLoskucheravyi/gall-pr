@@ -5,3 +5,6 @@ graphify-out/
 # Claude Code scratch state. Worktrees created here are full checkouts of
 # the repo, certificates and all, so this must never be committable.
 .claude/
+
+# Working documents kept alongside the repo but not part of it.
+*.pdf

@@ -4,6 +4,13 @@
   flex-direction: column;
   background-color: var(--color-background);
   color: var(--color-text);
+  // Absorbs the few pixels of horizontal overhang that full-bleed children
+  // pick up from 100vw counting the scrollbar gutter (see .pageContent in
+  // HomePage.module.scss). `clip` rather than `hidden` on purpose: hidden
+  // would turn this into a scroll container and break the sticky header,
+  // and neither clips the hero's fixed backdrop, whose containing block is
+  // the viewport.
+  overflow-x: clip;
 }
 
 .main {
