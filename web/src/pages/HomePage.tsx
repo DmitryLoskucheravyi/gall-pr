@@ -35,11 +35,17 @@ const HERO_BAND_SHAPES = [
 // The four corners the hero's Ken Burns tour visits, in %-of-image-box units
 // (see --pan-x*/--pan-y* in HomePage.module.scss). Listed around the
 // perimeter, so neighbours in this list are always edge-adjacent.
+//
+// 11% is close to the ceiling: the image is scaled to at least 1.39, which
+// overhangs the box by (1.39-1)/2, and the pan shifts it by 1.39x the value
+// here — so anything past ~14% would drag a bare edge into view. The
+// remaining slack absorbs the blur fringe. Keep these in sync with the
+// keyframe fallbacks in HomePage.module.scss.
 const HERO_CORNERS: Array<[string, string]> = [
-  ['-9%', '-9%'],
-  ['9%', '-9%'],
-  ['9%', '9%'],
-  ['-9%', '9%'],
+  ['-11%', '-11%'],
+  ['11%', '-11%'],
+  ['11%', '11%'],
+  ['-11%', '11%'],
 ];
 
 // A fresh tour each pan cycle: random starting corner, random direction —

@@ -113,33 +113,36 @@ $hero-title-serif: 'Cormorant Garamond', serif;
 // Once all three shards land on the same painting, tour across it in sync —
 // every shard gets the identical keyframe on an identically-sized box, which
 // (since they're windows onto the same reconstructed image) reads as one
-// continuous camera move rather than three separate ones. A sharp push in to
-// the first corner, then a slow drift around the painting easing back out
-// the whole way, then a pull back to wide. Each keyframe can set its own
-// animation-timing-function for the segment leading into it, so the opening
-// beat is sharp while the tour stays gentle. Which corner is visited when is
-// re-drawn per cycle (see the --pan-x*/--pan-y* custom properties set from
-// HomePage.tsx), so the tour never reads as scripted.
+// continuous camera move rather than three separate ones. A push in to the
+// first corner, a slow drift around the painting easing back out the whole
+// way, then a pull back to wide. The two big moves — in and out — share one
+// curve; the three corner hops keep the gentler sine below. Which corner is
+// visited when is re-drawn per cycle (see the --pan-x*/--pan-y* custom
+// properties set from HomePage.tsx), so the tour never reads as scripted.
+//
+// Waypoints sit at 18/38/58/78, which gives the opening a longer 18% of the
+// timeline to cover its much larger change (a 0.40 zoom plus a corner move)
+// while leaving the three hops an even 20% each.
 @keyframes hero-band-pan {
   0% {
     // Matches .heroBandImage's resting scale, so starting and ending the
     // animation never snaps the photo.
     transform: scale(1.08) translate(0%, 0%);
-    animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); // sharp push in
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); // ease in, settle
   }
   // The zoom eases out continuously across the tour instead of jumping in
   // and then holding — a camera that keeps breathing rather than freezing.
-  12% {
-    transform: scale(1.48) translate(var(--pan-x1, -9%), var(--pan-y1, -9%));
+  18% {
+    transform: scale(1.48) translate(var(--pan-x1, -11%), var(--pan-y1, -11%));
   }
-  34% {
-    transform: scale(1.45) translate(var(--pan-x2, 9%), var(--pan-y2, -9%));
+  38% {
+    transform: scale(1.45) translate(var(--pan-x2, 11%), var(--pan-y2, -11%));
   }
-  56% {
-    transform: scale(1.42) translate(var(--pan-x3, 9%), var(--pan-y3, 9%));
+  58% {
+    transform: scale(1.42) translate(var(--pan-x3, 11%), var(--pan-y3, 11%));
   }
   78% {
-    transform: scale(1.39) translate(var(--pan-x4, -9%), var(--pan-y4, 9%));
+    transform: scale(1.39) translate(var(--pan-x4, -11%), var(--pan-y4, 11%));
     animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); // settle back out
   }
   100% {
