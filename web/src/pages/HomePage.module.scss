@@ -3,20 +3,27 @@
 // Kept in sync with PAN_DURATION_MS in HomePage.tsx.
 $hero-pan-duration: 12s;
 
+// Mobile hero title only — see .title below. Imported in global.scss.
+$hero-title-font: 'Rubik', sans-serif;
+// Italic serif accent word inside the mobile hero title — the editorial
+// counterpoint to Rubik's chunky uppercase. Imported in global.scss.
+$hero-title-serif: 'Cormorant Garamond', serif;
+
 .hero {
-  // Sticky on mobile/tablet: the hero freezes just below the (also sticky)
-  // header while .pageContent below scrolls up and visually covers it —
-  // top matches the header's real measured height (see Header.tsx), so the
-  // two don't overlap.
-  position: sticky;
-  top: var(--header-height, 64px);
+  // Mobile/tablet: the hero itself stays in normal flow — its text scrolls
+  // away with the page like any other content — while the photo backdrop
+  // (.heroBg below) is position:fixed and stays frozen behind it until the
+  // opaque .pageContent slides up and covers it.
+  position: relative;
   z-index: 0;
   overflow: hidden;
   display: grid;
   grid-template-columns: 1fr;
   gap: $spacing-xxxl;
-  align-items: center;
-  align-content: center;
+  // Mobile/tablet: pin the text block to the bottom edge of the first
+  // screen. Desktop reverts to the split layout's vertical centering.
+  align-items: end;
+  align-content: end;
   // Full-bleed, full-screen on mobile/tablet: escape .main's container
   // padding (same trick as .marquee below) and the page's own top padding,
   // so the background sits flush against the header with no gap on any
@@ -24,85 +31,116 @@ $hero-pan-duration: 12s;
   margin-inline: calc(-1 * $container-padding);
   margin-top: calc(-1 * $spacing-xxxxl);
   min-height: calc(100dvh - var(--header-height, 64px));
-  padding: $spacing-xxxl $spacing-xl $spacing-huge;
+  // Slim bottom padding — the text block should sit at the very bottom
+  // edge of the first screen.
+  padding: $spacing-xxxl $spacing-xl $spacing-xl;
 
   @include respond-up($breakpoint-lg) {
-    position: relative;
-    top: auto;
     overflow: visible;
     margin-inline: 0;
     margin-top: 0;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
     gap: $spacing-huge;
+    align-items: center;
+    align-content: center;
     min-height: 560px;
     padding: $spacing-xxxl 0 72px;
   }
 }
 
-// Mobile/tablet: three horizontal "slot machine" bands, each locked to a
-// third of the hero's height, cycling paintings behind the (currently
-// hidden) text. Desktop keeps the layered card collage (.heroArt below) and
+// Mobile/tablet: three "slot machine" shards cycling paintings behind the
+// hero copy. Desktop keeps the layered card collage (.heroArt below) and
 // never renders any of this.
 .heroBg {
-  position: absolute;
-  inset: 0;
+  // Fixed, not absolute: the hero (and its text) scrolls with the page,
+  // but this backdrop stays pinned below the sticky header. It lives inside
+  // .hero's z-index:0 stacking context, so .pageContent (z-index:1) still
+  // paints over it once scrolled into view.
+  position: fixed;
+  top: var(--header-height, 64px);
+  left: 0;
+  right: 0;
+  height: calc(100dvh - var(--header-height, 64px));
   z-index: 0;
-  display: flex;
-  flex-direction: column;
 
   @include respond-up($breakpoint-lg) {
     display: none;
   }
 }
 
+// Every band is a full-size layer holding a complete painting; what makes it
+// a shard is the clip-path below. Because all three layers share identical
+// geometry, the moment they land on the same painting their crops line up
+// into one seamless picture with no offset math at all.
 .heroBand {
-  position: relative;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  flex: 1 1 0;
 }
 
-// Sized to exactly 3x the band's own height and shifted up by `band * 100%`
-// (inline style, per band) — each band then only shows its own third of the
-// image, and since all three bands render the same target src at settle
-// time, the crops line up into one seamless picture.
 .heroBandImage {
   position: absolute;
-  left: 0;
+  inset: 0;
   width: 100%;
-  height: 300%;
+  height: 100%;
   object-fit: cover;
   filter: blur(4px);
+  // Always slightly overscanned, for two reasons: blur() fades the outermost
+  // pixels to transparent, so at scale 1 a pale fringe shows along the hero's
+  // edges during the spin; and matching the pan's first and last keyframe
+  // means adding or dropping .heroBandImagePanning never snaps the photo.
+  transform: scale(1.08);
 }
 
-// Once all three bands land on the same painting, tour across it in sync —
-// every band gets the identical keyframe on an identically-sized box, which
+// Two slanted cuts across the hero split it into three uneven shards —
+// roughly 24% / 31% / 45% of the area — instead of equal horizontal strips.
+// The cuts tilt opposite ways, so the middle shard is a wedge: wide on the
+// left, narrow on the right. Neighbours overlap by 0.8% so no antialiased
+// hairline shows along a shared edge; the overlap is invisible because both
+// sides carry the same painting once assembled.
+.heroBandTop {
+  clip-path: polygon(0 0, 100% 0, 100% 30.4%, 0 18.4%);
+}
+
+.heroBandMiddle {
+  clip-path: polygon(0 17.6%, 100% 29.6%, 100% 47.4%, 0 63.4%);
+}
+
+.heroBandBottom {
+  clip-path: polygon(0 62.6%, 100% 46.6%, 100% 100%, 0 100%);
+}
+
+// Once all three shards land on the same painting, tour across it in sync —
+// every shard gets the identical keyframe on an identically-sized box, which
 // (since they're windows onto the same reconstructed image) reads as one
-// continuous camera move rather than three separate ones. A sharp snap into
-// the first corner, then a smooth glide corner to corner, then pull back out
-// — each keyframe sets its own animation-timing-function for the segment
-// leading into it, so the first beat can be sharp while the rest is smooth.
-// Which corner is visited at which waypoint is randomized per cycle (see
-// the --pan-x*/--pan-y* custom properties set from HomePage.tsx) rather than
-// a fixed top-left-then-clockwise order, so the tour doesn't read as scripted.
+// continuous camera move rather than three separate ones. A sharp push in to
+// the first corner, then a slow drift around the painting easing back out
+// the whole way, then a pull back to wide. Each keyframe can set its own
+// animation-timing-function for the segment leading into it, so the opening
+// beat is sharp while the tour stays gentle. Which corner is visited when is
+// re-drawn per cycle (see the --pan-x*/--pan-y* custom properties set from
+// HomePage.tsx), so the tour never reads as scripted.
 @keyframes hero-band-pan {
   0% {
+    // Matches .heroBandImage's resting scale, so starting and ending the
+    // animation never snaps the photo.
     transform: scale(1.08) translate(0%, 0%);
-    animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); // sharp snap in
+    animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); // sharp push in
   }
+  // The zoom eases out continuously across the tour instead of jumping in
+  // and then holding — a camera that keeps breathing rather than freezing.
   12% {
-    transform: scale(1.55) translate(var(--pan-x1, -9%), var(--pan-y1, -9%));
-    // Gentler S-curve than plain ease-in-out for the long glides that
-    // follow — reads as fluid drifting rather than mechanical easing.
-    animation-timing-function: cubic-bezier(0.45, 0, 0.15, 1);
+    transform: scale(1.48) translate(var(--pan-x1, -9%), var(--pan-y1, -9%));
   }
   34% {
     transform: scale(1.45) translate(var(--pan-x2, 9%), var(--pan-y2, -9%));
   }
   56% {
-    transform: scale(1.45) translate(var(--pan-x3, 9%), var(--pan-y3, 9%));
+    transform: scale(1.42) translate(var(--pan-x3, 9%), var(--pan-y3, 9%));
   }
   78% {
-    transform: scale(1.45) translate(var(--pan-x4, -9%), var(--pan-y4, 9%));
+    transform: scale(1.39) translate(var(--pan-x4, -9%), var(--pan-y4, 9%));
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); // settle back out
   }
   100% {
     transform: scale(1.08) translate(0%, 0%); // pull back out, wide
@@ -111,124 +149,333 @@ $hero-pan-duration: 12s;
 
 .heroBandImagePanning {
   @media (prefers-reduced-motion: no-preference) {
-    animation: hero-band-pan $hero-pan-duration cubic-bezier(0.45, 0, 0.15, 1) both;
+    // The default curve governs the three corner-to-corner hops. A gentle,
+    // symmetric sine ease: enough to round off the direction change at each
+    // corner, but without the long stall the previous curve's late-loaded
+    // deceleration produced.
+    animation: hero-band-pan $hero-pan-duration cubic-bezier(0.37, 0, 0.63, 1)
+      both;
   }
 }
 
-// Theme-aware wash so the text stays legible over a busy photo: lightens in
-// light mode, darkens in dark mode, using the theme's own background color.
-// Kept light on purpose — the photo should still read clearly — so the text
-// itself (--hero-photo-text + a shadow) carries the actual contrast.
+// Scrim that keeps the copy legible over a busy photo. Darkens in both
+// themes, not just dark mode — the hero text is white either way (see
+// --hero-photo-text), so lightening the photo in light mode would leave it
+// unreadable. Weighted toward the bottom, where the copy is anchored: the
+// top of the photo stays almost untouched and only the caption zone is
+// pulled down, so the painting still reads clearly.
 .heroOverlay {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background-color: color-mix(in srgb, var(--color-background) 30%, transparent);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(0, 0, 0, 0.16) 45%,
+    rgba(0, 0, 0, 0.52) 100%
+  );
 }
 
-// Hidden on mobile/tablet for now — the hero there is just the slot-machine
-// background, no overlaid copy.
+// Mobile/tablet shows the kicker/title/subtitle/actions over the slot-machine
+// background — only the stats stay hidden there (see .stats below) and
+// reappear at desktop's split layout.
 .heroText {
-  display: none;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
 
-  @include respond-up($breakpoint-lg) {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+// While the first painting is still decoding (see heroReady in
+// HomePage.tsx). Hiding alone isn't enough — CSS animations run regardless
+// of visibility, so the entrances would silently play out and the copy would
+// just pop in fully formed. Pausing holds every one of them at its first
+// frame instead, delays included, so they all start for real on reveal.
+// Kept mounted rather than unrendered: on desktop this is a grid column, and
+// removing it would slide the painting collage across.
+.heroTextWaiting {
+  visibility: hidden;
+
+  *,
+  *::before,
+  *::after {
+    animation-play-state: paused !important;
   }
 }
 
-// Hidden on mobile/tablet along with .stats below — only title/subtitle/
-// actions show over the photo hero there.
+// Mobile/tablet: a bare editorial kicker over the photo — tiny, widely
+// letterspaced, no chrome, just the accent dot. Desktop swaps back to the
+// bordered pill badge of the split layout.
 .eyebrow {
-  display: none;
+  display: inline-flex;
   align-items: center;
   gap: $spacing-sm;
-  border-radius: $radius-pill;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  padding: 6px $spacing-lg;
   font-family: $font-accent;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
-  letter-spacing: 0.14em;
-  color: var(--color-text-secondary);
+  letter-spacing: 0.24em;
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   text-transform: uppercase;
-  @include rise-in($delay: 0s);
 
   @include respond-up($breakpoint-lg) {
-    display: inline-flex;
+    border-radius: $radius-pill;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    padding: 6px $spacing-lg;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--color-text-secondary);
+    text-shadow: none;
   }
 
+  // The letters carry their own entrance (see .eyebrowLetter), so the accent
+  // dot is the only part that still needs animating here.
   &::before {
     content: '';
     height: 6px;
     width: 6px;
+    flex: none;
     border-radius: $radius-pill;
     background-color: var(--color-accent);
+    @include rise-in($delay: 0s);
+  }
+}
+
+// Wraps the split-up letters so they stay one flex item — otherwise each
+// letter would become a child of .eyebrow's flex row and pick up its gap.
+.eyebrowText {
+  display: inline-block;
+}
+
+// Each letter slides in from the left in turn, stepped by an inline
+// animation-delay set in HomePage.tsx.
+.eyebrowLetter {
+  display: inline-block;
+  // Keeps the word gaps from collapsing now that spaces are their own spans.
+  white-space: pre;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: eyebrow-letter-in $duration-slow $ease-out both;
+  }
+}
+
+@keyframes eyebrow-letter-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.5em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
 .title {
-  margin-top: $spacing-xl;
-  font-family: $font-display;
-  font-size: clamp(42px, 6vw, 72px);
-  line-height: 1.04;
-  letter-spacing: -0.02em;
+  margin-top: $spacing-lg;
+  font-family: $hero-title-font;
+  // Sized against ~11.5vw so "МИСТЕЦТВО," always fills one line edge to
+  // edge on phones without wrapping.
+  font-size: clamp(38px, 11.5vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
   // Forced high-contrast color on mobile/tablet, where this sits over the
   // cycling photo background — var(--color-text) alone isn't reliably
   // legible there. Desktop (no photo bg) reverts to the normal token below.
   color: var(--hero-photo-text);
+  font-weight: 900;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   @include rise-in($delay: 0.08s);
 
   em {
     font-style: italic;
     color: var(--color-accent);
+    // The editorial counterpoint: a bigger lowercase italic serif word set
+    // against the chunky uppercase — line-height 0 keeps the oversized word
+    // from stretching its line box out of the stack's rhythm.
+    font-family: $hero-title-serif;
+    font-weight: 600;
+    font-size: 1.32em;
+    line-height: 0;
+    text-transform: none;
+    letter-spacing: 0;
+
+    @include respond-up($breakpoint-lg) {
+      font-family: inherit;
+      font-weight: inherit;
+      font-size: inherit;
+      line-height: inherit;
+    }
   }
 
   @include respond-up($breakpoint-lg) {
+    margin-top: $spacing-xl;
+    font-family: $font-display;
+    font-size: clamp(42px, 6vw, 72px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    text-transform: none;
     color: var(--color-text);
+    font-weight: 600;
     text-shadow: none;
   }
 }
 
+// One character of the headline while it's still cycling through glyphs
+// (see HeroTitle in HomePage.tsx). Sized by the invisible real letter inside
+// it, so the line's width is already final on the first frame and nothing
+// reflows as the scramble runs.
+.titleLetter {
+  position: relative;
+  display: inline-block;
+}
+
+.titleLetterGhost {
+  visibility: hidden;
+}
+
+// The cycling glyph, centered over the slot the real letter reserved. top:0
+// (not a flex centering) keeps it on the same baseline as settled letters.
+.titleLetterSpin {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+// Mobile/tablet: each half of the headline is its own stacked line, the
+// second one nudged right for an editorial stagger. Desktop flows them back
+// inline as one sentence.
+.titleLine {
+  display: block;
+
+  &:last-child {
+    padding-left: clamp(20px, 8vw, 56px);
+  }
+
+  @include respond-up($breakpoint-lg) {
+    display: inline;
+
+    &:last-child {
+      padding-left: 0;
+    }
+  }
+}
+
+// Mobile/tablet: a quiet aside off the loud headline — smaller, tucked
+// behind a thin vertical rule, mirroring the stagger of the title's second
+// line. Desktop reverts to the split layout's plain lede.
 .subtitle {
   margin-top: $spacing-xl;
-  max-width: 480px;
-  font-size: 17px;
-  line-height: 1.65;
+  max-width: 300px;
+  border-left: 1px solid
+    color-mix(in srgb, var(--hero-photo-text) 45%, transparent);
+  padding-left: $spacing-lg;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--hero-photo-text);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   @include rise-in($delay: 0.16s);
 
   @include respond-up($breakpoint-lg) {
+    max-width: 480px;
+    border-left: none;
+    padding-left: 0;
+    font-size: 17px;
+    line-height: 1.65;
     color: var(--color-text-secondary);
     text-shadow: none;
   }
 }
 
+// Mobile/tablet: a full-width baseline bar — hairline on top, links pushed
+// to opposite edges — closing the hero composition like a caption strip.
+// Desktop reverts to the normal inline button row.
 .actions {
-  margin-top: $spacing-xxxl;
+  margin-top: $spacing-xxl;
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: $spacing-lg;
+  border-top: 1px solid
+    color-mix(in srgb, var(--hero-photo-text) 35%, transparent);
+  padding-top: $spacing-lg;
   @include rise-in($delay: 0.24s);
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: $spacing-xxxl;
+    width: auto;
+    justify-content: flex-start;
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+// Mobile/tablet: bare uppercase letterspaced links (no button chrome) in the
+// forced high-contrast color — desktop reverts to the site's normal filled
+// buttons below.
+.ctaButton,
+.ctaGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-family: $font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: opacity $duration-fast ease;
+
+  &:hover {
+    opacity: 0.7;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    display: inline-block;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    text-shadow: none;
+    font-size: 16px;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 }
 
 .ctaButton {
-  @include button-primary;
-  padding: $spacing-lg $spacing-xxxl;
-  font-size: 16px;
+  // Primary link carries the outward arrow — the only ornament in the bar.
+  svg {
+    flex: none;
+    height: 15px;
+    width: 15px;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    @include button-primary;
+    padding: $spacing-lg $spacing-xxxl;
+
+    // Desktop turns this back into a filled button, which carries no icon.
+    svg {
+      display: none;
+    }
+  }
 }
 
 .ctaGhost {
-  @include button-secondary;
-  padding: $spacing-lg $spacing-xxxl;
-  font-size: 16px;
+  opacity: 0.8;
+
+  @include respond-up($breakpoint-lg) {
+    @include button-secondary;
+    padding: $spacing-lg $spacing-xxxl;
+    opacity: 1;
+  }
 }
 
 .stats {
@@ -369,20 +616,71 @@ $hero-pan-duration: 12s;
 }
 
 // Everything after the hero, as one opaque sheet — on mobile/tablet this is
-// what visually slides up and covers the sticky hero as the page scrolls.
-// Desktop doesn't need it (hero isn't sticky there), but it's harmless.
+// what visually slides up and covers the fixed hero backdrop (.heroBg) as
+// the page scrolls. Desktop doesn't need it (no fixed backdrop there), but
+// it's harmless.
 .pageContent {
   position: relative;
   z-index: 1;
   background-color: var(--color-background);
   // Full-bleed like .hero (same breakout trick), so its background actually
-  // reaches the screen edges and fully occludes the sticky hero once
+  // reaches the screen edges and fully occludes the fixed backdrop once
   // scrolled past — otherwise a sliver of it stayed visible on both sides.
   // Padded back in by the same amount so children still align with the
   // normal container width (.marquee's own breakout below is unaffected —
   // it's relative to this padded content box, same as before).
   margin-inline: calc(-1 * $container-padding);
   padding-inline: $container-padding;
+}
+
+// Mobile/tablet: a deliberate transparent gap between the opaque sheets —
+// the fixed hero backdrop (still animating behind the page) shows through
+// it like a window as you scroll past. The .ctaBand's collapsed margin-top
+// adds its usual spacing on top of this height. Desktop has no backdrop, so
+// the window would just be dead space — hidden there.
+.heroPeek {
+  height: clamp(200px, 38vh, 380px);
+
+  @include respond-up($breakpoint-lg) {
+    display: none;
+  }
+}
+
+// Opaque breathing room between the last section and the top of the window,
+// so the content doesn't run straight into the cutout.
+.pageContentOpen {
+  padding-bottom: $spacing-huge * 2;
+
+  @include respond-up($breakpoint-lg) {
+    padding-bottom: 0;
+  }
+}
+
+// The closing sheet (everything after the window, up to the footer). Two
+// jobs beyond carrying the background:
+//
+// flow-root — the CTA band's own top margin would otherwise collapse out
+// through this sheet's top edge and land in the transparent window, reading
+// as a bigger cutout instead of a gap below it. A block formatting context
+// keeps that margin inside, so the band's normal spacing becomes the opaque
+// breathing room under the window (and stays untouched on desktop, where
+// the window is hidden and the color is the same either way).
+//
+// The padding/margin pair extends the sheet's background down through
+// .main's bottom padding (40px) and the footer's margin-top (48px), so the
+// backdrop can't leak through that strip — the window is the only
+// intentional gap. Net layout shift is zero.
+.pageContentClose {
+  display: flow-root;
+  // Adds to the band's own retained top margin, matching the opaque gap
+  // above the window.
+  padding-top: $spacing-huge;
+  padding-bottom: 88px;
+  margin-bottom: -88px;
+
+  @include respond-up($breakpoint-lg) {
+    padding-top: 0;
+  }
 }
 
 // ---------- Marquee strip ----------
@@ -422,7 +720,10 @@ $hero-pan-duration: 12s;
 
 .marqueeItem {
   display: inline-flex;
-  align-items: center;
+  // Baseline, not center: the attribution is set much smaller than the
+  // quote, so centering the two boxes leaves their text sitting at visibly
+  // different heights. (The dot re-centers itself — see .marqueeDot.)
+  align-items: baseline;
   gap: $spacing-xxxl;
   padding-right: $spacing-xxxl;
   font-family: $font-display;
@@ -433,7 +734,23 @@ $hero-pan-duration: 12s;
   color: var(--color-text-secondary);
 }
 
+// The attribution, set apart from the quote itself: smaller, upright and
+// letterspaced against the italic display face.
+.marqueeAuthor {
+  font-family: $font-accent;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  opacity: 0.75;
+}
+
 .marqueeDot {
+  // The separator has no text of its own, so baseline alignment would drop
+  // it to sit on the line — center it against the strip instead.
+  align-self: center;
   height: 5px;
   width: 5px;
   border-radius: $radius-pill;
