@@ -9,13 +9,29 @@
   color: #f0ede5;
 }
 
+// The footer is the last thing on the page, so it's where the fixed bottom
+// bar gets cleared. Padding .main instead only looked like it worked: the
+// footer is .main's sibling, not its child, so that padding pushed the two
+// apart and opened a gap above the footer without freeing any space under
+// it.
+//
+// Zeroed back out at $breakpoint-lg rather than trusting the variable to be
+// 0 there: a display:none element stops reporting to its ResizeObserver, so
+// --bottom-nav-height can still hold the phone height after a resize past
+// the breakpoint.
 .inner {
   margin: 0 auto;
   max-width: $container-max-width;
-  padding: $spacing-huge $container-padding $spacing-xxl;
+  padding: $spacing-huge $container-padding
+    calc(#{$spacing-xxl} + var(--bottom-nav-height, 0px));
 
   @include respond-up($breakpoint-md) {
-    padding: 72px $container-padding $spacing-xxxl;
+    padding: 72px $container-padding
+      calc(#{$spacing-xxxl} + var(--bottom-nav-height, 0px));
+  }
+
+  @include respond-up($breakpoint-lg) {
+    padding-bottom: $spacing-xxxl;
   }
 }
 

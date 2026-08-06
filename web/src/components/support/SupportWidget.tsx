@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { supportService } from '../../api/support.api';
-import type { SupportMessage } from '../../types/support.types';
-import { useSupportSocket } from '../../hooks/useSupportSocket';
+import { useMyUnreadSupportCount } from '../../hooks/queries/useSupport';
 import { useAppSelector } from '../../store/hooks';
 import styles from './SupportWidget.module.scss';
 
@@ -47,11 +45,9 @@ export default function SupportWidget() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [unread, setUnread] = useState(0);
-  // The chat page renders in place of this widget and owns the socket while
-  // it's open, so the badge only listens when the user is somewhere else.
+  // Same source as the header's icon on phones, so the two can't disagree.
+  const unread = useMyUnreadSupportCount();
   const onSupportPage = location.pathname.startsWith('/support');
-  const socket = useSupportSocket(!!userId && !onSupportPage);
   const [dock, setDock] = useState<Dock>(
     () =>
       readDock() ?? {
@@ -71,31 +67,6 @@ export default function SupportWidget() {
   // A drag ends with a click event too — swallow that one so releasing the
   // button somewhere doesn't also open the chat.
   const suppressClickRef = useRef(false);
-
-  // Runs again on the way back from the chat, where the count has just been
-  // zeroed by reading it.
-  useEffect(() => {
-    if (!userId || onSupportPage) return;
-
-    supportService
-      .getMyUnreadCount()
-      .then(setUnread)
-      .catch(() => {});
-  }, [userId, onSupportPage]);
-
-  // Keeps the badge live while the user browses the rest of the site.
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleMessage = (message: SupportMessage) => {
-      if (message.senderRole === 'ADMIN') setUnread((prev) => prev + 1);
-    };
-
-    socket.on('support:message', handleMessage);
-    return () => {
-      socket.off('support:message', handleMessage);
-    };
-  }, [socket]);
 
   // Keep the launcher on-screen when the viewport resizes or rotates. The
   // new object also re-renders it, so the docked x (derived from

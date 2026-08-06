@@ -80,13 +80,24 @@
   cursor: zoom-in;
 }
 
-// Its own proportions, at full width. The square box this used to be forced
-// into letterboxed every painting that wasn't square, and with the container
-// gone those bars would just be bare page.
+// Its own proportions, sized to fit the screen. The square box this used to
+// be forced into letterboxed every painting that wasn't square, and with the
+// container gone those bars would just be bare page — so width and height are
+// both left to the image and only capped. A portrait canvas would otherwise
+// run well past the fold and have to be scrolled to be seen whole.
 .mainImage {
   display: block;
-  width: 100%;
-  height: auto;
+  width: auto;
+  max-width: 100%;
+  max-height: calc(
+    100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+  );
+  margin-inline: auto;
+
+  @include respond-up($breakpoint-lg) {
+    // Leaves room for the page's own padding around it.
+    max-height: calc(100dvh - 160px);
+  }
 }
 
 .navArrow {
@@ -316,80 +327,6 @@
   font-family: $font-display;
   font-size: 24px;
   color: var(--color-text);
-}
-
-.animation3dPreview {
-  position: relative;
-  display: inline-block;
-}
-
-.animation3dImage {
-  display: block;
-  width: 720px;
-  max-width: 100%;
-  border-radius: $radius-md;
-  object-fit: cover;
-  box-shadow: var(--shadow-lg);
-}
-
-.animation3dLabel {
-  @include chip($active: true);
-  position: absolute;
-  right: $spacing-md;
-  bottom: $spacing-md;
-  padding: $spacing-xs $spacing-md;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.modal3dOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: $spacing-xxl;
-}
-
-.modal3dContent {
-  position: relative;
-  max-width: 900px;
-  width: 100%;
-  border-radius: $radius-xl;
-  background-color: var(--color-surface);
-  padding: $spacing-xl;
-}
-
-.modal3dClose {
-  position: absolute;
-  z-index: 1;
-  top: $spacing-md;
-  right: $spacing-md;
-  display: flex;
-  height: 32px;
-  width: 32px;
-  align-items: center;
-  justify-content: center;
-  border-radius: $radius-pill;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-
-  svg {
-    height: 18px;
-    width: 18px;
-  }
-
-  &:hover {
-    color: var(--color-primary);
-    background-color: var(--color-background-alt);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-  }
 }
 
 .related {

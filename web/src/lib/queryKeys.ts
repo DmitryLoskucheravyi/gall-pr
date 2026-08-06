@@ -81,6 +81,7 @@ export const queryKeys = {
   support: {
     all: ['support'] as const,
     adminChats: () => [...queryKeys.support.all, 'admin-chats'] as const,
+    myUnread: () => [...queryKeys.support.all, 'my-unread'] as const,
   },
   novaPoshta: {
     cities: (query: string) => ['nova-poshta', 'cities', query] as const,

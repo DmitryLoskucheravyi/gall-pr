@@ -3,13 +3,48 @@
   flex-direction: column;
   align-items: center;
   padding: $spacing-xxxxl 0;
-  perspective: 1400px;
+  perspective: 1300px;
 }
 
+// Idle sway carrier. A pure CSS animation, so the resting scene drifts
+// without any JS involvement; the component pauses it (freezing the pose,
+// not resetting it) while the visitor drags or a flick-spin is running.
+// Must stay free of filter/overflow — either would flatten the 3D children.
+.float {
+  transform-style: preserve-3d;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: painting-float 11s ease-in-out infinite;
+  }
+}
+
+.floatPaused {
+  animation-play-state: paused;
+}
+
+@keyframes painting-float {
+  0%,
+  100% {
+    transform: rotateX(1.5deg) rotateY(-3deg) translateY(0);
+  }
+  30% {
+    transform: rotateX(-1deg) rotateY(2.5deg) translateY(-7px);
+  }
+  65% {
+    transform: rotateX(2deg) rotateY(-1deg) translateY(-2px);
+  }
+}
+
+// The canvas as a box. The card itself carries the rotation; the six faces
+// below place themselves around it using the measured --w/--h and the
+// stretcher depth --d (all set from Painting3DViewer.tsx).
 .card {
   position: relative;
-  width: 640px;
-  max-width: 80vw;
+  // Width follows the painting's real proportions (--ar, set from the
+  // loaded image) so a portrait canvas fits the screen by its height: the
+  // third term is "the width at which height hits the viewport budget".
+  // Without it a 640px-wide portrait grew taller than the lightbox.
+  width: min(640px, 80vw, calc((100dvh - 320px) * var(--ar, 0.8)));
   transform-style: preserve-3d;
   cursor: grab;
   touch-action: none;
@@ -26,10 +61,17 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border-radius: $radius-md;
+  border-radius: 3px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+}
+
+.face {
+  transform: translateZ(calc(var(--d, 26px) / 2));
+}
+
+.faceBack {
+  transform: rotateY(180deg) translateZ(calc(var(--d, 26px) / 2));
 }
 
 .image {
@@ -38,11 +80,124 @@
   width: 100%;
   object-fit: cover;
   pointer-events: none;
+  // Dims as the front turns away from the fixed light — see --front-bright.
+  filter: brightness(var(--front-bright, 1));
 }
 
-.faceBack {
-  transform: rotateY(180deg);
+// Varnish sheen sweeping across the paint as the canvas turns. Position and
+// strength are driven from the same yaw the rotation uses, so the light
+// source stays put while the object moves through it.
+.glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    100deg,
+    transparent 34%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.18) 58%,
+    transparent 72%
+  );
+  background-size: 280% 100%;
+  background-position: var(--glare-pos, 50%) 0;
+  opacity: var(--glare-o, 0);
+  mix-blend-mode: soft-light;
 }
+
+// ---------- Stretcher sides ----------
+
+// Each side face shows a blurred sliver of the painting itself — the gallery
+// wrap of a real stretched canvas, paint folding over the edge — rather than
+// four flat grey walls. background-size pinned to the front face's measured
+// box means the sliver is exactly the strip adjoining that edge.
+.edge {
+  position: absolute;
+  overflow: hidden;
+  background-color: #6f655a;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--img);
+    background-size: var(--w, 640px) var(--h, 800px);
+    filter: blur(3px) brightness(0.72) saturate(0.85);
+  }
+
+  // Static shading per side sells the fixed light direction even while the
+  // box is still: lit from above-left.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.edgeLeft,
+.edgeRight {
+  top: 0;
+  left: calc(50% - var(--d, 26px) / 2);
+  width: var(--d, 26px);
+  height: 100%;
+}
+
+.edgeLeft {
+  transform: rotateY(-90deg) translateZ(calc(var(--w, 640px) / 2));
+
+  &::before {
+    background-position: left center;
+  }
+
+  &::after {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.edgeRight {
+  transform: rotateY(90deg) translateZ(calc(var(--w, 640px) / 2));
+
+  &::before {
+    background-position: right center;
+  }
+
+  &::after {
+    background: rgba(0, 0, 0, 0.28);
+  }
+}
+
+.edgeTop,
+.edgeBottom {
+  left: 0;
+  top: calc(50% - var(--d, 26px) / 2);
+  width: 100%;
+  height: var(--d, 26px);
+}
+
+.edgeTop {
+  transform: rotateX(90deg) translateZ(calc(var(--h, 800px) / 2));
+
+  &::before {
+    background-position: center top;
+  }
+
+  &::after {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+.edgeBottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--h, 800px) / 2));
+
+  &::before {
+    background-position: center bottom;
+  }
+
+  &::after {
+    background: rgba(0, 0, 0, 0.38);
+  }
+}
+
+// ---------- Back of the canvas ----------
 
 .frame {
   height: 100%;
@@ -50,6 +205,8 @@
   box-sizing: border-box;
   padding: 10px;
   background: linear-gradient(155deg, #d8c3a0, #a9835a 45%, #7a5636 100%);
+  // The back dims when it faces away, same light as the front.
+  filter: brightness(var(--back-bright, 1));
 }
 
 .canvasBack {
@@ -90,22 +247,30 @@
   background-color: rgba(0, 0, 0, 0.2);
 }
 
-.shadow {
-  margin-top: $spacing-xl;
-  height: 22px;
-  width: 220px;
-  max-width: 60%;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(0, 0, 0, 0) 72%
-  );
-}
-
-.hint {
-  margin-top: $spacing-lg;
+// Gallery label glued to the back — the detail that rewards flipping the
+// painting over.
+.sticker {
+  position: absolute;
+  right: 9%;
+  bottom: 9%;
+  display: flex;
+  max-width: 62%;
+  flex-direction: column;
+  gap: 2px;
+  transform: rotate(-2.5deg);
+  background-color: #f6f2e8;
+  padding: 8px 14px;
+  font-family: $font-display;
   font-size: 13px;
-  color: var(--color-text-muted);
+  line-height: 1.35;
+  color: #40382c;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+
+  em {
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8a7f6d;
+  }
 }

@@ -26,7 +26,9 @@
   flex-direction: column;
   margin-inline: calc(-1 * $container-padding);
   margin-top: calc(-1 * $spacing-xxxxl);
-  height: calc(100dvh - var(--header-height, 64px));
+  height: calc(
+    100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+  );
   background-color: var(--color-surface);
 
   @include respond-up($breakpoint-md) {

@@ -7,16 +7,21 @@ import { useAppSelector } from './store/hooks';
 import Toast from './components/ui/Toast';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
 
-// Statically importing the devtools would ship them in the production
-// bundle even though they never render there. A lazy() wrapped in a
-// build-time-false condition lets Vite strip the import() call entirely.
-const ReactQueryDevtools = import.meta.env.DEV
-  ? lazy(() =>
-      import('@tanstack/react-query-devtools').then((m) => ({
-        default: m.ReactQueryDevtools,
-      })),
-    )
-  : null;
+// Off by default: the devtools' launcher floats over the bottom-right
+// corner, which is where the mobile nav bar's last tab sits. Set
+// VITE_QUERY_DEVTOOLS=true in .env.local when you actually need them.
+//
+// Statically importing them would ship them in the production bundle even
+// though they never render there. A lazy() wrapped in a build-time-false
+// condition lets Vite strip the import() call entirely.
+const ReactQueryDevtools =
+  import.meta.env.DEV && import.meta.env.VITE_QUERY_DEVTOOLS === 'true'
+    ? lazy(() =>
+        import('@tanstack/react-query-devtools').then((m) => ({
+          default: m.ReactQueryDevtools,
+        })),
+      )
+    : null;
 
 function App() {
   const isDark = useAppSelector((state) => state.theme.isDark);

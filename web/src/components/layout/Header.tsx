@@ -161,6 +161,29 @@ export default function Header() {
     </svg>
   );
 
+  const favoritesIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 20.25c-.19 0-.38-.05-.55-.16-.66-.42-1.62-1.04-2.67-1.83C5.02 15.6 2.25 12.7 2.25 9.15 2.25 6.3 4.53 4 7.35 4c1.85 0 3.47.98 4.65 2.53C13.18 4.98 14.8 4 16.65 4c2.82 0 5.1 2.3 5.1 5.15 0 3.55-2.77 6.45-6.53 9.11-1.05.79-2.01 1.41-2.67 1.83-.17.11-.36.16-.55.16Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
+  const supportIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   const cartIcon = (
     <svg viewBox="0 0 24 24" fill="none">
       <path
@@ -320,6 +343,8 @@ export default function Header() {
         </nav>
 
         <div className={styles.mobileActions}>
+          {/* Home, catalog, cart, orders and gallery live in the bottom bar
+              at this width — what's left up here is the occasional stuff. */}
           <button
             onClick={handleThemeToggle}
             aria-label="Перемкнути тему"
@@ -328,18 +353,40 @@ export default function Header() {
             {themeIcon}
           </button>
 
-          <NavLink
-            to="/cart"
-            aria-label="Кошик"
-            className={({ isActive }) =>
-              `${styles.cartButton} ${isActive ? styles.active : ''}`
-            }
-          >
-            {cartIcon}
-            {cartCount > 0 && (
-              <span className={styles.cartBadge}>{cartCount}</span>
-            )}
-          </NavLink>
+          {/* The one slot that differs by role: an admin's most-used screen
+              here is the support inbox, a customer's is their saved works. */}
+          {user?.role === 'ADMIN' && (
+            <NavLink
+              to="/admin/support"
+              aria-label={
+                unreadSupportCount > 0
+                  ? `Підтримка, ${unreadSupportCount} нових звернень`
+                  : 'Підтримка'
+              }
+              className={({ isActive }) =>
+                `${styles.iconButton} ${isActive ? styles.active : ''}`
+              }
+            >
+              {supportIcon}
+              {unreadSupportCount > 0 && (
+                <span className={styles.cartBadge} aria-hidden="true">
+                  {unreadSupportCount > 9 ? '9+' : unreadSupportCount}
+                </span>
+              )}
+            </NavLink>
+          )}
+
+          {user && user.role !== 'ADMIN' && (
+            <NavLink
+              to="/favorites"
+              aria-label="Улюблені"
+              className={({ isActive }) =>
+                `${styles.iconButton} ${isActive ? styles.active : ''}`
+              }
+            >
+              {favoritesIcon}
+            </NavLink>
+          )}
 
           {user && (
             <NavLink
@@ -384,6 +431,15 @@ export default function Header() {
             </NavLink>
             <NavLink to="/gallery" className={mobileNavLinkClass}>
               Галерея
+            </NavLink>
+            <NavLink to="/cart" className={mobileNavLinkClass}>
+              Кошик
+              {cartCount > 0 && (
+                <span className={styles.navBadge}>{cartCount}</span>
+              )}
+            </NavLink>
+            <NavLink to="/orders" className={mobileNavLinkClass}>
+              Замовлення
             </NavLink>
 
             {user && (

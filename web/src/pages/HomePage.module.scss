@@ -26,7 +26,9 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   // side. 100dvh (not vh/%) accounts for mobile browser chrome correctly.
   margin-inline: calc(-1 * $container-padding);
   margin-top: calc(-1 * $spacing-xxxxl);
-  min-height: calc(100dvh - var(--header-height, 64px));
+  min-height: calc(
+    100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+  );
   // Slim bottom padding — the text block should sit at the very bottom
   // edge of the first screen.
   padding: $spacing-xxxl $spacing-xl $spacing-xl;
@@ -48,7 +50,9 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   top: var(--header-height, 64px);
   left: 0;
   right: 0;
-  height: calc(100dvh - var(--header-height, 64px));
+  height: calc(
+    100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+  );
   z-index: 0;
 }
 

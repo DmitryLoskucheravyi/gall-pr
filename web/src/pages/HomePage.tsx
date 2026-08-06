@@ -50,6 +50,11 @@ const HERO_PAN_MAX_MS = 12500;
 // straight interpolation between them from reading as a series of facets.
 const HERO_PAN_SAMPLES = 8;
 
+// The featured strip is a fanned stack, not a grid, so it needs a ceiling.
+// The flag itself is free for the admin to set on as many works as they
+// like; this is the display cap.
+const FEATURED_LIMIT = 10;
+
 // How many paintings the hero works with. A wide screen tours all of them in
 // turn; a phone shows one, chosen at random per visit.
 const HERO_SLIDE_COUNT = 3;
@@ -666,7 +671,7 @@ export default function HomePage() {
           {loading ? (
             <FeaturedStackSkeleton />
           ) : featured.length > 0 ? (
-            <FeaturedStack paintings={featured} />
+            <FeaturedStack paintings={featured.slice(0, FEATURED_LIMIT)} />
           ) : (
             <p className={styles.muted}>Скоро тут з'являться нові роботи</p>
           )}

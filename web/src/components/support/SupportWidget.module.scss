@@ -1,10 +1,12 @@
 // Position (left/top) is driven from SupportWidget.tsx — the launcher is
 // draggable and docks to either side edge, so it has no fixed corner here.
 // Keep the box size in sync with SIZE in that file.
+// Mobile-first: on phones support lives in the header and the bottom bar
+// owns this corner, so the launcher only appears from $breakpoint-lg.
 .launcher {
+  display: none;
   position: fixed;
   z-index: 40;
-  display: flex;
   height: 48px;
   width: 48px;
   align-items: center;
@@ -24,6 +26,10 @@
     top 0.3s $ease-spring,
     transform 0.35s $ease-spring,
     box-shadow 0.25s ease;
+
+  @include respond-up($breakpoint-lg) {
+    display: flex;
+  }
 
   &:hover {
     transform: scale(1.08) translateY(-2px);

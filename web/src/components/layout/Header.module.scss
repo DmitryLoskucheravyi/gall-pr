@@ -160,10 +160,19 @@
   color: var(--color-text-muted);
 }
 
+// The menu is short now that the primary links live in the bottom bar, and
+// which sections it shows depends on the visitor — a divider can end up
+// first or last with nothing to divide.
 .mobileDivider {
   margin: $spacing-sm $spacing-lg;
   height: 1px;
   background-color: var(--color-border);
+
+  &:first-child,
+  &:last-child,
+  & + & {
+    display: none;
+  }
 }
 
 .mobileLogout {
@@ -362,6 +371,35 @@
   font-size: 11px;
   font-weight: 700;
   color: var(--color-on-accent);
+}
+
+// Plain icon link in the mobile action row — same box and behaviour as
+// .profileButton next to it.
+.iconButton {
+  position: relative;
+  display: flex;
+  height: 34px;
+  width: 34px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  transition:
+    color 0.2s ease,
+    transform 0.3s $ease-spring;
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
+
+  &:hover {
+    color: var(--color-text);
+    transform: translateY(-1px);
+  }
+
+  &.active {
+    color: var(--color-text);
+  }
 }
 
 .profileButton {

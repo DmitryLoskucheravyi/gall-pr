@@ -1,44 +1,15 @@
+// No card around the news any more — no panel, no border, no shadow. It
+// reads as a passage set into the page rather than a widget sitting on it.
 .banner {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border-radius: $radius-lg;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.imageWrap {
-  height: 220px;
-  width: 100%;
-
-  @include respond-up($breakpoint-lg) {
-    height: 320px;
-  }
-}
-
-.image {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-}
-
-.body {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
   align-items: flex-start;
-  gap: $spacing-sm;
-  padding: $spacing-xl $spacing-xxl;
-
-  @include respond-up($breakpoint-lg) {
-    padding: $spacing-xxxxl;
-  }
+  gap: $spacing-md;
 }
 
 .title {
   font-family: $font-display;
-  font-size: 28px;
+  font-size: clamp(24px, 3.4vw, 34px);
   line-height: 1.2;
   color: var(--color-text);
 }
@@ -46,17 +17,14 @@
 .text {
   width: 100%;
   color: var(--color-text-secondary);
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.7;
+  // Keeps the paragraph breaks the admin typed.
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
 
 .skeleton {
-  height: 220px;
-  border-radius: $radius-lg;
+  height: 140px;
   background-color: var(--color-background-alt);
-
-  @include respond-up($breakpoint-lg) {
-    height: 280px;
-  }
 }
