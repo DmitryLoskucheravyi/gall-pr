@@ -9,37 +9,16 @@ import { LoginDto } from './dto/login.dto';
 import { User } from '../users/entities/user.entity';
 import { JwtPayload } from './types/jwt-payload.type';
 
-const CODE_TTL_MS = 15 * 60 * 1000; // 15 min
-const RESEND_COOLDOWN_MS = 60 * 1000; // 60 s
-const MAX_ATTEMPTS = 5;
-
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    // Nothing sends mail today: email confirmation is gone, since a shop has
+    // no reason to hold up a purchase for a round-trip through the inbox.
+    // Kept wired for the order-flow mailings that come next.
     private readonly mailService: MailService,
   ) {}
-
-  // Generates a fresh 6-digit code, stores its hash + expiry on the user, and
-  // emails it. Returns nothing sensitive.
-  private async issueVerificationCode(user: User) {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    const verificationCodeHash = await bcrypt.hash(code, 10);
-
-    await this.usersService.update(user.id, {
-      verificationCodeHash,
-      verificationExpiresAt: new Date(Date.now() + CODE_TTL_MS),
-      verificationSentAt: new Date(),
-      verificationAttempts: 0,
-    });
-
-    await this.mailService.sendVerificationCode(
-      user.email,
-      code,
-      user.firstName,
-    );
-  }
 
   private buildUserResponse(user: User) {
     return {
@@ -49,7 +28,6 @@ export class AuthService {
       lastName: user.lastName,
       phone: user.phone,
       role: user.role,
-      isVerified: user.isVerified,
       telegramLinked: !!user.telegramChatId,
     };
   }
@@ -69,74 +47,12 @@ export class AuthService {
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
       phone: registerDto.phone,
-      isVerified: false,
     });
 
-    await this.issueVerificationCode(user);
-
-    // Auto-login as an unverified account: the user can browse, but verified
-    // status gates checkout (see OrdersService). The frontend routes them to
-    // the code-entry screen right after registration.
     const tokens = this.generateTokens(user);
     await this.usersService.updateRefreshToken(user.id, tokens.refreshToken);
 
     return { ...tokens, user: this.buildUserResponse(user) };
-  }
-
-  async verifyEmail(email: string, code: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) throw new BadRequestException('User not found');
-    if (user.isVerified) return { user: this.buildUserResponse(user) };
-
-    if (
-      !user.verificationCodeHash ||
-      !user.verificationExpiresAt ||
-      user.verificationExpiresAt.getTime() < Date.now()
-    ) {
-      throw new BadRequestException('Код прострочений. Надішліть новий.');
-    }
-
-    if (user.verificationAttempts >= MAX_ATTEMPTS) {
-      throw new BadRequestException(
-        'Забагато спроб. Надішліть новий код.',
-      );
-    }
-
-    const isValid = await bcrypt.compare(code, user.verificationCodeHash);
-    if (!isValid) {
-      await this.usersService.update(user.id, {
-        verificationAttempts: user.verificationAttempts + 1,
-      });
-      throw new BadRequestException('Невірний код.');
-    }
-
-    await this.usersService.update(user.id, {
-      isVerified: true,
-      verificationCodeHash: null,
-      verificationExpiresAt: null,
-      verificationSentAt: null,
-      verificationAttempts: 0,
-    });
-
-    return { user: { ...this.buildUserResponse(user), isVerified: true } };
-  }
-
-  async resendCode(email: string) {
-    const user = await this.usersService.findByEmail(email);
-    // Don't reveal whether the email exists.
-    if (!user || user.isVerified) return { message: 'ok' };
-
-    if (
-      user.verificationSentAt &&
-      Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS
-    ) {
-      throw new BadRequestException(
-        'Зачекайте хвилину перед повторною відправкою.',
-      );
-    }
-
-    await this.issueVerificationCode(user);
-    return { message: 'ok' };
   }
 
   async login(loginDto: LoginDto) {

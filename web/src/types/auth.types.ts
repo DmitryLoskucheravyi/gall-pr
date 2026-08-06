@@ -5,7 +5,6 @@ export type User = {
   lastName: string;
   phone: string;
   role: string;
-  isVerified: boolean;
   telegramLinked: boolean;
 };
 

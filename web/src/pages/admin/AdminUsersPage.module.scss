@@ -68,18 +68,6 @@
   color: var(--color-on-primary);
 }
 
-.verified {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-success);
-}
-
-.unverified {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-warning);
-}
-
 .meta {
   margin-top: $spacing-xs;
   display: flex;

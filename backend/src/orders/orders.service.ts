@@ -80,19 +80,6 @@ export class OrdersService {
       );
     }
 
-    // Registered users must have a verified email to place an order (guests
-    // are exempt — they have no account to verify).
-    if (!isGuest) {
-      const user = await this.usersService.findById(
-        (identity as { userId: number }).userId,
-      );
-      if (!user?.isVerified) {
-        throw new BadRequestException(
-          'Підтвердіть email, щоб оформити замовлення',
-        );
-      }
-    }
-
     if (
       dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA &&
       (!dto.novaPoshtaCity?.trim() || !dto.novaPoshtaWarehouse?.trim())

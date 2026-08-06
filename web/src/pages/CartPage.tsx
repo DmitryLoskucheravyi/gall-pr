@@ -76,7 +76,6 @@ export default function CartPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  const user = useAppSelector((state) => state.auth.user);
 
   const { data: cart, isLoading: loading } = useCart();
   const removeItem = useRemoveCartItemMutation();
@@ -117,18 +116,6 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (checkout.isPending || items.length === 0) return;
-
-    // Registered but unverified — send them to confirm their email first.
-    if (isAuthenticated && user && !user.isVerified) {
-      dispatch(
-        showToast({
-          message: 'Підтвердіть email, щоб оформити замовлення',
-          variant: 'error',
-        }),
-      );
-      navigate('/verify-email');
-      return;
-    }
 
     if (!isAuthenticated && (!guestName.trim() || !guestPhone.trim())) {
       dispatch(

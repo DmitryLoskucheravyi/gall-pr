@@ -41,8 +41,7 @@ export default function RegisterPage() {
         await mergeGuestCart.mutateAsync(guestToken).catch(() => {});
       }
 
-      // New accounts start unverified — send them to the code-entry screen.
-      navigate('/verify-email');
+      navigate('/');
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Не вдалося зареєструватись');
     } finally {

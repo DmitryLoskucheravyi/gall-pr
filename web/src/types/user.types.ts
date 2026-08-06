@@ -5,7 +5,6 @@ export type AdminUser = {
   lastName: string;
   phone: string;
   role: 'USER' | 'ADMIN';
-  isVerified: boolean;
   isActive: boolean;
   createdAt: string;
 };

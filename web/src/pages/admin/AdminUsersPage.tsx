@@ -60,11 +60,6 @@ export default function AdminUsersPage() {
                     {user.role === 'ADMIN' && (
                       <span className={styles.adminBadge}>Адмін</span>
                     )}
-                    {user.isVerified ? (
-                      <span className={styles.verified}>✓ Підтверджено</span>
-                    ) : (
-                      <span className={styles.unverified}>Не підтверджено</span>
-                    )}
                   </div>
                   <div className={styles.meta}>
                     <a href={`mailto:${user.email}`} className={styles.email}>

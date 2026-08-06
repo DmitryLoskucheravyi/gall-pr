@@ -11,7 +11,6 @@ const GiveawayDetailPage = lazy(() => import('../pages/GiveawayDetailPage'));
 const PaintingPage = lazy(() => import('../pages/PaintingPage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
-const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage'));
 const CartPage = lazy(() => import('../pages/CartPage'));
 const OrdersPage = lazy(() => import('../pages/OrdersPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
@@ -37,7 +36,6 @@ export const router = createBrowserRouter([
       { path: 'painting/:id', element: <PaintingPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
-      { path: 'verify-email', element: <VerifyEmailPage /> },
       { path: 'cart', element: <CartPage /> },
       { path: 'orders', element: <OrdersPage /> },
       { path: 'support', element: <FaqPage /> },

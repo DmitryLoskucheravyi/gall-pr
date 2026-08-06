@@ -12,15 +12,6 @@ class AuthService {
     return response.data;
   }
 
-  async verifyEmail(email: string, code: string): Promise<{ user: User }> {
-    const response = await api.post('/auth/verify-email', { email, code });
-    return response.data;
-  }
-
-  async resendCode(email: string): Promise<void> {
-    await api.post('/auth/resend-code', { email });
-  }
-
   async getProfile(): Promise<User> {
     const response = await api.get('/auth/me');
     return response.data;
