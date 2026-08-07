@@ -10,6 +10,8 @@ import { NovaPoshtaModule } from '../nova-poshta/nova-poshta.module';
 import { UsersModule } from '../users/users.module';
 import { TelegramModule } from '../telegram/telegram.module';
 import { UploadsModule } from '../uploads/uploads.module';
+import { MailModule } from '../mail/mail.module';
+import { SettingsModule } from '../settings/settings.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
@@ -21,6 +23,8 @@ import { OrdersService } from './orders.service';
     UsersModule,
     TelegramModule,
     UploadsModule,
+    MailModule,
+    SettingsModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],

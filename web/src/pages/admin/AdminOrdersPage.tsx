@@ -66,6 +66,9 @@ type Tab = 'active' | 'completed';
 export default function AdminOrdersPage() {
   const { data: orders = [], isLoading: loading } = useAdminOrders();
   const updateStatus = useUpdateOrderStatusMutation();
+  // Which order is mid-shipping, and the waybill being typed for it.
+  const [shippingOrderId, setShippingOrderId] = useState<number | null>(null);
+  const [trackingInput, setTrackingInput] = useState('');
   const updatePaymentStatus = useUpdatePaymentStatusMutation();
   const deleteOrder = useDeleteOrderMutation();
   const archiveOrder = useArchiveOrderMutation();
@@ -78,7 +81,27 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = (order: Order, status: OrderStatus) => {
     if (status === order.status) return;
+
+    // Marking an order shipped opens the waybill field instead of sending it
+    // straight through: the customer's email is built around that number, and
+    // the backend refuses the transition without one.
+    if (status === 'SHIPPED') {
+      setShippingOrderId(order.id);
+      setTrackingInput(order.trackingNumber ?? '');
+      return;
+    }
+
     updateStatus.mutate({ id: order.id, status });
+  };
+
+  const handleShipConfirm = (order: Order) => {
+    const trackingNumber = trackingInput.trim();
+    if (!trackingNumber) return;
+
+    updateStatus.mutate(
+      { id: order.id, status: 'SHIPPED', trackingNumber },
+      { onSuccess: () => setShippingOrderId(null) },
+    );
   };
 
   const handleTogglePaymentStatus = (order: Order) => {
@@ -315,6 +338,43 @@ export default function AdminOrdersPage() {
                     </button>
                   ))}
                 </div>
+
+                {shippingOrderId === order.id && (
+                  <div className={styles.trackingRow}>
+                    <input
+                      value={trackingInput}
+                      onChange={(event) => setTrackingInput(event.target.value)}
+                      placeholder="Номер накладної (ТТН)"
+                      autoFocus
+                      className={styles.trackingInput}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') handleShipConfirm(order);
+                        if (event.key === 'Escape') setShippingOrderId(null);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleShipConfirm(order)}
+                      disabled={!trackingInput.trim() || updateStatus.isPending}
+                      className={styles.trackingConfirm}
+                    >
+                      Відправлено
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShippingOrderId(null)}
+                      className={styles.trackingCancel}
+                    >
+                      Скасувати
+                    </button>
+                  </div>
+                )}
+
+                {order.trackingNumber && shippingOrderId !== order.id && (
+                  <p className={styles.trackingLine}>
+                    ТТН: <strong>{order.trackingNumber}</strong>
+                  </p>
+                )}
 
                 {order.status === 'CANCELLED' && (
                   <button

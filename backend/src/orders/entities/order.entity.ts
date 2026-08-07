@@ -64,6 +64,11 @@ export class Order {
   @Column({ name: 'guest_address', type: 'varchar', length: 500, nullable: true })
   guestAddress: string | null;
 
+  // Nova Poshta waybill, set by the admin at the moment the order is marked
+  // SHIPPED — the shipped email is worthless without it.
+  @Column({ name: 'tracking_number', type: 'varchar', length: 64, nullable: true })
+  trackingNumber: string | null;
+
   @Column({ type: 'text', nullable: true })
   comment: string | null;
 

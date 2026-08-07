@@ -43,8 +43,15 @@ class OrdersService {
     return response.data;
   }
 
-  async updateStatus(id: number, status: OrderStatus): Promise<Order> {
-    const response = await api.patch(`/orders/${id}/status`, { status });
+  async updateStatus(
+    id: number,
+    status: OrderStatus,
+    trackingNumber?: string,
+  ): Promise<Order> {
+    const response = await api.patch(`/orders/${id}/status`, {
+      status,
+      trackingNumber,
+    });
     return response.data;
   }
 

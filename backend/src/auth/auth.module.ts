@@ -6,14 +6,12 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 
 import { UsersModule } from '../users/users.module';
-import { MailModule } from '../mail/mail.module';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     UsersModule,
-    MailModule,
     PassportModule,
     JwtModule.register({
       secret: 'SUPER_SECRET_KEY',

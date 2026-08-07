@@ -37,6 +37,7 @@ export type Order = {
   user?: OrderUser | null;
   guestName?: string | null;
   guestEmail?: string | null;
+  trackingNumber?: string | null;
   guestPhone?: string | null;
   guestAddress?: string | null;
   comment?: string | null;

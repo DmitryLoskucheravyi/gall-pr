@@ -24,6 +24,8 @@ import { NovaPoshtaService } from '../nova-poshta/nova-poshta.service';
 import { UsersService } from '../users/users.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { UploadsService } from '../uploads/uploads.service';
+import { MailService, type OrderMailData } from '../mail/mail.service';
+import { SettingsService } from '../settings/settings.service';
 import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
 
 const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
@@ -66,6 +68,8 @@ export class OrdersService {
     private readonly usersService: UsersService,
     private readonly telegramService: TelegramService,
     private readonly uploadsService: UploadsService,
+    private readonly mailService: MailService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async checkout(
@@ -73,6 +77,12 @@ export class OrdersService {
     dto: CheckoutDto,
   ): Promise<Order & { paymentForm: PaymentInitResult | null }> {
     const isGuest = !('userId' in identity);
+
+    // Email carries every update a guest will get about this order, so it's
+    // as required as the name and phone.
+    if (isGuest && !dto.guestEmail?.trim()) {
+      throw new BadRequestException('Вкажіть email — надішлемо туди замовлення');
+    }
 
     if (isGuest && (!dto.guestName?.trim() || !dto.guestPhone?.trim())) {
       throw new BadRequestException(
@@ -181,6 +191,7 @@ export class OrdersService {
     });
 
     this.notifyAdminOfNewOrder(savedOrder.id).catch(() => {});
+    this.emailOrderPlaced(savedOrder.id).catch(() => {});
 
     return {
       ...savedOrder,
@@ -191,6 +202,75 @@ export class OrdersService {
   // Re-fetches by id (rather than using the freshly-saved entity) so eager
   // relations — items → painting — are actually populated: save() returns
   // what you gave it, it doesn't hydrate eager relations the way find() does.
+  // Email is the one channel that reaches everyone: Telegram only works for
+  // account holders who linked the bot, and guests have no account at all.
+  private async recipientOf(
+    order: Order,
+  ): Promise<{ email: string; name: string | null } | null> {
+    if (order.userId) {
+      const user = await this.usersService.findById(order.userId);
+      return user?.email
+        ? { email: user.email, name: user.firstName ?? null }
+        : null;
+    }
+    return order.guestEmail
+      ? { email: order.guestEmail, name: order.guestName ?? null }
+      : null;
+  }
+
+  private deliveryPlaceOf(order: Order): string | null {
+    if (order.deliveryMethod !== DeliveryMethod.NOVA_POSHTA) return null;
+    return `Нова пошта, ${order.novaPoshtaCity ?? '—'} — ${order.novaPoshtaWarehouse ?? '—'}`;
+  }
+
+  private toMailData(order: Order, name: string | null): OrderMailData {
+    return {
+      id: order.id,
+      customerName: name,
+      items: (order.items ?? []).map((item) => ({
+        title: item.painting?.title ?? `Картина #${item.paintingId}`,
+        quantity: item.quantity,
+        price: Number(item.price),
+      })),
+      total: Number(order.total),
+      deliveryCost: Number(order.deliveryCost),
+      codFee: Number(order.codFee),
+      deliveryPlace: this.deliveryPlaceOf(order),
+      paymentLabel: PAYMENT_PROVIDER_LABEL[order.paymentProvider],
+      comment: order.comment,
+    };
+  }
+
+  // Every mail is fire-and-forget: an order is placed, paid or shipped
+  // whether or not its notification leaves the building.
+  private async emailOrderPlaced(orderId: number) {
+    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    if (!order) return;
+
+    const recipient = await this.recipientOf(order);
+    if (!recipient) return;
+
+    // A card transfer needs somewhere to send the money, and this receipt is
+    // the only place the customer is given it.
+    const iban =
+      order.paymentProvider === PaymentProvider.CARD_TRANSFER
+        ? (await this.settingsService.get()).cardTransferIban || null
+        : null;
+
+    await this.mailService.sendOrderPlaced(
+      recipient.email,
+      this.toMailData(order, recipient.name),
+      iban,
+    );
+  }
+
+  private async emailPaymentProofReceived(order: Order) {
+    const recipient = await this.recipientOf(order);
+    if (!recipient) return;
+
+    await this.mailService.sendPaymentProofReceived(recipient.email, order.id);
+  }
+
   private async notifyAdminOfNewOrder(orderId: number) {
     const order = await this.ordersRepository.findOne({ where: { id: orderId } });
     if (!order) return;
@@ -267,7 +347,7 @@ export class OrdersService {
       throw new BadRequestException('Completed orders cannot be cancelled');
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const updated = await this.dataSource.transaction(async (manager) => {
       for (const item of order.items) {
         const painting = await manager.findOne(Painting, {
           where: { id: item.paintingId },
@@ -284,6 +364,13 @@ export class OrdersService {
 
       return manager.save(order);
     });
+
+    // Cancelling from the cabinet ends up in the same place as an admin
+    // cancellation, so it deserves the same confirmation — a cancel that
+    // acknowledges nothing leaves the customer unsure it went through.
+    this.notifyUserOfStatusChange(updated).catch(() => {});
+
+    return updated;
   }
 
   async uploadPaymentProof(
@@ -323,6 +410,12 @@ export class OrdersService {
         proofBuffer,
       )
       .catch(() => {});
+
+    // The screenshot only reaches the admin's Telegram, so without this the
+    // customer is left with money gone and nothing acknowledging it until
+    // someone gets around to checking the transfer. Confirmation itself comes
+    // later, from updatePaymentStatusAdmin.
+    this.emailPaymentProofReceived(order).catch(() => {});
 
     return updated;
   }
@@ -380,18 +473,33 @@ export class OrdersService {
 
     const updated = await this.ordersRepository.save(order);
 
-    if (updated.userId && paymentStatus !== PaymentStatus.PENDING) {
-      const text =
-        paymentStatus === PaymentStatus.PAID
-          ? `✅ Оплату замовлення №${updated.id} підтверджено. Дякуємо!`
-          : `⚠️ Оплата замовлення №${updated.id} не пройшла. Зв'яжіться з підтримкою.`;
-      this.telegramService.notifyUser(updated.userId, text).catch(() => {});
+    if (paymentStatus !== PaymentStatus.PENDING) {
+      if (updated.userId) {
+        const text =
+          paymentStatus === PaymentStatus.PAID
+            ? `✅ Оплату замовлення №${updated.id} підтверджено. Дякуємо!`
+            : `⚠️ Оплата замовлення №${updated.id} не пройшла. Зв'яжіться з підтримкою.`;
+        this.telegramService.notifyUser(updated.userId, text).catch(() => {});
+      }
+
+      this.recipientOf(updated)
+        .then((recipient) => {
+          if (!recipient) return;
+          return paymentStatus === PaymentStatus.PAID
+            ? this.mailService.sendPaymentConfirmed(recipient.email, updated.id)
+            : this.mailService.sendPaymentFailed(recipient.email, updated.id);
+        })
+        .catch(() => {});
     }
 
     return updated;
   }
 
-  async updateStatusAdmin(id: number, status: OrderStatus): Promise<Order> {
+  async updateStatusAdmin(
+    id: number,
+    status: OrderStatus,
+    trackingNumber?: string,
+  ): Promise<Order> {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
@@ -400,6 +508,18 @@ export class OrdersService {
 
     if (order.status === status) {
       return order;
+    }
+
+    // The shipped mail is built around the waybill, so refuse the transition
+    // without one rather than send the customer a notice they can't act on.
+    if (status === OrderStatus.SHIPPED) {
+      const ttn = trackingNumber?.trim();
+      if (!ttn) {
+        throw new BadRequestException(
+          'Вкажіть номер накладної (ТТН), щоб позначити замовлення відправленим',
+        );
+      }
+      order.trackingNumber = ttn;
     }
 
     const wasCancelled = order.status === OrderStatus.CANCELLED;
@@ -425,6 +545,7 @@ export class OrdersService {
       });
 
       this.notifyUserOfStatusChange(updated).catch(() => {});
+      this.emailStatusChange(updated).catch(() => {});
       return updated;
     }
 
@@ -464,6 +585,7 @@ export class OrdersService {
       });
 
       this.notifyUserOfStatusChange(updated).catch(() => {});
+      this.emailStatusChange(updated).catch(() => {});
       return updated;
     }
 
@@ -471,7 +593,37 @@ export class OrdersService {
 
     const updated = await this.ordersRepository.save(order);
     this.notifyUserOfStatusChange(updated).catch(() => {});
+    this.emailStatusChange(updated).catch(() => {});
     return updated;
+  }
+
+  // Only two status changes are worth an email. CONFIRMED usually lands
+  // minutes after the receipt, and COMPLETED tells the customer something
+  // they already know — the painting is in their hands.
+  private async emailStatusChange(order: Order) {
+    if (
+      order.status !== OrderStatus.SHIPPED &&
+      order.status !== OrderStatus.CANCELLED
+    ) {
+      return;
+    }
+
+    const recipient = await this.recipientOf(order);
+    if (!recipient) return;
+
+    if (order.status === OrderStatus.CANCELLED) {
+      await this.mailService.sendOrderCancelled(recipient.email, order.id);
+      return;
+    }
+
+    if (order.trackingNumber) {
+      await this.mailService.sendOrderShipped(
+        recipient.email,
+        order.id,
+        order.trackingNumber,
+        this.deliveryPlaceOf(order),
+      );
+    }
   }
 
   private async notifyUserOfStatusChange(order: Order) {

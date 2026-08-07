@@ -87,7 +87,11 @@ export class OrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
   ) {
-    return this.ordersService.updateStatusAdmin(Number(id), dto.status);
+    return this.ordersService.updateStatusAdmin(
+      Number(id),
+      dto.status,
+      dto.trackingNumber,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

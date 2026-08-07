@@ -283,3 +283,40 @@
   margin-top: $spacing-lg;
   padding: $spacing-sm $spacing-lg;
 }
+
+// Waybill entry, shown in place of an immediate "shipped" — the number goes
+// into the customer's email, so it's collected before the status flips.
+.trackingRow {
+  margin-top: $spacing-md;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.trackingInput {
+  @include input-base;
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.trackingConfirm {
+  @include button-primary;
+  padding: $spacing-sm $spacing-lg;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.trackingCancel {
+  @include button-secondary;
+  padding: $spacing-sm $spacing-lg;
+}
+
+.trackingLine {
+  margin-top: $spacing-sm;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}

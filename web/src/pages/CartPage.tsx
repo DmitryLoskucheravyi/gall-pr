@@ -117,10 +117,15 @@ export default function CartPage() {
   const handleCheckout = async () => {
     if (checkout.isPending || items.length === 0) return;
 
-    if (!isAuthenticated && (!guestName.trim() || !guestPhone.trim())) {
+    if (
+      !isAuthenticated &&
+      (!guestName.trim() || !guestPhone.trim() || !guestEmail.trim())
+    ) {
       dispatch(
         showToast({
-          message: "Вкажіть ім'я та телефон для оформлення замовлення",
+          // Email is where every update about this order goes — a guest has
+          // no account to check.
+          message: "Вкажіть ім'я, телефон та email для оформлення замовлення",
           variant: 'error',
         }),
       );
@@ -168,7 +173,7 @@ export default function CartPage() {
               callMeRequested,
               guestName: guestName.trim(),
               guestPhone: guestPhone.trim(),
-              guestEmail: guestEmail.trim() || undefined,
+              guestEmail: guestEmail.trim(),
               comment: comment.trim() || undefined,
               ...novaPoshtaExtra,
             },
@@ -251,7 +256,7 @@ export default function CartPage() {
                 />
                 <FloatField
                   id="guest-email"
-                  label="Email (необов'язково)"
+                  label="Email"
                   type="email"
                   value={guestEmail}
                   onChange={setGuestEmail}

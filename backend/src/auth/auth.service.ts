@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { UsersService } from '../users/users.service';
-import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { User } from '../users/entities/user.entity';
@@ -14,10 +13,6 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    // Nothing sends mail today: email confirmation is gone, since a shop has
-    // no reason to hold up a purchase for a round-trip through the inbox.
-    // Kept wired for the order-flow mailings that come next.
-    private readonly mailService: MailService,
   ) {}
 
   private buildUserResponse(user: User) {

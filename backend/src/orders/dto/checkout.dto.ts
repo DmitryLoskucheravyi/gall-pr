@@ -7,6 +7,9 @@ export class CheckoutDto {
   @IsString()
   guestName?: string;
 
+  // Guests are told about their order by email and nothing else, so this is
+  // the one contact field that can't be skipped. The service checks it too,
+  // since it only applies when there's no account.
   @IsOptional()
   @IsEmail()
   guestEmail?: string;
