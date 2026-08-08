@@ -269,6 +269,9 @@ export default function Header() {
                   <NavLink to="/admin/giveaways" className={adminNavLinkClass}>
                     Розіграш
                   </NavLink>
+                  <NavLink to="/admin/mail" className={adminNavLinkClass}>
+                    Журнал листів
+                  </NavLink>
                 </div>
               )}
             </div>
@@ -475,6 +478,9 @@ export default function Header() {
                 </NavLink>
                 <NavLink to="/admin/giveaways" className={mobileNavLinkClass}>
                   Розіграш
+                </NavLink>
+                <NavLink to="/admin/mail" className={mobileNavLinkClass}>
+                  Журнал листів
                 </NavLink>
               </>
             )}

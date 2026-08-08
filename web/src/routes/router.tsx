@@ -23,6 +23,7 @@ const AdminOrdersPage = lazy(() => import('../pages/admin/AdminOrdersPage'));
 const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
 const AdminSupportPage = lazy(() => import('../pages/admin/AdminSupportPage'));
 const AdminGiveawaysPage = lazy(() => import('../pages/admin/AdminGiveawaysPage'));
+const AdminMailPage = lazy(() => import('../pages/admin/AdminMailPage'));
 
 export const router = createBrowserRouter([
   {
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
           { path: 'admin/settings', element: <AdminSettingsPage /> },
           { path: 'admin/support', element: <AdminSupportPage /> },
           { path: 'admin/giveaways', element: <AdminGiveawaysPage /> },
+          { path: 'admin/mail', element: <AdminMailPage /> },
         ],
       },
     ],

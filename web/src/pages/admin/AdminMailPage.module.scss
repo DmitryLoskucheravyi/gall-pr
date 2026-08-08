@@ -1,0 +1,253 @@
+.header {
+  margin-bottom: $spacing-md;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: clamp(30px, 4vw, 40px);
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.clearButton {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-error);
+  }
+}
+
+.intro {
+  margin-bottom: $spacing-xl;
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+
+.alarm {
+  color: var(--color-error);
+}
+
+.tabs {
+  margin-bottom: $spacing-xl;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.tab {
+  @include chip;
+}
+
+.tabActive {
+  @include chip($active: true);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.row {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+
+  @include respond-up($breakpoint-sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-lg;
+  }
+}
+
+.info {
+  min-width: 0;
+  flex: 1;
+}
+
+.topLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.badge {
+  border-radius: $radius-pill;
+  padding: 2px $spacing-sm;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+// Status is the first thing the eye should land on, so each one gets its own
+// colour rather than a shared neutral pill.
+.pending,
+.sending {
+  background-color: var(--color-background-alt);
+  color: var(--color-text-secondary);
+}
+
+.sent {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.failed {
+  background-color: var(--color-error);
+  color: #fff;
+}
+
+.skipped {
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.kind {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.order {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.subject {
+  margin-top: $spacing-xs;
+  font-family: $font-display;
+  font-size: 17px;
+  color: var(--color-text);
+}
+
+.meta {
+  margin-top: $spacing-xs;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.email {
+  color: var(--color-text);
+}
+
+.error {
+  margin-top: $spacing-sm;
+  border-left: 2px solid var(--color-error);
+  padding-left: $spacing-sm;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  word-break: break-word;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: $spacing-sm;
+}
+
+.viewButton {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.retryButton {
+  @include button-secondary;
+  padding: $spacing-sm $spacing-md;
+  font-size: 13px;
+}
+
+.rowSkeleton {
+  height: 108px;
+  width: 100%;
+  border-radius: $radius-lg;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+  background-color: rgba(12, 10, 8, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.preview {
+  display: flex;
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: $radius-xl;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  border-bottom: 1px solid var(--color-border);
+  padding: $spacing-lg;
+}
+
+.previewSubject {
+  min-width: 0;
+  font-family: $font-display;
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.closeButton {
+  flex-shrink: 0;
+  border-radius: $radius-pill;
+  padding: $spacing-xs $spacing-sm;
+  font-size: 15px;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.previewFrame {
+  height: 70vh;
+  width: 100%;
+  border: 0;
+  background-color: #fff;
+}

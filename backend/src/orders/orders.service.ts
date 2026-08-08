@@ -597,12 +597,14 @@ export class OrdersService {
     return updated;
   }
 
-  // Only two status changes are worth an email. CONFIRMED usually lands
-  // minutes after the receipt, and COMPLETED tells the customer something
-  // they already know — the painting is in their hands.
+  // CONFIRMED is the one status change that stays silent — it usually lands
+  // minutes after the receipt and repeats it. The rest each carry something
+  // the customer can't get anywhere else: a waybill, a refund promise, or,
+  // once the work is home, how to keep it that way.
   private async emailStatusChange(order: Order) {
     if (
       order.status !== OrderStatus.SHIPPED &&
+      order.status !== OrderStatus.COMPLETED &&
       order.status !== OrderStatus.CANCELLED
     ) {
       return;
@@ -616,6 +618,14 @@ export class OrdersService {
       return;
     }
 
+    if (order.status === OrderStatus.COMPLETED) {
+      await this.mailService.sendOrderCompleted(
+        recipient.email,
+        this.toMailData(order, recipient.name),
+      );
+      return;
+    }
+
     if (order.trackingNumber) {
       await this.mailService.sendOrderShipped(
         recipient.email,
@@ -624,6 +634,97 @@ export class OrdersService {
         this.deliveryPlaceOf(order),
       );
     }
+  }
+
+  // The admin's "send it anyway" button. Automatic sends are deduplicated per
+  // status, so a corrected waybill or a status flipped back and forth needs a
+  // deliberate way to reach the customer again — this is it.
+  async sendStatusMailAdmin(id: number): Promise<{ message: string }> {
+    const order = await this.ordersRepository.findOne({ where: { id } });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const recipient = await this.recipientOf(order);
+    if (!recipient) {
+      throw new BadRequestException(
+        'У цього замовлення немає email, куди надіслати лист',
+      );
+    }
+
+    const mailData = this.toMailData(order, recipient.name);
+
+    switch (order.status) {
+      case OrderStatus.PENDING: {
+        const iban =
+          order.paymentProvider === PaymentProvider.CARD_TRANSFER
+            ? (await this.settingsService.get()).cardTransferIban || null
+            : null;
+
+        await this.mailService.sendOrderPlaced(recipient.email, mailData, iban, {
+          force: true,
+        });
+        break;
+      }
+
+      case OrderStatus.SHIPPED: {
+        if (!order.trackingNumber) {
+          throw new BadRequestException(
+            'Немає номера накладної — лист про відправку без нього безкорисний',
+          );
+        }
+
+        await this.mailService.sendOrderShipped(
+          recipient.email,
+          order.id,
+          order.trackingNumber,
+          this.deliveryPlaceOf(order),
+          { force: true },
+        );
+        break;
+      }
+
+      case OrderStatus.COMPLETED:
+        await this.mailService.sendOrderCompleted(recipient.email, mailData, {
+          force: true,
+        });
+        break;
+
+      case OrderStatus.CANCELLED:
+        await this.mailService.sendOrderCancelled(recipient.email, order.id, {
+          force: true,
+        });
+        break;
+
+      // CONFIRMED has no letter of its own: it lands minutes after the receipt
+      // and would only repeat it.
+      default:
+        throw new BadRequestException(
+          'Для цього статусу листа не передбачено',
+        );
+    }
+
+    return { message: `Лист надіслано на ${recipient.email}` };
+  }
+
+  async sendApologyMailAdmin(id: number): Promise<{ message: string }> {
+    const order = await this.ordersRepository.findOne({ where: { id } });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const recipient = await this.recipientOf(order);
+    if (!recipient) {
+      throw new BadRequestException(
+        'У цього замовлення немає email, куди надіслати лист',
+      );
+    }
+
+    await this.mailService.sendOrderApology(recipient.email, order.id);
+
+    return { message: `Лист-вибачення надіслано на ${recipient.email}` };
   }
 
   private async notifyUserOfStatusChange(order: Order) {

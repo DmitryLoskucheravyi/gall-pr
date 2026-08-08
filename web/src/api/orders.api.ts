@@ -43,6 +43,16 @@ class OrdersService {
     return response.data;
   }
 
+  async sendStatusMail(id: number): Promise<{ message: string }> {
+    const response = await api.post(`/orders/${id}/status-mail`);
+    return response.data;
+  }
+
+  async sendApologyMail(id: number): Promise<{ message: string }> {
+    const response = await api.post(`/orders/${id}/apology-mail`);
+    return response.data;
+  }
+
   async updateStatus(
     id: number,
     status: OrderStatus,

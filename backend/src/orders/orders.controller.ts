@@ -109,6 +109,20 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @Post(':id/status-mail')
+  sendStatusMailAdmin(@Param('id') id: string) {
+    return this.ordersService.sendStatusMailAdmin(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Post(':id/apology-mail')
+  sendApologyMailAdmin(@Param('id') id: string) {
+    return this.ordersService.sendApologyMailAdmin(Number(id));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Delete(':id')
   removeAdmin(@Param('id') id: string) {
     return this.ordersService.removeAdmin(Number(id));

@@ -4,6 +4,8 @@ import { useAdminOrders } from '../../hooks/queries/useOrders';
 import {
   useArchiveOrderMutation,
   useDeleteOrderMutation,
+  useSendApologyMailMutation,
+  useSendStatusMailMutation,
   useUpdateOrderStatusMutation,
   useUpdatePaymentStatusMutation,
 } from '../../hooks/mutations/useOrderMutations';
@@ -51,6 +53,16 @@ const DELIVERY_METHOD_LABEL: Record<DeliveryMethod, string> = {
   NOVA_POSHTA: 'Нова пошта',
 };
 
+// Which statuses have a letter behind them. CONFIRMED lands minutes after the
+// receipt and would only repeat it, so it has none — and the button says so
+// instead of pretending otherwise.
+const STATUS_MAIL_LABEL: Partial<Record<OrderStatus, string>> = {
+  PENDING: 'Надіслати лист про замовлення',
+  SHIPPED: 'Надіслати лист про відправку',
+  COMPLETED: 'Надіслати лист-подяку',
+  CANCELLED: 'Надіслати лист про скасування',
+};
+
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString('uk-UA', {
     day: '2-digit',
@@ -72,6 +84,8 @@ export default function AdminOrdersPage() {
   const updatePaymentStatus = useUpdatePaymentStatusMutation();
   const deleteOrder = useDeleteOrderMutation();
   const archiveOrder = useArchiveOrderMutation();
+  const sendStatusMail = useSendStatusMailMutation();
+  const sendApologyMail = useSendApologyMailMutation();
   const confirm = useConfirm();
   const [tab, setTab] = useState<Tab>('active');
 
@@ -118,6 +132,29 @@ export default function AdminOrdersPage() {
     });
     if (!ok) return;
     deleteOrder.mutate(order.id);
+  };
+
+  const recipientOf = (order: Order) =>
+    order.user?.email ?? order.guestEmail ?? null;
+
+  const handleSendStatusMail = async (order: Order) => {
+    const ok = await confirm({
+      title: STATUS_MAIL_LABEL[order.status] ?? 'Надіслати лист?',
+      message: `Лист про поточний статус піде на ${recipientOf(order)}. Якщо такий лист уже надсилали, клієнт отримає його вдруге.`,
+      confirmLabel: 'Надіслати',
+    });
+    if (!ok) return;
+    sendStatusMail.mutate(order.id);
+  };
+
+  const handleSendApologyMail = async (order: Order) => {
+    const ok = await confirm({
+      title: `Надіслати лист-вибачення до №${order.id}?`,
+      message: `На ${recipientOf(order)} піде лист: сталася помилка, ми розбираємось і скоро звʼяжемось. Деталей у ньому немає — розкажете їх самі.`,
+      confirmLabel: 'Надіслати',
+    });
+    if (!ok) return;
+    sendApologyMail.mutate(order.id);
   };
 
   const handleArchive = async (order: Order) => {
@@ -375,6 +412,43 @@ export default function AdminOrdersPage() {
                     ТТН: <strong>{order.trackingNumber}</strong>
                   </p>
                 )}
+
+                {/* Letters are sent automatically once per status, so this row
+                    is what re-sends one — after a corrected waybill, or when
+                    the customer says nothing arrived. */}
+                <div className={styles.mailRow}>
+                  {recipientOf(order) ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleSendStatusMail(order)}
+                        disabled={
+                          !STATUS_MAIL_LABEL[order.status] || sendStatusMail.isPending
+                        }
+                        title={
+                          STATUS_MAIL_LABEL[order.status]
+                            ? undefined
+                            : 'Для цього статусу листа не передбачено'
+                        }
+                        className={styles.mailButton}
+                      >
+                        {STATUS_MAIL_LABEL[order.status] ?? 'Листа для статусу немає'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendApologyMail(order)}
+                        disabled={sendApologyMail.isPending}
+                        className={styles.apologyButton}
+                      >
+                        Лист-вибачення
+                      </button>
+                    </>
+                  ) : (
+                    <span className={styles.mailMuted}>
+                      Немає email — листи цьому замовленню не надсилаються
+                    </span>
+                  )}
+                </div>
 
                 {order.status === 'CANCELLED' && (
                   <button

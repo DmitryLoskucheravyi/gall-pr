@@ -77,6 +77,49 @@ export function useUpdatePaymentStatusMutation() {
   });
 }
 
+// Both letters below are the admin's own doing, so the toast repeats back the
+// address they went to — a mail sent to the wrong person is worth catching in
+// the second it happens, not in the log later.
+export function useSendStatusMailMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: number) => ordersService.sendStatusMail(orderId),
+    onSuccess: ({ message }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mail.all });
+      store.dispatch(showToast({ message }));
+    },
+    onError: (error: any) => {
+      store.dispatch(
+        showToast({
+          message: error?.response?.data?.message ?? 'Не вдалося надіслати лист',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
+export function useSendApologyMailMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: number) => ordersService.sendApologyMail(orderId),
+    onSuccess: ({ message }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mail.all });
+      store.dispatch(showToast({ message }));
+    },
+    onError: (error: any) => {
+      store.dispatch(
+        showToast({
+          message: error?.response?.data?.message ?? 'Не вдалося надіслати лист',
+          variant: 'error',
+        }),
+      );
+    },
+  });
+}
+
 export function useUploadPaymentProofMutation() {
   const queryClient = useQueryClient();
 

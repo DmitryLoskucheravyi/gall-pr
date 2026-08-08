@@ -72,6 +72,12 @@ export const queryKeys = {
     all: ['users'] as const,
     admin: () => [...queryKeys.users.all, 'admin'] as const,
   },
+  mail: {
+    all: ['mail'] as const,
+    outbox: (status: string | 'all') =>
+      [...queryKeys.mail.all, 'outbox', status] as const,
+    letter: (id: number) => [...queryKeys.mail.all, 'letter', id] as const,
+  },
   settings: {
     all: ['settings'] as const,
   },
