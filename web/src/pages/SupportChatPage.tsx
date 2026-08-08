@@ -5,6 +5,7 @@ import { supportService } from '../api/support.api';
 import type { SupportMessage } from '../types/support.types';
 import { useSupportSocket } from '../hooks/useSupportSocket';
 import { useSettings } from '../hooks/queries/useSettings';
+import { useScrollToTopAfterKeyboard } from '../hooks/useScrollToTopAfterKeyboard';
 import ChatThread from '../components/support/ChatThread';
 import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './SupportChatPage.module.scss';
@@ -16,6 +17,7 @@ export default function SupportChatPage() {
   const socket = useSupportSocket(true);
   const { data: settings } = useSettings();
   const navigate = useNavigate();
+  const scrollToTopAfterKeyboard = useScrollToTopAfterKeyboard();
 
   const hasContacts =
     !!settings?.supportEmail ||
@@ -45,6 +47,11 @@ export default function SupportChatPage() {
 
   const handleSend = (content: string) => {
     socket?.emit('support:message', { content });
+    // On a phone the keyboard has scrolled the page down to sit above itself,
+    // and closes on send without scrolling anything back — leaving the chat's
+    // header, and the only way out of the conversation, above the top of the
+    // screen. No-op on desktop.
+    scrollToTopAfterKeyboard();
   };
 
   return (
