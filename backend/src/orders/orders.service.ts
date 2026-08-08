@@ -44,6 +44,13 @@ const ORDER_STATUS_MESSAGE: Record<OrderStatus, string> = {
   [OrderStatus.COMPLETED]: 'виконано. Дякуємо за покупку!',
 };
 
+// Every place that locks painting rows walks them in the same order, by id.
+// Without that, two transactions holding the same two paintings in opposite
+// orders take the locks crosswise and deadlock.
+function stockOrder<T extends { paintingId: number }>(items: T[]): T[] {
+  return [...items].sort((left, right) => left.paintingId - right.paintingId);
+}
+
 // Shared by both CartItem and Order lookups — both entities key guest rows
 // by the same guestToken column, so one where-clause builder covers both.
 function identityWhere(identity: Identity) {
@@ -130,9 +137,19 @@ export class OrdersService {
       const orderItems: OrderItem[] = [];
       let total = 0;
 
-      for (const cartItem of cartItems) {
+      // Two checkouts for the last copy of a painting both used to pass the
+      // stock check: under REPEATABLE READ a plain SELECT takes no lock, so
+      // both transactions read amount = 1, both decided it was enough, and both
+      // decremented. The transaction only ever guaranteed that the writes were
+      // atomic — not that what was read still held when they landed. The
+      // oversell wasn't even visible afterwards, since amount is clamped at 0.
+      //
+      // Locking each row for update serialises that: the second checkout waits
+      // for the first to commit, then reads amount = 0 and fails properly.
+      for (const cartItem of stockOrder(cartItems)) {
         const painting = await manager.findOne(Painting, {
           where: { id: cartItem.paintingId },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (
@@ -351,9 +368,14 @@ export class OrdersService {
     }
 
     const updated = await this.dataSource.transaction(async (manager) => {
-      for (const item of order.items) {
+      // Restoring stock is the same read-modify-write as taking it, so it
+      // needs the same lock: two orders cancelled at once, both holding the
+      // same painting, would otherwise read the same amount and one of the two
+      // increments would be lost. Locked in id order, as in checkout().
+      for (const item of stockOrder(order.items)) {
         const painting = await manager.findOne(Painting, {
           where: { id: item.paintingId },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (painting) {
@@ -554,9 +576,10 @@ export class OrdersService {
 
     if (!wasCancelled && willBeCancelled) {
       const updated = await this.dataSource.transaction(async (manager) => {
-        for (const item of order.items) {
+        for (const item of stockOrder(order.items)) {
           const painting = await manager.findOne(Painting, {
             where: { id: item.paintingId },
+            lock: { mode: 'pessimistic_write' },
           });
 
           if (painting) {
@@ -580,9 +603,15 @@ export class OrdersService {
       const updated = await this.dataSource.transaction(async (manager) => {
         const paintings = new Map<number, Painting>();
 
-        for (const item of order.items) {
+        // Un-cancelling takes the stock back, so it races exactly as checkout
+        // does — an admin restoring an order while a customer buys the last
+        // copy. The two-pass shape (check everything, then decrement) is what
+        // keeps a partial failure from leaving stock half-taken; the lock is
+        // what makes the checks still true by the time the writes happen.
+        for (const item of stockOrder(order.items)) {
           const painting = await manager.findOne(Painting, {
             where: { id: item.paintingId },
+            lock: { mode: 'pessimistic_write' },
           });
 
           if (!painting || painting.amount < item.quantity) {

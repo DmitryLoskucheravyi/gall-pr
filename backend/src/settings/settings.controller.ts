@@ -25,8 +25,20 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
+  // Public, and therefore a projection rather than the row. The storefront
+  // needs the author's name, the support contacts and the hero picks; it has
+  // never needed the admin's Telegram chat id or the live code that binds it.
   @Get()
   get() {
+    return this.settingsService.getPublic();
+  }
+
+  // The full row, for the settings screen. Declared before any parameterised
+  // GET would be, so 'admin' can't be swallowed as a path parameter later.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('admin')
+  getForAdmin() {
     return this.settingsService.get();
   }
 

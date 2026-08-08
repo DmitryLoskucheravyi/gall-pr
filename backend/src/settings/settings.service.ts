@@ -9,6 +9,28 @@ import { CreateFaqItemDto, UpdateFaqItemDto } from './dto/faq-item.dto';
 
 const ADMIN_LINK_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
 
+// What an anonymous visitor is allowed to see. Everything the storefront
+// actually renders — the author's name, the support contacts, the hero picks,
+// and the IBAN a card-transfer customer has to pay against.
+//
+// Deliberately absent: adminTelegramLinkCode, which is a live one-time code
+// that binds the bot's admin notifications to whoever redeems it, and
+// adminTelegramChatId. Those were being handed to anybody who asked for
+// GET /settings, so polling that route until the admin pressed "link the bot"
+// was enough to take over every order, payment-proof and support notification
+// the shop sends. Also absent: the Nova Poshta sender city, which is internal
+// and nothing on the storefront reads.
+export type PublicSettings = {
+  authorName: string;
+  cardTransferIban: string;
+  supportEmail: string;
+  supportPhone: string;
+  supportTelegramUrl: string;
+  heroPaintingId1: number | null;
+  heroPaintingId2: number | null;
+  heroPaintingId3: number | null;
+};
+
 @Injectable()
 export class SettingsService {
   constructor(
@@ -41,6 +63,24 @@ export class SettingsService {
         faq: {},
       }),
     );
+  }
+
+  // The storefront's view of the settings. get() stays as it was and keeps
+  // returning the whole row: the order, mail and Telegram services all read
+  // fields from it that no HTTP response should ever carry.
+  async getPublic(): Promise<PublicSettings> {
+    const settings = await this.get();
+
+    return {
+      authorName: settings.authorName,
+      cardTransferIban: settings.cardTransferIban,
+      supportEmail: settings.supportEmail,
+      supportPhone: settings.supportPhone,
+      supportTelegramUrl: settings.supportTelegramUrl,
+      heroPaintingId1: settings.heroPaintingId1,
+      heroPaintingId2: settings.heroPaintingId2,
+      heroPaintingId3: settings.heroPaintingId3,
+    };
   }
 
   // Object.assign only touches keys actually present on dto — fields the

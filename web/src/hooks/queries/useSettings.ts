@@ -11,6 +11,17 @@ export function useSettings() {
   });
 }
 
+// The full row, admin-only. Kept under its own query key so the storefront's
+// cache never holds the admin fields — and so a 403 for a non-admin can't
+// evict the public settings every page depends on.
+export function useAdminSettings() {
+  return useQuery({
+    queryKey: queryKeys.settings.admin,
+    queryFn: () => settingsService.getAdminSettings(),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useAuthorName(): string {
   const { data } = useSettings();
   return data?.authorName ?? '';

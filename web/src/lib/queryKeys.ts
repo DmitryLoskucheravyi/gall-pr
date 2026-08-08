@@ -80,6 +80,7 @@ export const queryKeys = {
   },
   settings: {
     all: ['settings'] as const,
+    admin: ['settings', 'admin'] as const,
   },
   faq: {
     all: ['faq'] as const,

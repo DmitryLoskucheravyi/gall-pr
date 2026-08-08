@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { NovaPoshtaOption } from '../../types/novaPoshta.types';
-import { useSettings } from '../../hooks/queries/useSettings';
+import { useAdminSettings } from '../../hooks/queries/useSettings';
 import { usePaintings } from '../../hooks/queries/usePaintings';
 import {
   useUpdateSettingsMutation,
@@ -19,7 +19,7 @@ const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
   string | undefined;
 
 export default function AdminSettingsPage() {
-  const { data: settings, isLoading: loading } = useSettings();
+  const { data: settings, isLoading: loading } = useAdminSettings();
   const updateSettings = useUpdateSettingsMutation();
   const adminTelegramLink = useAdminTelegramLinkMutation();
   const resetAdminTelegramLink = useResetAdminTelegramLinkMutation();

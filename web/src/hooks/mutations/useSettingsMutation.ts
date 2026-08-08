@@ -26,7 +26,11 @@ export function useResetAdminTelegramLinkMutation() {
   return useMutation({
     mutationFn: () => settingsService.resetAdminTelegramLink(),
     onSuccess: (settings) => {
-      queryClient.setQueryData(queryKeys.settings.all, settings);
+      // The response is the full row, so it belongs under the admin key only —
+      // writing it to the public key would put adminTelegramChatId back into
+      // the cache every storefront page reads from.
+      queryClient.setQueryData(queryKeys.settings.admin, settings);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
       store.dispatch(showToast({ message: "Прив'язку бота скинуто" }));
     },
     onError: () => {
@@ -43,7 +47,10 @@ export function useUpdateSettingsMutation() {
   return useMutation({
     mutationFn: (dto: UpdateSettingsDto) => settingsService.updateSettings(dto),
     onSuccess: (settings) => {
-      queryClient.setQueryData(queryKeys.settings.all, settings);
+      // See the note in useResetAdminTelegramLinkMutation — full row to the
+      // admin key, and the storefront refetches its own projection.
+      queryClient.setQueryData(queryKeys.settings.admin, settings);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
       store.dispatch(showToast({ message: 'Налаштування збережено' }));
     },
     onError: (error: any) => {

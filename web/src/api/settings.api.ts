@@ -1,9 +1,20 @@
 import { api } from './client';
-import type { AppSettings, UpdateSettingsDto } from '../types/settings.types';
+import type {
+  AppSettings,
+  PublicAppSettings,
+  UpdateSettingsDto,
+} from '../types/settings.types';
 
 class SettingsService {
-  async getSettings(): Promise<AppSettings> {
+  // Open to everyone, and returns only the storefront's fields.
+  async getSettings(): Promise<PublicAppSettings> {
     const response = await api.get('/settings');
+    return response.data;
+  }
+
+  // Admin-only, and the only place the full row is available.
+  async getAdminSettings(): Promise<AppSettings> {
+    const response = await api.get('/settings/admin');
     return response.data;
   }
 

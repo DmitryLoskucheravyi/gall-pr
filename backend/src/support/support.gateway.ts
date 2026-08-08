@@ -16,6 +16,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { TelegramService } from '../telegram/telegram.service';
 import { isValidGuestToken, type Identity } from '../common/identity.util';
+import { corsOriginDelegate } from '../config/cors';
 
 // userId is null for a guest — the chat itself is the handle we route by, and
 // a guest's messages simply have no account behind them.
@@ -35,7 +36,11 @@ type SocketData = {
   ready?: Promise<void>;
 };
 
-@WebSocketGateway({ cors: { origin: '*' }, namespace: '/support' })
+// Same origin policy as the HTTP side — the handshake is a browser request too.
+@WebSocketGateway({
+  cors: { origin: corsOriginDelegate },
+  namespace: '/support',
+})
 export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
