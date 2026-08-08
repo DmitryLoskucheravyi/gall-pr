@@ -18,6 +18,13 @@ class SupportService {
     return response.data.unread as number;
   }
 
+  // Hands an anonymous thread over to the account that just signed in, so a
+  // conversation started as a guest doesn't vanish behind a token the site
+  // stops sending.
+  async claimGuestChat(guestToken: string): Promise<void> {
+    await api.post('/support/claim-guest-chat', { guestToken });
+  }
+
   async getChats(): Promise<SupportChatSummary[]> {
     const response = await api.get('/support/chats');
     return response.data;

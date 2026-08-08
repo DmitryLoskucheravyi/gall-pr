@@ -9,9 +9,17 @@ import { useSupportSocket } from '../../hooks/useSupportSocket';
 import ChatThread from '../../components/support/ChatThread';
 import styles from './AdminSupportPage.module.scss';
 
+// A guest has no name, so both of these fall back to the chat number — stable
+// across sessions and enough to tell two guests apart in the list.
 function initialsOf(chat: SupportChatSummary) {
+  if (!chat.user) return 'Г';
   const { firstName, lastName } = chat.user;
   return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase() || '?';
+}
+
+function nameOf(chat: SupportChatSummary) {
+  if (!chat.user) return `Гість #${chat.id}`;
+  return `${chat.user.firstName} ${chat.user.lastName}`.trim() || chat.user.email;
 }
 
 function sortChats(chats: SupportChatSummary[]) {
@@ -54,14 +62,14 @@ export default function AdminSupportPage() {
     };
 
     const handlePresence = ({
-      userId,
+      chatId,
       online,
     }: {
-      userId: number;
+      chatId: number;
       online: boolean;
     }) => {
       setChats((prev) =>
-        prev.map((c) => (c.user.id === userId ? { ...c, isOnline: online } : c)),
+        prev.map((c) => (c.id === chatId ? { ...c, isOnline: online } : c)),
       );
     };
 
@@ -144,9 +152,7 @@ export default function AdminSupportPage() {
                 </div>
 
                 <div className={styles.chatInfo}>
-                  <div className={styles.chatName}>
-                    {chat.user.firstName} {chat.user.lastName}
-                  </div>
+                  <div className={styles.chatName}>{nameOf(chat)}</div>
                   <div className={styles.chatPreview}>
                     {chat.lastMessage
                       ? `${chat.lastMessage.senderRole === 'ADMIN' ? 'Ви: ' : ''}${chat.lastMessage.content}`
@@ -201,7 +207,7 @@ export default function AdminSupportPage() {
 
                   <div className={styles.threadHeaderText}>
                     <div className={styles.threadHeaderName}>
-                      {selectedChat.user.firstName} {selectedChat.user.lastName}
+                      {nameOf(selectedChat)}
                     </div>
                     <div
                       className={`${styles.threadHeaderStatus} ${

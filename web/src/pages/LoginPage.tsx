@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { authService } from '../api/auth.api';
+import { supportService } from '../api/support.api';
 import { useMergeGuestCartMutation } from '../hooks/mutations/useCartMutations';
 import { useAppDispatch } from '../store/hooks';
 import { setAuth } from '../store/slices/authSlice';
@@ -27,9 +28,12 @@ export default function LoginPage() {
       const auth = await authService.login({ email, password });
       dispatch(setAuth(auth));
 
+      // Whatever this browser did as a guest — a cart, a support thread —
+      // follows them into the account.
       const guestToken = peekGuestToken();
       if (guestToken) {
         await mergeGuestCart.mutateAsync(guestToken).catch(() => {});
+        await supportService.claimGuestChat(guestToken).catch(() => {});
       }
 
       navigate('/');

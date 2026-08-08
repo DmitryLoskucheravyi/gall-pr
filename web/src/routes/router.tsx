@@ -40,12 +40,14 @@ export const router = createBrowserRouter([
       { path: 'cart', element: <CartPage /> },
       { path: 'orders', element: <OrdersPage /> },
       { path: 'support', element: <FaqPage /> },
+      // Open to guests: someone with a question usually doesn't have an
+      // account yet, and making them register first is making them leave.
+      { path: 'support/chat', element: <SupportChatPage /> },
       {
         element: <ProtectedRoute />,
         children: [
           { path: 'profile', element: <ProfilePage /> },
           { path: 'favorites', element: <FavoritesPage /> },
-          { path: 'support/chat', element: <SupportChatPage /> },
         ],
       },
       {

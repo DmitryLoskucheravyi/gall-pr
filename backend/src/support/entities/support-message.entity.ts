@@ -22,12 +22,15 @@ export class SupportMessage {
   @JoinColumn({ name: 'chat_id' })
   chat: SupportChat;
 
-  @Column({ name: 'sender_id' })
-  senderId: number;
+  // Null when a guest wrote it — there is no account behind the message.
+  // senderRole still says which side of the conversation it came from, which
+  // is all the thread needs to render it.
+  @Column({ name: 'sender_id', type: 'int', nullable: true })
+  senderId: number | null;
 
-  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'sender_id' })
-  sender: User;
+  sender: User | null;
 
   @Column({ name: 'sender_role', type: 'varchar', length: 10 })
   senderRole: UserRole;

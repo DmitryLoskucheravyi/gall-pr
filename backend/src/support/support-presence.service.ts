@@ -1,18 +1,20 @@
 import { Injectable } from '@nestjs/common';
 
+// Keyed by chat, not by user: a guest has no user id, and the chat is the one
+// handle both sides of a conversation always have.
 @Injectable()
 export class SupportPresenceService {
-  private readonly onlineUserIds = new Set<number>();
+  private readonly onlineChatIds = new Set<number>();
 
-  markOnline(userId: number) {
-    this.onlineUserIds.add(userId);
+  markOnline(chatId: number) {
+    this.onlineChatIds.add(chatId);
   }
 
-  markOffline(userId: number) {
-    this.onlineUserIds.delete(userId);
+  markOffline(chatId: number) {
+    this.onlineChatIds.delete(chatId);
   }
 
-  isOnline(userId: number): boolean {
-    return this.onlineUserIds.has(userId);
+  isOnline(chatId: number): boolean {
+    return this.onlineChatIds.has(chatId);
   }
 }

@@ -41,7 +41,7 @@ function readDock(): Dock | null {
 }
 
 export default function SupportWidget() {
-  const userId = useAppSelector((state) => state.auth.user?.id);
+  const isAdmin = useAppSelector((state) => state.auth.user?.role === 'ADMIN');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,7 +77,9 @@ export default function SupportWidget() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  if (!userId || onSupportPage) return null;
+  // Guests get the launcher too — support is the one thing on the site that
+  // shouldn't wait for an account.
+  if (isAdmin || onSupportPage) return null;
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;

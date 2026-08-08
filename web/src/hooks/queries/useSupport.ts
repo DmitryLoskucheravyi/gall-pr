@@ -38,9 +38,9 @@ export function useAdminUnreadSupportCount(): number {
 // reported.
 export function useMyUnreadSupportCount(): number {
   const queryClient = useQueryClient();
-  const isCustomer = useAppSelector(
-    (state) => state.auth.isAuthenticated && state.auth.user?.role !== 'ADMIN',
-  );
+  // Guests included — their chat is keyed by the guest token, so they have
+  // unread replies to count like anyone else. Only the admin is excluded.
+  const isCustomer = useAppSelector((state) => state.auth.user?.role !== 'ADMIN');
   // The chat page owns a socket of its own while it's open, and reading the
   // chat is what zeroes this — so stand down there.
   const { pathname } = useLocation();
