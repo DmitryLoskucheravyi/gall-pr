@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Request,
@@ -19,10 +20,12 @@ import { OrdersService } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { CheckoutDto } from './dto/checkout.dto';
+import { ClaimGuestOrdersDto } from './dto/claim-guest-orders.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import type { OptionalAuthenticatedRequest } from '../auth/types/optional-authenticated-request.type';
 import { resolveIdentity } from '../common/identity.util';
 import { imageUploadOptions } from '../common/upload.options';
@@ -46,6 +49,19 @@ export class OrdersController {
     return this.ordersService.findAllForIdentity(resolveIdentity(req));
   }
 
+  // Signing in brings the guest's orders across, alongside POST /cart/merge
+  // and POST /support/claim-guest-chat. Same shape of risk as those two — the
+  // token is the only claim of ownership — so the same ceiling.
+  @Throttle({ default: { ttl: 3_600_000, limit: 10 } })
+  @UseGuards(JwtAuthGuard)
+  @Post('claim-guest')
+  claimGuestOrders(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: ClaimGuestOrdersDto,
+  ) {
+    return this.ordersService.claimGuestOrders(req.user.id, dto.guestToken);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('all')
@@ -55,14 +71,14 @@ export class OrdersController {
 
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  findOne(@Request() req: OptionalAuthenticatedRequest, @Param('id') id: string) {
-    return this.ordersService.findOne(resolveIdentity(req), Number(id));
+  findOne(@Request() req: OptionalAuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.findOne(resolveIdentity(req), id);
   }
 
   @UseGuards(OptionalJwtAuthGuard)
   @Patch(':id/cancel')
-  cancel(@Request() req: OptionalAuthenticatedRequest, @Param('id') id: string) {
-    return this.ordersService.cancel(resolveIdentity(req), Number(id));
+  cancel(@Request() req: OptionalAuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.cancel(resolveIdentity(req), id);
   }
 
   // Reachable without an account, and it writes to disk before the handler can
@@ -75,7 +91,7 @@ export class OrdersController {
   @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   uploadPaymentProof(
     @Request() req: OptionalAuthenticatedRequest,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (!file) {
@@ -84,7 +100,7 @@ export class OrdersController {
 
     return this.ordersService.uploadPaymentProof(
       resolveIdentity(req),
-      Number(id),
+      id,
       file,
     );
   }
@@ -93,11 +109,11 @@ export class OrdersController {
   @Roles('ADMIN')
   @Patch(':id/status')
   updateStatusAdmin(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderStatusDto,
   ) {
     return this.ordersService.updateStatusAdmin(
-      Number(id),
+      id,
       dto.status,
       dto.trackingNumber,
     );
@@ -107,11 +123,11 @@ export class OrdersController {
   @Roles('ADMIN')
   @Patch(':id/payment-status')
   updatePaymentStatusAdmin(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePaymentStatusDto,
   ) {
     return this.ordersService.updatePaymentStatusAdmin(
-      Number(id),
+      id,
       dto.paymentStatus,
     );
   }
@@ -119,28 +135,28 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Post(':id/status-mail')
-  sendStatusMailAdmin(@Param('id') id: string) {
-    return this.ordersService.sendStatusMailAdmin(Number(id));
+  sendStatusMailAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.sendStatusMailAdmin(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Post(':id/apology-mail')
-  sendApologyMailAdmin(@Param('id') id: string) {
-    return this.ordersService.sendApologyMailAdmin(Number(id));
+  sendApologyMailAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.sendApologyMailAdmin(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
-  removeAdmin(@Param('id') id: string) {
-    return this.ordersService.removeAdmin(Number(id));
+  removeAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.removeAdmin(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id/archive')
-  archiveAdmin(@Param('id') id: string) {
-    return this.ordersService.archiveAdmin(Number(id));
+  archiveAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.archiveAdmin(id);
   }
 }

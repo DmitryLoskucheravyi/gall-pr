@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
@@ -38,32 +39,32 @@ export class TechniquesController {
 
   @Get(':id')
   findOne(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
   ) {
-    return this.techniquesService.findOne(Number(id));
+    return this.techniquesService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
   update(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
 
     @Body()
     dto: UpdateTechniqueDto,
   ) {
-    return this.techniquesService.update(Number(id), dto);
+    return this.techniquesService.update(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
   remove(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
   ) {
-    return this.techniquesService.remove(Number(id));
+    return this.techniquesService.remove(id);
   }
 }

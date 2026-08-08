@@ -74,7 +74,9 @@ export type CheckoutDto = {
   paymentProvider: PaymentProvider;
   deliveryMethod: DeliveryMethod;
   callMeRequested?: boolean;
-  novaPoshtaCity?: string;
-  novaPoshtaWarehouse?: string;
+  // Refs, not names: the city and warehouse written onto the order are
+  // resolved server-side from these, so the address and the delivery fee
+  // always describe the same destination.
   novaPoshtaCityRef?: string;
+  novaPoshtaWarehouseRef?: string;
 };

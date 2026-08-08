@@ -2,7 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Order, PaymentProvider, PaymentStatus } from '../orders/entities/order.entity';
+import {
+  Order,
+  OrderStatus,
+  PaymentProvider,
+  PaymentStatus,
+} from '../orders/entities/order.entity';
 import { LiqPayGateway } from './gateways/liqpay.gateway';
 import { WayForPayGateway } from './gateways/wayforpay.gateway';
 import type { PaymentGateway, PaymentInitResult } from './gateways/payment-gateway.interface';
@@ -77,6 +82,32 @@ export class PaymentsService {
     if (!order) {
       this.logger.warn(
         `Rejected ${provider} callback for order ${result.orderId}: no such order for this provider`,
+      );
+      return gateway.buildCallbackAck?.(payload) ?? null;
+    }
+
+    // Gateway signatures cover the payload and nothing else — no nonce, no
+    // timestamp — so a callback body is replayable forever by anyone who ever
+    // saw one. Settling the same transaction twice must therefore be a no-op,
+    // or a captured "paid" body becomes a way to un-fail or un-refund an order
+    // at will.
+    if (
+      order.paymentStatus === PaymentStatus.PAID &&
+      order.paymentTransactionId === result.transactionId
+    ) {
+      this.logger.log(
+        `Ignored duplicate ${provider} callback for order ${order.id}: already settled by ${result.transactionId}`,
+      );
+      return gateway.buildCallbackAck?.(payload) ?? null;
+    }
+
+    // A cancelled order has had its stock returned to the catalogue and may
+    // well have been sold again since. Marking it paid now would be a payment
+    // against something the shop no longer owes — that needs a human, not an
+    // automatic status flip.
+    if (order.status === OrderStatus.CANCELLED) {
+      this.logger.error(
+        `${provider} callback for order ${order.id} arrived after the order was cancelled — ignored, needs a human.`,
       );
       return gateway.buildCallbackAck?.(payload) ?? null;
     }

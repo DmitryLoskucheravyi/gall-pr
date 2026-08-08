@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Request,
@@ -28,23 +29,23 @@ export class GiveawaysController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.giveawaysService.findOne(Number(id));
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.giveawaysService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/my-status')
   hasJoined(
     @Request() req: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.giveawaysService.hasJoined(Number(id), req.user.id);
+    return this.giveawaysService.hasJoined(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/join')
-  join(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.giveawaysService.join(Number(id), req.user.id);
+  join(@Request() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.giveawaysService.join(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -57,14 +58,14 @@ export class GiveawaysController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateGiveawayDto) {
-    return this.giveawaysService.update(Number(id), dto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateGiveawayDto) {
+    return this.giveawaysService.update(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.giveawaysService.remove(Number(id));
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.giveawaysService.remove(id);
   }
 }

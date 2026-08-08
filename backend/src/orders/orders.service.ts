@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { readFile, unlink } from 'fs/promises';
 
 import {
@@ -43,6 +43,12 @@ const ORDER_STATUS_MESSAGE: Record<OrderStatus, string> = {
   [OrderStatus.CANCELLED]: 'скасовано',
   [OrderStatus.COMPLETED]: 'виконано. Дякуємо за покупку!',
 };
+
+// Money is added up in integer cents, never floats. Prices come out of MySQL
+// as DECIMAL strings, and 0.1 + 0.2 is as untrue here as anywhere else.
+function toCents(value: number | string): number {
+  return Math.round(Number(value) * 100);
+}
 
 // Every place that locks painting rows walks them in the same order, by id.
 // Without that, two transactions holding the same two paintings in opposite
@@ -102,9 +108,34 @@ export class OrdersService {
 
     if (
       dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA &&
-      (!dto.novaPoshtaCity?.trim() || !dto.novaPoshtaWarehouse?.trim())
+      (!dto.novaPoshtaCityRef?.trim() || !dto.novaPoshtaWarehouseRef?.trim())
     ) {
       throw new BadRequestException('Оберіть місто та відділення Нової пошти');
+    }
+
+    // The address is resolved from the refs, not accepted from the client:
+    // the delivery fee is priced from novaPoshtaCityRef, so letting the
+    // written-down city be an unrelated free string meant paying for one
+    // destination and being sent to another. Resolving the warehouse through
+    // its city also rejects a warehouse ref that belongs somewhere else.
+    let deliveryAddress: { city: string; warehouse: string } | null = null;
+
+    if (dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA) {
+      const [city, warehouse] = await Promise.all([
+        this.novaPoshtaService.getCityByRef(dto.novaPoshtaCityRef!),
+        this.novaPoshtaService.getWarehouseByRef(
+          dto.novaPoshtaCityRef!,
+          dto.novaPoshtaWarehouseRef!,
+        ),
+      ]);
+
+      if (!city || !warehouse) {
+        throw new BadRequestException(
+          'Не вдалося підтвердити відділення Нової пошти — оберіть місто й відділення ще раз',
+        );
+      }
+
+      deliveryAddress = { city: city.name, warehouse: warehouse.name };
     }
 
     const cartWhere = identityWhere(identity);
@@ -135,7 +166,11 @@ export class OrdersService {
 
     const savedOrder = await this.dataSource.transaction(async (manager) => {
       const orderItems: OrderItem[] = [];
-      let total = 0;
+      // Accumulated in integer cents. price is DECIMAL(10,2) and arrives as a
+      // string; summing it as a float is how a two-item order ends up a
+      // hundredth of a hryvnia off the number the gateway settles, which is
+      // the reason the callback reconciliation needed a tolerance at all.
+      let totalCents = 0;
 
       // Two checkouts for the last copy of a painting both used to pass the
       // stock check: under REPEATABLE READ a plain SELECT takes no lock, so
@@ -170,7 +205,7 @@ export class OrdersService {
           }),
         );
 
-        total += Number(painting.price) * cartItem.quantity;
+        totalCents += toCents(painting.price) * cartItem.quantity;
 
         painting.amount -= cartItem.quantity;
         if (painting.amount <= 0) {
@@ -181,7 +216,9 @@ export class OrdersService {
         await manager.save(painting);
       }
 
-      total += deliveryCost + codFee;
+      totalCents += toCents(deliveryCost) + toCents(codFee);
+
+      const total = totalCents / 100;
 
       const order = manager.create(Order, {
         userId: isGuest ? null : (identity as { userId: number }).userId,
@@ -195,8 +232,8 @@ export class OrdersService {
         paymentProvider: dto.paymentProvider,
         deliveryMethod: dto.deliveryMethod,
         callMeRequested: dto.callMeRequested ?? false,
-        novaPoshtaCity: dto.novaPoshtaCity?.trim() || null,
-        novaPoshtaWarehouse: dto.novaPoshtaWarehouse?.trim() || null,
+        novaPoshtaCity: deliveryAddress?.city ?? null,
+        novaPoshtaWarehouse: deliveryAddress?.warehouse ?? null,
         deliveryCost,
         codFee,
         total,
@@ -367,6 +404,17 @@ export class OrdersService {
       throw new BadRequestException('Completed orders cannot be cancelled');
     }
 
+    // Once it's with the courier the painting is physically gone, but the
+    // cancel below puts its quantity back on the shelf and flips isAvailable —
+    // so a customer could cancel a parcel already in transit and the same
+    // one-of-a-kind work would go back up for sale. Anything past dispatch is
+    // a conversation with support, not a button.
+    if (order.status === OrderStatus.SHIPPED) {
+      throw new BadRequestException(
+        'Замовлення вже відправлено — щоб його скасувати, звʼяжіться з підтримкою',
+      );
+    }
+
     const updated = await this.dataSource.transaction(async (manager) => {
       // Restoring stock is the same read-modify-write as taking it, so it
       // needs the same lock: two orders cancelled at once, both holding the
@@ -467,6 +515,26 @@ export class OrdersService {
     } catch (error) {
       this.logger.warn(`Failed to remove temp upload ${file.path}`, error);
     }
+  }
+
+  // Signing in takes the guest's orders with it, the same way the cart and the
+  // support thread already did. Without this the history simply vanished:
+  // findAllForIdentity looks orders up by userId once there's an account, and
+  // the guest rows stay keyed to a token the client stops sending.
+  //
+  // guestName/Email/Phone are left on the row on purpose — they are what the
+  // customer actually typed for that delivery, and the account's current
+  // details are not a substitute for the record of what was ordered then.
+  async claimGuestOrders(
+    userId: number,
+    guestToken: string,
+  ): Promise<{ claimed: number }> {
+    const result = await this.ordersRepository.update(
+      { guestToken, userId: IsNull() },
+      { userId, guestToken: null },
+    );
+
+    return { claimed: result.affected ?? 0 };
   }
 
   findAllForIdentity(identity: Identity): Promise<Order[]> {

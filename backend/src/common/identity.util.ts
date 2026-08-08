@@ -13,7 +13,10 @@ export type Identity = { userId: number } | { guestToken: string };
 //  - it rejects the short, guessable, hand-typed strings that someone probing
 //    for other people's carts and orders would start with;
 //  - it means the value can be treated as opaque everywhere downstream.
-const GUEST_TOKEN_PATTERN =
+// Exported so the DTOs that accept a token in a body validate against exactly
+// the same shape — a token arriving in a body is no more trustworthy than one
+// in a header.
+export const GUEST_TOKEN_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function isValidGuestToken(value: unknown): value is string {

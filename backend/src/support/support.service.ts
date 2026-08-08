@@ -38,13 +38,27 @@ export class SupportService {
   // One chat per identity, created when someone actually writes. A guest
   // identity is the browser's guest token, so the same browser lands in the
   // same thread days later without an account ever being involved.
+  // Check-then-insert, so two first messages arriving together can both find
+  // nothing and both insert. user_id has a unique index that turns the loser of
+  // that race into an error; guest_token only recently got one (see
+  // temp/support_guest_chat_unique.sql), and this must not depend on whether
+  // that migration has been applied yet — so the insert is retried through a
+  // re-read either way. Worst case without the index, the re-read finds the
+  // other row and we simply don't create a second.
   async getOrCreateChat(identity: Identity): Promise<SupportChat> {
     const existing = await this.findChat(identity);
     if (existing) return existing;
 
-    return this.chatsRepository.save(
-      this.chatsRepository.create(this.identityWhere(identity)),
-    );
+    try {
+      return await this.chatsRepository.save(
+        this.chatsRepository.create(this.identityWhere(identity)),
+      );
+    } catch (error) {
+      const raced = await this.findChat(identity);
+      if (raced) return raced;
+
+      throw error;
+    }
   }
 
   // Called when a guest signs in or registers: their thread follows them into

@@ -1,13 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { randomUUID, randomBytes } from 'crypto';
+import { randomUUID, randomBytes, timingSafeEqual } from 'crypto';
 
 import { AppSettings, FaqMap } from './entities/app-settings.entity';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateFaqItemDto, UpdateFaqItemDto } from './dto/faq-item.dto';
 
 const ADMIN_LINK_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
+
+function secretsMatch(expected: string, received: string): boolean {
+  const left = Buffer.from(expected);
+  const right = Buffer.from(received);
+
+  return left.length === right.length && timingSafeEqual(left, right);
+}
 
 // What an anonymous visitor is allowed to see. Everything the storefront
 // actually renders — the author's name, the support contacts, the hero picks,
@@ -38,15 +45,53 @@ export class SettingsService {
     private readonly settingsRepository: Repository<AppSettings>,
   ) {}
 
+  // Lazily creates the single settings row on first use. Two things matter
+  // here that didn't used to:
+  //
+  //  - the read is ordered by id, so once a row exists every caller agrees on
+  //    which one it is. find({ take: 1 }) with no order returns whatever the
+  //    engine feels like, which on a table with two rows means settings that
+  //    change depending on the query plan;
+  //  - two concurrent first-ever requests both saw an empty table and both
+  //    inserted. The insert is now retried through a re-read, so the loser of
+  //    that race returns the winner's row instead of creating a second one.
   async get(): Promise<AppSettings> {
-    const settings = await this.settingsRepository.find({ take: 1 });
+    const existing = await this.findRow();
 
-    if (settings.length > 0) {
-      return settings[0];
+    if (existing) {
+      return existing;
     }
 
+    try {
+      return await this.createDefaultRow();
+    } catch {
+      // Almost certainly the other half of the race having inserted first.
+      const raced = await this.findRow();
+
+      if (raced) return raced;
+
+      throw new Error('Failed to create the application settings row');
+    }
+  }
+
+  private async findRow(): Promise<AppSettings | null> {
+    const [settings] = await this.settingsRepository.find({
+      order: { id: 'ASC' },
+      take: 1,
+    });
+
+    return settings ?? null;
+  }
+
+  // id is pinned to 1 on purpose. app_settings has no natural unique key, so
+  // without it two concurrent inserts both succeed and the table quietly ends
+  // up with two rows — the retry above would never fire, because nothing
+  // failed. Writing the primary key explicitly makes the second insert a
+  // duplicate-key error, which is exactly the signal the caller needs.
+  private createDefaultRow(): Promise<AppSettings> {
     return this.settingsRepository.save(
       this.settingsRepository.create({
+        id: 1,
         authorName: '',
         cardTransferIban: '',
         novaPoshtaSenderCityRef: '',
@@ -123,9 +168,13 @@ export class SettingsService {
   async redeemAdminTelegramLinkCode(code: string, chatId: string): Promise<boolean> {
     const settings = await this.get();
 
+    // Constant-time, like every other secret comparison in the codebase. The
+    // channel here is Telegram rather than HTTP, so timing is barely a
+    // practical attack — but a one-time code that grants the admin
+    // notification stream shouldn't be the one place compared with ===.
     const valid =
       !!settings.adminTelegramLinkCode &&
-      settings.adminTelegramLinkCode === code &&
+      secretsMatch(settings.adminTelegramLinkCode, code) &&
       !!settings.adminTelegramLinkCodeExpiresAt &&
       settings.adminTelegramLinkCodeExpiresAt.getTime() > Date.now();
 

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Request,
   UseGuards,
@@ -34,8 +35,8 @@ export class UsersController {
   }
 
   @Delete(':id')
-  remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.usersService.remove(Number(id), req.user.id);
+  remove(@Request() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.usersService.remove(id, req.user.id);
   }
 
   // Any authenticated user (not just admins) may link their own Telegram —

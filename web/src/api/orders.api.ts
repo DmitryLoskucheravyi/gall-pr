@@ -75,6 +75,13 @@ class OrdersService {
     return response.data;
   }
 
+  // Called right after signing in, alongside the cart merge and chat claim, so
+  // orders placed as a guest show up in the new account's history.
+  async claimGuestOrders(guestToken: string): Promise<{ claimed: number }> {
+    const response = await api.post('/orders/claim-guest', { guestToken });
+    return response.data;
+  }
+
   async uploadPaymentProof(id: number, file: File): Promise<Order> {
     const formData = new FormData();
     formData.append('image', file);

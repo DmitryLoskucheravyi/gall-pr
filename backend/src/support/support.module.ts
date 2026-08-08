@@ -8,6 +8,7 @@ import { SupportService } from './support.service';
 import { SupportController } from './support.controller';
 import { SupportGateway } from './support.gateway';
 import { SupportPresenceService } from './support-presence.service';
+import { SupportRateLimitService } from './support-rate-limit.service';
 import { TelegramModule } from '../telegram/telegram.module';
 import { jwtAccessSecret } from '../config/secrets';
 
@@ -20,7 +21,12 @@ import { jwtAccessSecret } from '../config/secrets';
     }),
     TelegramModule,
   ],
-  providers: [SupportService, SupportGateway, SupportPresenceService],
+  providers: [
+    SupportService,
+    SupportGateway,
+    SupportPresenceService,
+    SupportRateLimitService,
+  ],
   controllers: [SupportController],
 })
 export class SupportModule {}

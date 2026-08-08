@@ -63,6 +63,28 @@ export class NovaPoshtaService {
     return cities.slice(0, 20).map((city) => ({ ref: city.Ref, name: city.Description }));
   }
 
+  // Resolves a city ref back to its name, so the address written onto an order
+  // comes from Nova Poshta rather than from whatever string the client typed
+  // alongside the ref.
+  async getCityByRef(cityRef: string): Promise<NovaPoshtaOption | null> {
+    const [city] = await this.call('AddressGeneral', 'getCities', {
+      Ref: cityRef,
+    });
+
+    return city ? { ref: city.Ref, name: city.Description } : null;
+  }
+
+  // Confirms the warehouse actually belongs to the city, and hands back its
+  // canonical name. A warehouse ref from a different city resolves to null.
+  async getWarehouseByRef(
+    cityRef: string,
+    warehouseRef: string,
+  ): Promise<NovaPoshtaOption | null> {
+    const warehouses = await this.getWarehouses(cityRef);
+
+    return warehouses.find((warehouse) => warehouse.ref === warehouseRef) ?? null;
+  }
+
   async getWarehouses(cityRef: string): Promise<NovaPoshtaOption[]> {
     const warehouses = await this.call('AddressGeneral', 'getWarehouses', {
       CityRef: cityRef,

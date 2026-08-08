@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Request, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 
 import { SupportService } from './support.service';
@@ -68,8 +68,7 @@ export class SupportController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('chats/:id/messages')
-  async getChatMessages(@Param('id') id: string) {
-    const chatId = Number(id);
+  async getChatMessages(@Param('id', ParseIntPipe) chatId: number) {
     const messages = await this.supportService.getMessages(chatId);
     await this.supportService.markReadByAdmin(chatId);
 

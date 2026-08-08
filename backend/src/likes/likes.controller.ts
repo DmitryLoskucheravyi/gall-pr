@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Post, Request, UseGuards } from '@nestjs/common';
 
 import { LikesService } from './likes.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -12,9 +12,9 @@ export class LikesController {
   @Post(':paintingId')
   toggle(
     @Request() req: AuthenticatedRequest,
-    @Param('paintingId') paintingId: string,
+    @Param('paintingId', ParseIntPipe) paintingId: number,
   ) {
-    return this.likesService.toggleLike(req.user.id, Number(paintingId));
+    return this.likesService.toggleLike(req.user.id, paintingId);
   }
 
   @Get('mine')

@@ -1,12 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
-  Delete,
 } from '@nestjs/common';
 
 import { PaintingsService } from './paintings.service';
@@ -98,31 +99,31 @@ export class PaintingsController {
 
   @Get(':id')
   findOne(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
   ) {
-    return this.paintingsService.findOne(Number(id));
+    return this.paintingsService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
   update(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
 
     @Body()
     dto: UpdatePaintingDto,
   ) {
-    return this.paintingsService.update(Number(id), dto);
+    return this.paintingsService.update(id, dto);
   }
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
   remove(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
   ) {
-    return this.paintingsService.remove(Number(id));
+    return this.paintingsService.remove(id);
   }
 }

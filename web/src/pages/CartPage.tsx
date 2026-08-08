@@ -149,12 +149,12 @@ export default function CartPage() {
       return;
     }
 
+    // Refs only — the backend resolves both names from Nova Poshta itself.
+    // Sending the display names too meant the address written onto the order
+    // and the address the delivery fee was priced for could disagree.
     const novaPoshtaExtra = {
-      novaPoshtaCity: npSelectedCity.name,
       novaPoshtaCityRef: npSelectedCity.ref,
-      novaPoshtaWarehouse: warehouseOptions.find(
-        (warehouse) => warehouse.ref === npWarehouseRef,
-      )?.name,
+      novaPoshtaWarehouseRef: npWarehouseRef,
     };
 
     try {

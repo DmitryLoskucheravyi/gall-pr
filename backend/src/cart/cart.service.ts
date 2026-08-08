@@ -87,6 +87,12 @@ export class CartService {
       throw new NotFoundException('Cart item not found');
     }
 
+    // addItem checks this too. Without it here, a painting withdrawn from sale
+    // while it sat in someone's cart could still have its quantity raised.
+    if (!item.painting.isAvailable) {
+      throw new BadRequestException('Painting is not available');
+    }
+
     if (quantity > item.painting.amount) {
       throw new BadRequestException('Not enough stock');
     }

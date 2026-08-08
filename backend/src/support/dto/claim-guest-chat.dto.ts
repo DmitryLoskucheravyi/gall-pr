@@ -1,8 +1,6 @@
 import { IsString, Matches } from 'class-validator';
 
-// See MergeCartDto — same token, same reasoning.
-const GUEST_TOKEN_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { GUEST_TOKEN_PATTERN } from '../../common/identity.util';
 
 export class ClaimGuestChatDto {
   @IsString()

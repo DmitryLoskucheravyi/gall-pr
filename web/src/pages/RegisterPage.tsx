@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { authService } from '../api/auth.api';
 import { supportService } from '../api/support.api';
+import { ordersService } from '../api/orders.api';
 import { useMergeGuestCartMutation } from '../hooks/mutations/useCartMutations';
 import { useAppDispatch } from '../store/hooks';
 import { setAuth } from '../store/slices/authSlice';
@@ -37,10 +38,12 @@ export default function RegisterPage() {
       });
       dispatch(setAuth(auth));
 
-      // Whatever this browser did as a guest — a cart, a support thread —
-      // follows them into the new account.
+      // Whatever this browser did as a guest — a cart, a support thread, past
+      // orders — follows them into the new account. Orders are claimed before
+      // the cart merge, which clears the guest token on success.
       const guestToken = peekGuestToken();
       if (guestToken) {
+        await ordersService.claimGuestOrders(guestToken).catch(() => {});
         await mergeGuestCart.mutateAsync(guestToken).catch(() => {});
         await supportService.claimGuestChat(guestToken).catch(() => {});
       }

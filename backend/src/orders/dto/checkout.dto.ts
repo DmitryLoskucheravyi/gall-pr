@@ -36,15 +36,16 @@ export class CheckoutDto {
   @IsBoolean()
   callMeRequested?: boolean;
 
-  @IsOptional()
-  @IsString()
-  novaPoshtaCity?: string;
-
-  @IsOptional()
-  @IsString()
-  novaPoshtaWarehouse?: string;
-
+  // Refs only. The display names used to be sent alongside them as free
+  // strings and written onto the order verbatim, while the delivery fee was
+  // priced from the ref — so a client could pay for delivery to the cheapest
+  // city in the country and have the parcel addressed to any other. Both names
+  // are now resolved from these refs server-side.
   @IsOptional()
   @IsString()
   novaPoshtaCityRef?: string;
+
+  @IsOptional()
+  @IsString()
+  novaPoshtaWarehouseRef?: string;
 }

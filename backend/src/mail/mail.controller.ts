@@ -3,6 +3,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Query,
   UseGuards,
@@ -33,12 +34,12 @@ export class MailController {
   }
 
   @Get('outbox/:id')
-  findOne(@Param('id') id: string) {
-    return this.mailService.findOutboxLetter(Number(id));
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.mailService.findOutboxLetter(id);
   }
 
   @Post('outbox/:id/retry')
-  retry(@Param('id') id: string) {
-    return this.mailService.retryOutboxLetter(Number(id));
+  retry(@Param('id', ParseIntPipe) id: number) {
+    return this.mailService.retryOutboxLetter(id);
   }
 }

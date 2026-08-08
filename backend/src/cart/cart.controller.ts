@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Request,
@@ -43,12 +44,12 @@ export class CartController {
   @Patch(':paintingId')
   updateItem(
     @Request() req: OptionalAuthenticatedRequest,
-    @Param('paintingId') paintingId: string,
+    @Param('paintingId', ParseIntPipe) paintingId: number,
     @Body() dto: UpdateCartItemDto,
   ) {
     return this.cartService.updateItem(
       resolveIdentity(req),
-      Number(paintingId),
+      paintingId,
       dto.quantity,
     );
   }
@@ -56,9 +57,9 @@ export class CartController {
   @Delete(':paintingId')
   removeItem(
     @Request() req: OptionalAuthenticatedRequest,
-    @Param('paintingId') paintingId: string,
+    @Param('paintingId', ParseIntPipe) paintingId: number,
   ) {
-    return this.cartService.removeItem(resolveIdentity(req), Number(paintingId));
+    return this.cartService.removeItem(resolveIdentity(req), paintingId);
   }
 
   @Delete()

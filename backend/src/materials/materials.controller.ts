@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
@@ -38,32 +39,32 @@ export class MaterialsController {
 
   @Get(':id')
   findOne(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
   ) {
-    return this.materialsService.findOne(Number(id));
+    return this.materialsService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
   update(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
 
     @Body()
     dto: UpdateMaterialDto,
   ) {
-    return this.materialsService.update(Number(id), dto);
+    return this.materialsService.update(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
   remove(
-    @Param('id')
-    id: string,
+    @Param('id', ParseIntPipe)
+    id: number,
   ) {
-    return this.materialsService.remove(Number(id));
+    return this.materialsService.remove(id);
   }
 }

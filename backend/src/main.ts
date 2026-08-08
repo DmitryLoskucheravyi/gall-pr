@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { corsOriginDelegate } from './config/cors';
@@ -22,6 +23,22 @@ import { corsOriginDelegate } from './config/cors';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // X-Content-Type-Options, X-Frame-Options, Referrer-Policy and friends.
+  //
+  // contentSecurityPolicy is off: this process serves JSON, not pages, so a CSP
+  // here protects nothing — the policy that matters belongs on whatever serves
+  // the web build, where the scripts actually run. Turning on helmet's default
+  // CSP would only mislabel this as covered.
+  //
+  // crossOriginResourcePolicy is relaxed for the same reason the CORS list
+  // exists: the API is deliberately read across origins by the web client.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 

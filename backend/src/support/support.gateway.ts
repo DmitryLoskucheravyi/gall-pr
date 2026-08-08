@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 
 import { SupportService } from './support.service';
 import { SupportPresenceService } from './support-presence.service';
+import { SupportRateLimitService } from './support-rate-limit.service';
 import { UserRole } from '../users/entities/user.entity';
 import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { TelegramService } from '../telegram/telegram.service';
@@ -26,6 +27,19 @@ import { corsOriginDelegate } from '../config/cors';
 // which is well before this gateway has finished its database round-trip — so
 // anything sent in that window must wait for this rather than be dropped for
 // having no chat yet.
+// Long enough for anyone actually describing a problem, short enough that the
+// TEXT column isn't a place to store arbitrary payloads.
+const MAX_MESSAGE_LENGTH = 2000;
+
+// Behind a reverse proxy this needs the forwarded address to mean anything;
+// direct, handshake.address is the peer.
+function addressOf(client: Socket): string {
+  const forwarded = client.handshake.headers['x-forwarded-for'];
+  const first = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+
+  return first?.split(',')[0].trim() || client.handshake.address || 'unknown';
+}
+
 type SocketData = {
   userId: number | null;
   role: UserRole;
@@ -50,6 +64,7 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
     private readonly supportService: SupportService,
     private readonly presence: SupportPresenceService,
     private readonly telegramService: TelegramService,
+    private readonly rateLimit: SupportRateLimitService,
   ) {}
 
   // Two ways in: a JWT, or a guest token. The guest token is not a credential
@@ -135,6 +150,8 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
   handleDisconnect(client: Socket) {
     const data = client.data as SocketData;
 
+    this.rateLimit.releaseSocket(client.id);
+
     if (data?.role === UserRole.USER && data.chatId) {
       this.presence.markOffline(data.chatId);
       this.server
@@ -181,8 +198,36 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
     // from disappearing.
     await data.ready;
 
-    const content = body?.content?.trim();
+    // Nothing validates this body: the global ValidationPipe only sees HTTP
+    // requests, and an inline type is erased at runtime. So the checks are
+    // here, by hand.
+    if (typeof body?.content !== 'string') return;
+
+    const content = body.content.trim();
     if (!content) return;
+
+    // support_messages.content is TEXT, and until now the only bound on what
+    // went into it was how much a client felt like sending.
+    if (content.length > MAX_MESSAGE_LENGTH) {
+      client.emit('support:error', {
+        message: `Повідомлення задовге — максимум ${MAX_MESSAGE_LENGTH} символів`,
+      });
+      return;
+    }
+
+    // Every message writes a row, can create a chat, and forwards to Telegram,
+    // so an unmetered socket is a way to fill a table and hammer a third-party
+    // API at once. Admins are exempt: they're authenticated staff, and a
+    // throttled support desk is its own kind of outage.
+    if (
+      data.role !== UserRole.ADMIN &&
+      !this.rateLimit.allowMessage(client.id, addressOf(client))
+    ) {
+      client.emit('support:error', {
+        message: 'Забагато повідомлень. Зачекайте трохи.',
+      });
+      return;
+    }
 
     const chatId =
       data.role === UserRole.ADMIN
