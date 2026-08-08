@@ -5,4 +5,11 @@ services:
       - ./backend/.env
     ports:
       - '3001:3001'
+    volumes:
+      # The Tailscale TLS cert, read-only. Mounted rather than built into the
+      # image so the private key never becomes an image layer, and so renewing
+      # it (`tailscale cert`, every 90 days) doesn't need a rebuild. Remove
+      # this mount and the server falls back to plain HTTP — which is what
+      # production does, with Caddy terminating TLS in front of it.
+      - ./backend/cert:/app/cert:ro
     restart: unless-stopped

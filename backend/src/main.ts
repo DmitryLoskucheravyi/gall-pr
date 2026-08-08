@@ -1,28 +1,36 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 import { AppModule } from './app.module';
 import { corsOriginDelegate } from './config/cors';
 
-// HTTPS is off for now — plain HTTP while we're in dev.
+// HTTPS is opt-in on the presence of a cert in ./cert, which in dev is the
+// machine's Tailscale certificate — a real Let's Encrypt one for its tailnet
+// name, mounted in rather than baked into the image.
 //
-// It was opt-in on the presence of a self-signed cert in backend/cert, which
-// browsers treat as a secure context so crypto.randomUUID() and friends exist
-// when serving over a LAN IP rather than localhost. Nothing depends on that any
-// more: the guest token generator now falls back to crypto.getRandomValues,
-// which works over plain HTTP. Re-enable by restoring this and the matching
-// block in web/vite.config.ts, and pointing VITE_API_URL back at https://.
-//
-// import { existsSync, readFileSync } from 'fs';
-// import { join } from 'path';
-//
-// const keyPath = join(process.cwd(), 'cert', 'key.pem');
-// const certPath = join(process.cwd(), 'cert', 'cert.pem');
-// const hasCert = existsSync(keyPath) && existsSync(certPath);
+// Both sides have to agree: the web app is served over HTTPS on the same
+// tailnet name, and a page loaded over HTTPS cannot call an HTTP API — the
+// browser blocks it as mixed content. Falls back to plain HTTP when the files
+// aren't there, which is what makes localhost-only work need no cert at all.
+const keyPath = join(process.cwd(), 'cert', 'key.pem');
+const certPath = join(process.cwd(), 'cert', 'cert.pem');
+const hasCert = existsSync(keyPath) && existsSync(certPath);
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(
+    AppModule,
+    hasCert
+      ? {
+          httpsOptions: {
+            key: readFileSync(keyPath),
+            cert: readFileSync(certPath),
+          },
+        }
+      : undefined,
+  );
 
   // X-Content-Type-Options, X-Frame-Options, Referrer-Policy and friends.
   //
@@ -49,7 +57,9 @@ async function bootstrap() {
 
   await app.listen(port, '0.0.0.0');
 
-  console.log(`HTTP server running on http://localhost:${port}`);
+  console.log(
+    `HTTP${hasCert ? 'S' : ''} server running on http${hasCert ? 's' : ''}://localhost:${port}`,
+  );
 }
 
 void bootstrap();

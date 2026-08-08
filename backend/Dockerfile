@@ -22,10 +22,15 @@ RUN npm install --omit=dev
 
 COPY --from=build /app/dist ./dist
 
-# Dev TLS cert (see main.ts) — opt-in, only makes the server listen over
-# HTTPS if both files are present. Harmless to ship; it's a throwaway
-# self-signed dev cert, not a secret.
-COPY cert ./cert
+# The TLS cert is deliberately NOT copied in. It used to be, back when it was
+# a throwaway self-signed file; it is now a real Let's Encrypt certificate for
+# this machine's tailnet name, and baking a private key into an image layer
+# means it travels with the image everywhere the image goes.
+#
+# docker-compose mounts ./backend/cert at /app/cert instead, so the key stays
+# on the host and the 90-day renewal needs no rebuild. main.ts falls back to
+# plain HTTP when the directory isn't mounted, which is what production wants
+# anyway — there, TLS is terminated by Caddy in front.
 
 # multer's diskStorage writes payment-proof/image uploads here before they go
 # to Cloudinary — it doesn't create the directory itself, so it must exist
