@@ -58,8 +58,20 @@
   }
 }
 
+// A fixed viewport for the artwork, taking up well over half the screen.
+//
+// Letting each image keep its own proportions meant the box resized to
+// whatever was in it, so moving between a portrait and a landscape shot of
+// the same painting shifted everything below — the title, the price, the
+// buy button — down or up the page mid-click. A stable frame is worth the
+// letterboxing, and the mat behind it is what makes those bars read as
+// deliberate rather than as a gap.
 .imageWrap {
   position: relative;
+  height: 64dvh;
+  min-height: 300px;
+  overflow: hidden;
+  background-color: var(--color-background-alt);
   // Mobile/tablet: the artwork runs the full width of the screen and sits
   // flush under the header — no container padding, no gap above it. Desktop
   // leaves it inside its grid column, where full-bleed would make no sense.
@@ -67,37 +79,47 @@
   margin-top: calc(-1 * $spacing-xxxxl);
 
   @include respond-up($breakpoint-lg) {
+    height: min(74dvh, 720px);
+    border-radius: $radius-md;
     margin-inline: 0;
     margin-top: 0;
   }
 }
 
-// No card chrome around the artwork — no frame, no radius, no shadow. The
-// painting is the page.
-.mainImageButton {
-  display: block;
-  width: 100%;
+// The slider proper: one shot per screenful, snapping. A native scroller
+// rather than a JS gesture handler, so a phone gets its own momentum and
+// rubber-banding for free, and a trackpad can swipe it sideways too.
+.track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  // The thumbnails already say how many there are; a scrollbar across the
+  // artwork would only be chrome.
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
   cursor: zoom-in;
 }
 
-// Its own proportions, sized to fit the screen. The square box this used to
-// be forced into letterboxed every painting that wasn't square, and with the
-// container gone those bars would just be bare page — so width and height are
-// both left to the image and only capped. A portrait canvas would otherwise
-// run well past the fold and have to be scrolled to be seen whole.
+// contain, never cover: cropping a painting to fill a box is the one thing
+// this page must not do.
 .mainImage {
   display: block;
-  width: auto;
-  max-width: 100%;
-  max-height: calc(
-    100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
-  );
-  margin-inline: auto;
-
-  @include respond-up($breakpoint-lg) {
-    // Leaves room for the page's own padding around it.
-    max-height: calc(100dvh - 160px);
-  }
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
 }
 
 .navArrow {
@@ -174,8 +196,10 @@
   object-fit: cover;
 }
 
+// Fills the same fixed frame the artwork will, so the page doesn't jump when
+// the real thing arrives — the whole point of the frame.
 .skeletonImage {
-  aspect-ratio: 1 / 1;
+  height: 100%;
   width: 100%;
 }
 

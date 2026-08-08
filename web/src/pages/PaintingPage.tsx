@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import PaintingCard from '../components/PaintingCard';
@@ -12,6 +12,7 @@ import { useAuthorName } from '../hooks/queries/useSettings';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { safeJsonLd } from '../utils/safeUrl';
+import { cdnImage } from '../utils/imageUrl';
 import styles from './PaintingPage.module.scss';
 
 export default function PaintingPage() {
@@ -30,11 +31,53 @@ export default function PaintingPage() {
   const [isDescOpen, setIsDescOpen] = useState(true);
   const [isCharOpen, setIsCharOpen] = useState(true);
 
+  // The slider is a real horizontal scroller rather than one image swapped in
+  // place, so a phone can swipe through the shots with the momentum and
+  // rubber-banding it does everywhere else. That makes the scroll position the
+  // one source of truth: the arrows and thumbnails scroll it, and activeImage
+  // follows from where it ends up rather than being set alongside it.
+  const trackRef = useRef<HTMLDivElement>(null);
+  const scrollFrame = useRef(0);
+
   useEscapeKey(() => setLightboxOpen(false), lightboxOpen);
 
   useEffect(() => {
     setActiveImage(0);
+    // Instantly, not smoothly: this is a different painting, not a move
+    // within the current one.
+    trackRef.current?.scrollTo({ left: 0, behavior: 'instant' as ScrollBehavior });
   }, [id]);
+
+  useEffect(() => () => cancelAnimationFrame(scrollFrame.current), []);
+
+  // Arrows and thumbnails move the scroller; they don't set the index. The
+  // scroll handler below does that, so the two can never disagree — which is
+  // exactly what would happen if a swipe changed the position without anyone
+  // telling the thumbnails about it.
+  const goToImage = (index: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    track.scrollTo({ left: track.clientWidth * index, behavior: 'smooth' });
+  };
+
+  const handleTrackScroll = () => {
+    // Scroll fires far more often than the screen repaints, and every one of
+    // these would otherwise be a React render.
+    if (scrollFrame.current) return;
+
+    scrollFrame.current = requestAnimationFrame(() => {
+      scrollFrame.current = 0;
+
+      const track = trackRef.current;
+      if (!track || track.clientWidth === 0) return;
+
+      const index = Math.round(track.scrollLeft / track.clientWidth);
+      // Setting the same value is a no-op in React, so the smooth scrolls
+      // above don't cause a render per frame.
+      setActiveImage(index);
+    });
+  };
 
   usePageMeta(
     painting?.title,
@@ -133,25 +176,39 @@ export default function PaintingPage() {
               </svg>
             </button>
 
-            <button
-              onClick={() => setLightboxOpen(true)}
-              className={styles.mainImageButton}
+            <div
+              ref={trackRef}
+              onScroll={handleTrackScroll}
+              className={styles.track}
             >
-              <img
-                src={images[activeImage]}
-                alt={painting.title}
-                className={styles.mainImage}
-              />
-            </button>
+              {images.map((url, index) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => setLightboxOpen(true)}
+                  className={styles.slide}
+                  aria-label={`Відкрити зображення ${index + 1} на весь екран`}
+                >
+                  <img
+                    src={cdnImage(url, 1400)}
+                    alt={index === 0 ? painting.title : ''}
+                    aria-hidden={index === 0 ? undefined : 'true'}
+                    // Every shot is in the DOM now that this scrolls, so only
+                    // the one on screen is worth fetching up front.
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    className={styles.mainImage}
+                  />
+                </button>
+              ))}
+            </div>
 
             {images.length > 1 && (
               <>
                 <button
                   type="button"
                   onClick={() =>
-                    setActiveImage(
-                      (prev) => (prev - 1 + images.length) % images.length,
-                    )
+                    goToImage((activeImage - 1 + images.length) % images.length)
                   }
                   className={`${styles.navArrow} ${styles.navArrowLeft}`}
                   aria-label="Попереднє зображення"
@@ -169,9 +226,7 @@ export default function PaintingPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setActiveImage((prev) => (prev + 1) % images.length)
-                  }
+                  onClick={() => goToImage((activeImage + 1) % images.length)}
                   className={`${styles.navArrow} ${styles.navArrowRight}`}
                   aria-label="Наступне зображення"
                 >
@@ -194,12 +249,19 @@ export default function PaintingPage() {
               {images.map((url, index) => (
                 <button
                   key={url}
-                  onClick={() => setActiveImage(index)}
+                  onClick={() => goToImage(index)}
                   className={`${styles.thumbButton} ${
                     index === activeImage ? styles.active : ''
                   }`}
+                  aria-label={`Зображення ${index + 1}`}
                 >
-                  <img src={url} alt="" className={styles.thumbImage} />
+                  <img
+                    src={cdnImage(url, 160)}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className={styles.thumbImage}
+                  />
                 </button>
               ))}
             </div>
