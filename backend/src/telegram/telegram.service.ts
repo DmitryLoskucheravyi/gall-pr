@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bot, InputFile } from 'grammy';
+import { randomInt } from 'crypto';
 
 import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
@@ -66,7 +67,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         // linking always goes through the payload branch below via its own
         // dedicated deep link, so there is nothing admin-related to mention
         // here — a chat id means nothing to anyone but the admin.
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        //
+        // randomInt, not Math.random: this code is the sole credential for
+        // binding a site account to this chat, and Math.random's state is
+        // recoverable from a handful of outputs.
+        const code = String(randomInt(100000, 1000000));
 
         await this.pendingLinkRepository.delete({ chatId });
         await this.pendingLinkRepository.save(

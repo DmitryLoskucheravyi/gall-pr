@@ -45,6 +45,14 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+# Multer's upload staging area (see common/upload.options.ts). Files here are
+# in flight to Cloudinary and deleted straight after; none of it belongs in git.
+/temp
+
+# Local dev TLS certificate, regenerate with `node generate-cert.js`. Self-signed
+# and only used to get a secure context when serving over a LAN IP — but a
+# private key is a private key, and it has no business in version control.
+/cert
 
 # Runtime data
 pids

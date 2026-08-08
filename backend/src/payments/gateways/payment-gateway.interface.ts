@@ -11,6 +11,12 @@ export type PaymentCallbackResult = {
   orderId: number;
   transactionId: string;
   success: boolean;
+  // What the gateway says was actually paid, in UAH. A valid signature only
+  // proves the message came from the gateway — not that it settles this order,
+  // so PaymentsService reconciles this against the order total before marking
+  // anything PAID.
+  amount: number | null;
+  currency: string | null;
 };
 
 export interface PaymentGateway {

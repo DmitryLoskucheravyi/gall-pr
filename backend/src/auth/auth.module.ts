@@ -8,14 +8,19 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { jwtAccessSecret } from '../config/secrets';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: 'SUPER_SECRET_KEY',
-      signOptions: { expiresIn: '15m' },
+    // Access tokens only. Refresh tokens are signed with their own key, passed
+    // explicitly at sign/verify time in AuthService.
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: jwtAccessSecret(),
+        signOptions: { expiresIn: '15m' },
+      }),
     }),
   ],
   providers: [AuthService, JwtStrategy],

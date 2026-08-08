@@ -9,13 +9,14 @@ import { SupportController } from './support.controller';
 import { SupportGateway } from './support.gateway';
 import { SupportPresenceService } from './support-presence.service';
 import { TelegramModule } from '../telegram/telegram.module';
+import { jwtAccessSecret } from '../config/secrets';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SupportChat, SupportMessage]),
-    JwtModule.register({
-      secret: 'SUPER_SECRET_KEY',
-      signOptions: { expiresIn: '15m' },
+    // The gateway only ever verifies access tokens off the socket handshake.
+    JwtModule.registerAsync({
+      useFactory: () => ({ secret: jwtAccessSecret() }),
     }),
     TelegramModule,
   ],

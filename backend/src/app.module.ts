@@ -38,9 +38,22 @@ import { NewsModule } from './news/news.module';
 import { NovaPoshtaModule } from './nova-poshta/nova-poshta.module';
 
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+
+import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
+    // A baseline ceiling on everything, so no route is completely unmetered
+    // just because nobody thought about it. Routes worth guarding harder —
+    // login, register, the Telegram code, guest-cart claims — carry their own
+    // stricter @Throttle. Generous enough that ordinary browsing (a catalogue
+    // page fires a burst of requests) never trips it.
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 120 },
+    ]),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST,
@@ -101,6 +114,9 @@ import { ConfigModule } from '@nestjs/config';
     NovaPoshtaModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: HttpOnlyThrottlerGuard },
+  ],
 })
 export class AppModule {}

@@ -6,6 +6,7 @@ import type { SupportMessage } from '../types/support.types';
 import { useSupportSocket } from '../hooks/useSupportSocket';
 import { useSettings } from '../hooks/queries/useSettings';
 import ChatThread from '../components/support/ChatThread';
+import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './SupportChatPage.module.scss';
 
 export default function SupportChatPage() {
@@ -122,7 +123,7 @@ export default function SupportChatPage() {
                 <li className={styles.contactItem}>
                   <span className={styles.contactLabel}>Telegram</span>
                   <a
-                    href={settings.supportTelegramUrl}
+                    href={safeExternalUrl(settings.supportTelegramUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.contactValue}

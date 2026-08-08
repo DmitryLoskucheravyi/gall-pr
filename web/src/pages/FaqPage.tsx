@@ -5,6 +5,7 @@ import { useSupportTelegramUrl } from '../hooks/queries/useSettings';
 import Skeleton from '../components/ui/Skeleton';
 import FaqAccordion from '../components/ui/FaqAccordion';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './FaqPage.module.scss';
 
 export default function FaqPage() {
@@ -52,7 +53,11 @@ export default function FaqPage() {
             <ol className={styles.botInfoSteps}>
               <li>
                 Перейдіть за{' '}
-                <a href={supportTelegramUrl} target="_blank" rel="noreferrer">
+                <a
+                  href={safeExternalUrl(supportTelegramUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   посиланням на бота
                 </a>{' '}
                 і натисніть Start

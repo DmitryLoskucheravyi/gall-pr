@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 import { Order, PaymentProvider } from '../../orders/entities/order.entity';
 import type {
@@ -77,6 +77,11 @@ export class WayForPayGateway implements PaymentGateway {
   }
 
   verifyCallback(payload: Record<string, unknown>): PaymentCallbackResult | null {
+    // No secret, no verifiable callback — see the same guard in LiqPayGateway.
+    if (!this.isConfigured()) {
+      return null;
+    }
+
     const {
       orderReference,
       amount,
@@ -88,7 +93,7 @@ export class WayForPayGateway implements PaymentGateway {
       merchantSignature,
     } = payload as Record<string, string>;
 
-    if (!orderReference || !merchantSignature) {
+    if (typeof orderReference !== 'string' || typeof merchantSignature !== 'string') {
       return null;
     }
 
@@ -103,20 +108,24 @@ export class WayForPayGateway implements PaymentGateway {
       reasonCode ?? '',
     ]);
 
-    if (expected !== merchantSignature) {
+    if (!signaturesMatch(expected, merchantSignature)) {
       return null;
     }
 
     const orderId = Number(orderReference.replace('order-', ''));
 
-    if (!orderId) {
+    if (!Number.isInteger(orderId) || orderId <= 0) {
       return null;
     }
+
+    const paidAmount = Number(amount);
 
     return {
       orderId,
       transactionId: orderReference,
       success: transactionStatus === 'Approved',
+      amount: Number.isFinite(paidAmount) ? paidAmount : null,
+      currency: typeof currency === 'string' ? currency : null,
     };
   }
 
@@ -127,4 +136,12 @@ export class WayForPayGateway implements PaymentGateway {
 
     return { orderReference, status: 'accept', time, signature };
   }
+}
+
+// Constant-time comparison — see the note in LiqPayGateway.
+function signaturesMatch(expected: string, received: string): boolean {
+  const left = Buffer.from(expected);
+  const right = Buffer.from(received);
+
+  return left.length === right.length && timingSafeEqual(left, right);
 }

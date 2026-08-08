@@ -9,6 +9,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import { CartService } from './cart.service';
 import { AddCartItemDto } from './dto/add-cart-item.dto';
@@ -65,6 +66,11 @@ export class CartController {
     return this.cartService.clearCart(resolveIdentity(req));
   }
 
+  // Takes a guest token from the body and moves that cart onto the caller's
+  // account. The token is the only thing standing in for ownership, so this is
+  // a route somebody could sweep for tokens — legitimately it fires once, right
+  // after signing in.
+  @Throttle({ default: { ttl: 3_600_000, limit: 10 } })
   @UseGuards(JwtAuthGuard)
   @Post('merge')
   mergeGuestCart(

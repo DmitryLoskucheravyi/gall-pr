@@ -1,11 +1,12 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { readFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
 
 import {
   DeliveryMethod,
@@ -53,6 +54,8 @@ function identityWhere(identity: Identity) {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
@@ -373,6 +376,11 @@ export class OrdersService {
     return updated;
   }
 
+  // The uploaded file is already on disk when this runs: the route is open to
+  // guests, and multer's interceptor writes before the handler gets a say. So
+  // every path out of here — including the rejections below — has to take the
+  // temp file with it, or an anonymous caller can fill the volume one 404 at a
+  // time. uploadImage() cleans up after itself; these early exits didn't.
   async uploadPaymentProof(
     identity: Identity,
     id: number,
@@ -383,10 +391,12 @@ export class OrdersService {
     });
 
     if (!order) {
+      await this.discardTempFile(file);
       throw new NotFoundException('Order not found');
     }
 
     if (order.paymentProvider !== PaymentProvider.CARD_TRANSFER) {
+      await this.discardTempFile(file);
       throw new BadRequestException(
         'Скріншот оплати можна додати лише для переказу на карту',
       );
@@ -394,7 +404,14 @@ export class OrdersService {
 
     // Read the temp file into memory before uploadImage deletes it — the
     // Telegram send below needs the raw bytes, not just the Cloudinary URL.
-    const proofBuffer = await readFile(file.path);
+    let proofBuffer: Buffer;
+
+    try {
+      proofBuffer = await readFile(file.path);
+    } catch (error) {
+      await this.discardTempFile(file);
+      throw error;
+    }
 
     const { url } = await this.uploadsService.uploadImage(file);
     order.paymentProofUrl = url;
@@ -418,6 +435,16 @@ export class OrdersService {
     this.emailPaymentProofReceived(order).catch(() => {});
 
     return updated;
+  }
+
+  // Best-effort: failing to remove a temp file must not replace the real error
+  // (a 404, a bad payment method) with a filesystem one.
+  private async discardTempFile(file: Express.Multer.File): Promise<void> {
+    try {
+      await unlink(file.path);
+    } catch (error) {
+      this.logger.warn(`Failed to remove temp upload ${file.path}`, error);
+    }
   }
 
   findAllForIdentity(identity: Identity): Promise<Order[]> {

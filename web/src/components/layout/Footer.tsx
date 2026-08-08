@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 
 import { useAuthorName, useSupportTelegramUrl } from '../../hooks/queries/useSettings';
 import { useAppSelector } from '../../store/hooks';
+import { safeExternalUrl } from '../../utils/safeUrl';
 import styles from './Footer.module.scss';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -69,7 +70,7 @@ export default function Footer() {
               </NavLink>
               {supportTelegramUrl && (
                 <a
-                  href={supportTelegramUrl}
+                  href={safeExternalUrl(supportTelegramUrl)}
                   target="_blank"
                   rel="noreferrer"
                   className={styles.link}

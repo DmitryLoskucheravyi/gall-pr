@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -12,7 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { Throttle } from '@nestjs/throttler';
 
 import { OrdersService } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -24,6 +25,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { OptionalAuthenticatedRequest } from '../auth/types/optional-authenticated-request.type';
 import { resolveIdentity } from '../common/identity.util';
+import { imageUploadOptions } from '../common/upload.options';
 
 @Controller('orders')
 export class OrdersController {
@@ -63,16 +65,23 @@ export class OrdersController {
     return this.ordersService.cancel(resolveIdentity(req), Number(id));
   }
 
+  // Reachable without an account, and it writes to disk before the handler can
+  // check who owns the order — so it gets a ceiling of its own on top of the
+  // size/type limits in imageUploadOptions. Uploading a transfer screenshot is
+  // something a customer does once.
+  @Throttle({ default: { ttl: 3_600_000, limit: 10 } })
   @UseGuards(OptionalJwtAuthGuard)
   @Post(':id/payment-proof')
-  @UseInterceptors(
-    FileInterceptor('image', { storage: diskStorage({ destination: './temp' }) }),
-  )
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   uploadPaymentProof(
     @Request() req: OptionalAuthenticatedRequest,
     @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
+    if (!file) {
+      throw new BadRequestException('Додайте скріншот оплати');
+    }
+
     return this.ordersService.uploadPaymentProof(
       resolveIdentity(req),
       Number(id),

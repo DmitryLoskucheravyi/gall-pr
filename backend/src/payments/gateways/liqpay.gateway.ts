@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
 import { Order, PaymentProvider } from '../../orders/entities/order.entity';
 import type {
@@ -28,9 +28,13 @@ export class LiqPayGateway implements PaymentGateway {
 
   // LiqPay signature scheme: base64( sha1( private_key + data + private_key ) ).
   // Same formula is used both to sign outgoing requests and to verify callbacks.
-  private sign(data: string): string {
+  //
+  // Takes the key as an argument rather than reading the getter, so an unset
+  // key can't quietly become the string "undefined" — which is a signing key an
+  // attacker knows as well as we do.
+  private sign(data: string, privateKey: string): string {
     return createHash('sha1')
-      .update(this.privateKey + data + this.privateKey)
+      .update(privateKey + data + privateKey)
       .digest('base64');
   }
 
@@ -49,7 +53,7 @@ export class LiqPayGateway implements PaymentGateway {
     };
 
     const data = Buffer.from(JSON.stringify(payload)).toString('base64');
-    const signature = this.sign(data);
+    const signature = this.sign(data, this.privateKey!);
 
     return {
       actionUrl: CHECKOUT_URL,
@@ -58,6 +62,14 @@ export class LiqPayGateway implements PaymentGateway {
   }
 
   verifyCallback(payload: Record<string, unknown>): PaymentCallbackResult | null {
+    const privateKey = this.privateKey;
+
+    // Without a key there is no signature to check, so there is no such thing
+    // as a callback we can believe.
+    if (!privateKey) {
+      return null;
+    }
+
     const data = payload.data;
     const signature = payload.signature;
 
@@ -65,26 +77,54 @@ export class LiqPayGateway implements PaymentGateway {
       return null;
     }
 
-    if (this.sign(data) !== signature) {
+    if (!signaturesMatch(this.sign(data, privateKey), signature)) {
       return null;
     }
 
-    const decoded = JSON.parse(Buffer.from(data, 'base64').toString()) as {
-      order_id: string;
-      payment_id: number;
-      status: string;
+    // The signature is ours, but the body is still whatever arrived over the
+    // wire — malformed JSON or a missing order_id must be a rejected callback,
+    // not a 500.
+    let decoded: {
+      order_id?: unknown;
+      payment_id?: unknown;
+      status?: unknown;
+      amount?: unknown;
+      currency?: unknown;
     };
+
+    try {
+      decoded = JSON.parse(Buffer.from(data, 'base64').toString());
+    } catch {
+      return null;
+    }
+
+    if (typeof decoded.order_id !== 'string') {
+      return null;
+    }
 
     const orderId = Number(decoded.order_id.replace('order-', ''));
 
-    if (!orderId) {
+    if (!Number.isInteger(orderId) || orderId <= 0) {
       return null;
     }
 
+    const amount = Number(decoded.amount);
+
     return {
       orderId,
-      transactionId: String(decoded.payment_id),
+      transactionId: String(decoded.payment_id ?? ''),
       success: decoded.status === 'success' || decoded.status === 'sandbox',
+      amount: Number.isFinite(amount) ? amount : null,
+      currency: typeof decoded.currency === 'string' ? decoded.currency : null,
     };
   }
+}
+
+// Constant-time comparison so a forger can't learn the expected signature one
+// byte at a time from response-timing differences.
+function signaturesMatch(expected: string, received: string): boolean {
+  const left = Buffer.from(expected);
+  const right = Buffer.from(received);
+
+  return left.length === right.length && timingSafeEqual(left, right);
 }

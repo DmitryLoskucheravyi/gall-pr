@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import { SupportService } from './support.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -45,6 +46,9 @@ export class SupportController {
 
   // Signing in hands the guest thread over to the account, the same way the
   // guest cart is merged at that moment.
+  // Same shape of risk as POST /cart/merge, with a worse payload: the thread
+  // being claimed is somebody's whole conversation with support.
+  @Throttle({ default: { ttl: 3_600_000, limit: 10 } })
   @UseGuards(JwtAuthGuard)
   @Post('claim-guest-chat')
   claimGuestChat(

@@ -22,6 +22,25 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 
 import { Roles } from '../auth/decorators/roles.decorator';
 
+const DEFAULT_PAGE_SIZE = 12;
+const MAX_PAGE_SIZE = 100;
+
+// Keeps a non-numeric, missing or out-of-range value from reaching the query
+// builder, falling back to the default rather than rejecting the request — a
+// catalogue link with a stale ?page= shouldn't be an error page.
+function clampInt(
+  raw: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const parsed = Number(raw);
+
+  if (!Number.isFinite(parsed)) return fallback;
+
+  return Math.min(Math.max(Math.trunc(parsed), min), max);
+}
+
 @Controller('paintings')
 export class PaintingsController {
   constructor(private readonly paintingsService: PaintingsService) {}
@@ -40,9 +59,13 @@ export class PaintingsController {
     @Query()
     query: GetPaintingsDto,
   ) {
-    const page = Number(query.page ?? 1);
+    // IsNumberString lets through "0" and "-5" as happily as "1000000", and
+    // findAll() feeds these straight into skip/take: an unbounded limit reads
+    // the whole table into memory, and page 0 computes a negative offset the
+    // driver rejects outright.
+    const page = clampInt(query.page, 1, 1, Number.MAX_SAFE_INTEGER);
 
-    const limit = Number(query.limit ?? 12);
+    const limit = clampInt(query.limit, DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
 
     const techniqueId = query.techniqueId
       ? Number(query.techniqueId)

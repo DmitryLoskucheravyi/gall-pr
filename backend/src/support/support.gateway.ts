@@ -15,7 +15,7 @@ import { SupportPresenceService } from './support-presence.service';
 import { UserRole } from '../users/entities/user.entity';
 import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { TelegramService } from '../telegram/telegram.service';
-import type { Identity } from '../common/identity.util';
+import { isValidGuestToken, type Identity } from '../common/identity.util';
 
 // userId is null for a guest — the chat itself is the handle we route by, and
 // a guest's messages simply have no account behind them.
@@ -67,9 +67,10 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
       const data = client.data as SocketData;
 
       if (token) {
-        const payload = this.jwtService.verify<JwtPayload>(token, {
-          secret: 'SUPER_SECRET_KEY',
-        });
+        // No secret override: the module's JwtModule is already configured with
+        // the access-token key, and naming it again here is how it drifted out
+        // of sync with auth.module in the first place.
+        const payload = this.jwtService.verify<JwtPayload>(token);
 
         data.userId = payload.sub;
         data.role = payload.role;
@@ -83,7 +84,10 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
         return;
       }
 
-      if (guestToken?.trim()) {
+      // Same shape check the HTTP side applies — the handshake is just another
+      // place the token arrives from, and a socket that gets in on a garbage
+      // token would sit in a chat room keyed by it.
+      if (isValidGuestToken(guestToken)) {
         data.userId = null;
         data.role = UserRole.USER;
 

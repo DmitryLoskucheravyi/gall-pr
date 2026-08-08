@@ -11,6 +11,7 @@ import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import { useAuthorName } from '../hooks/queries/useSettings';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { safeJsonLd } from '../utils/safeUrl';
 import styles from './PaintingPage.module.scss';
 
 export default function PaintingPage() {
@@ -106,8 +107,11 @@ export default function PaintingPage() {
     <div>
       <script
         type="application/ld+json"
+        // Escaped rather than plain JSON.stringify: the painting's title and
+        // description end up inside a <script> block, where a literal
+        // "</script>" would close it early and turn the rest into markup.
         // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(productJsonLd) }}
       />
 
       <div className={styles.grid}>

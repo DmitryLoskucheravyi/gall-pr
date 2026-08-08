@@ -8,6 +8,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import { UsersService } from './users.service';
 import { RedeemTelegramCodeDto } from './dto/redeem-telegram-code.dto';
@@ -49,6 +50,11 @@ export class UsersController {
   // (opened via the plain bot link rather than the personalized deep link).
   // Returns the updated user in the same shape as /auth/me so the frontend
   // can drop it straight into Redux.
+  // The code is six digits — 900k possibilities, which is nothing at all to a
+  // loop. Redeeming it binds the caller's account to whichever Telegram chat
+  // that code belongs to, so an unmetered guess is a way to attach yourself to
+  // a stranger's chat. 5/hour makes finding one by chance hopeless.
+  @Throttle({ default: { ttl: 3_600_000, limit: 5 } })
   @Roles('USER', 'ADMIN')
   @Post('me/telegram-link-code/redeem')
   async redeemTelegramLinkCode(
