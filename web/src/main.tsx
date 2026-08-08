@@ -7,6 +7,13 @@ import './styles/global.scss';
 import App from './App.tsx';
 import { store } from './store';
 import { queryClient } from './lib/queryClient';
+import { bootstrapAuth } from './auth/bootstrap';
+
+// Kicked off before render rather than awaited: the catalogue, the hero and
+// everything else public should paint immediately for a visitor who isn't
+// signed in — which is most of them. App holds back only the parts that
+// actually depend on knowing who you are.
+void bootstrapAuth();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

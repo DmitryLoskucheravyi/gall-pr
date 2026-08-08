@@ -6,9 +6,15 @@ import { getGuestToken } from '../utils/guestToken';
 
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
+// withCredentials is what lets the browser attach the refresh cookie. It only
+// actually travels on /auth/* — the cookie is scoped to that path — so every
+// other call still authenticates with the bearer header below and carries no
+// ambient credential, which is what keeps CSRF off the table for the rest of
+// the API.
 export const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
@@ -25,20 +31,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Concurrent 401s must share a single refresh call: the backend rotates
-// the refresh token on every use, so two independent refresh requests
-// racing on the same old token would leave one of them rejected as
-// "invalid" and force a logout right after a perfectly good refresh.
+// Concurrent 401s must share a single refresh call: the backend rotates the
+// refresh token on every use, so two independent refreshes would race on the
+// same cookie and one would be rejected as invalid right after a perfectly
+// good rotation.
 let refreshPromise: Promise<string> | null = null;
 
-function refreshAccessToken(refreshToken: string): Promise<string> {
+// No argument any more — the refresh token is a cookie the browser attaches
+// itself, and this code cannot read it. Exported because startup uses the same
+// single-flight path: see auth/bootstrap.ts.
+export function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = axios
-      .post(`${API_URL}/auth/refresh`, { refreshToken })
+      .post(`${API_URL}/auth/refresh`, null, { withCredentials: true })
       .then((response) => {
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-        store.dispatch(refreshAuth({ accessToken, refreshToken: newRefreshToken }));
-        return accessToken;
+        const { accessToken } = response.data;
+        store.dispatch(refreshAuth({ accessToken }));
+        return accessToken as string;
       })
       .finally(() => {
         refreshPromise = null;
@@ -74,21 +83,11 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const refreshToken = store.getState().auth.refreshToken;
-
-      if (!refreshToken) {
-        store.dispatch(logout());
-
-        if (isStaleTokenGuestFallback) {
-          delete originalRequest.headers.Authorization;
-          return api(originalRequest);
-        }
-
-        return Promise.reject(error);
-      }
-
+      // There is no longer a refresh token to check for up front — whether a
+      // session exists is something only the server can answer, by looking at
+      // the cookie. So we always ask, and treat a failure as "no session".
       try {
-        const accessToken = await refreshAccessToken(refreshToken);
+        const accessToken = await refreshAccessToken();
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 

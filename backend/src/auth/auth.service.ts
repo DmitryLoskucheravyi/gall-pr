@@ -126,7 +126,15 @@ export class AuthService {
   // isn't good any more needs to log in, and which of the checks tripped is
   // none of their business. Previously a malformed token escaped as an
   // unhandled JsonWebTokenError and surfaced as a 500.
-  async refresh(refreshToken: string) {
+  // Returns the user alongside the tokens because this is also what the web
+  // app calls on startup: nothing about the session is persisted client-side
+  // any more, so a page load has to ask who it is. Handing the profile back
+  // here makes that one round trip instead of a refresh followed by /auth/me.
+  async refresh(refreshToken: string | undefined) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
     let payload: JwtPayload;
 
     try {
@@ -154,11 +162,28 @@ export class AuthService {
       hashRefreshToken(tokens.refreshToken),
     );
 
-    return tokens;
+    return { ...tokens, user: this.buildUserResponse(user) };
   }
 
-  async logout(userId: number) {
-    await this.usersService.updateRefreshToken(userId, null);
+  // Best-effort by design: the caller clears the cookie no matter what this
+  // does, so a session that can't be identified — expired token, already
+  // logged out, no cookie at all — still ends on the client. What must not
+  // happen is logout failing and leaving a live refresh token behind.
+  async logoutByRefreshToken(refreshToken: string | undefined) {
+    if (!refreshToken) {
+      return { message: 'Logged out' };
+    }
+
+    try {
+      const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
+        secret: jwtRefreshSecret(),
+      });
+
+      await this.usersService.updateRefreshToken(payload.sub, null);
+    } catch {
+      // An unverifiable token revokes nothing, which is already the state we
+      // want it in.
+    }
 
     return { message: 'Logged out' };
   }

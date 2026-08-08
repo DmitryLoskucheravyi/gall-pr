@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -48,10 +49,16 @@ async function bootstrap() {
     }),
   );
 
+  // The refresh token arrives as a cookie — see auth/auth.cookie.ts.
+  app.use(cookieParser());
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Was origin: '*' — see config/cors.ts for why that had to go.
-  app.enableCors({ origin: corsOriginDelegate });
+  // credentials: true is what lets the browser send the refresh cookie on a
+  // cross-origin request, and it is precisely why origin: '*' had to go first:
+  // a wildcard origin and credentialed requests are mutually exclusive, by
+  // design. See config/cors.ts.
+  app.enableCors({ origin: corsOriginDelegate, credentials: true });
 
   const port = Number(process.env.PORT) || 3001;
 

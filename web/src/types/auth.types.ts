@@ -18,8 +18,10 @@ export type RegisterDto = {
 
 export type LoginDto = { email: string; password: string };
 
+// No refreshToken: it never reaches JavaScript. The server sets it as an
+// httpOnly cookie on login/register/refresh, and the browser sends it back
+// on its own — see backend/src/auth/auth.cookie.ts.
 export type AuthResponse = {
   accessToken: string;
-  refreshToken: string;
   user: User;
 };

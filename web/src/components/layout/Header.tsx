@@ -5,6 +5,8 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
+import { authService } from '../../api/auth.api';
+import { queryClient } from '../../lib/queryClient';
 import { useCartCount } from '../../hooks/queries/useCart';
 import { useAdminPendingOrdersCount } from '../../hooks/queries/useOrders';
 import { useAdminUnreadSupportCount } from '../../hooks/queries/useSupport';
@@ -24,6 +26,11 @@ export default function Header() {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
+  // The session is re-established from the refresh cookie after the page
+  // loads, so for a moment we don't know who this is. Showing the signed-out
+  // branch during that window flashes "Увійти" on every reload for someone who
+  // is in fact signed in — better to show neither until the answer arrives.
+  const authKnown = useAppSelector((state) => state.auth.isBootstrapped);
   const cartCount = useCartCount();
   const pendingOrdersCount = useAdminPendingOrdersCount();
   const unreadSupportCount = useAdminUnreadSupportCount();
@@ -94,9 +101,19 @@ export default function Header() {
     };
   }, [isMobileMenuOpen]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/');
+  // The server has to be told: it holds the refresh cookie, and the page
+  // cannot clear an httpOnly one itself. This used to only reset Redux, which
+  // left the session alive server-side — reloading would have signed you back
+  // in. Local state is cleared either way, so a failed request still logs you
+  // out here rather than stranding you in a half-signed-in header.
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      dispatch(logout());
+      queryClient.clear();
+      navigate('/');
+    }
   };
 
   const handleThemeToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -304,7 +321,7 @@ export default function Header() {
             )}
           </NavLink>
 
-          {user ? (
+          {!authKnown ? null : user ? (
             <div className={styles.userGroup}>
               <NavLink
                 to="/profile"
@@ -487,7 +504,7 @@ export default function Header() {
 
             <div className={styles.mobileDivider} />
 
-            {user ? (
+            {!authKnown ? null : user ? (
               <button onClick={handleLogout} className={styles.mobileLogout}>
                 Вийти
               </button>
