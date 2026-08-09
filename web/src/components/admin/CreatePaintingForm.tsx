@@ -20,6 +20,12 @@ type Props = {
 
 type PendingImage = { file: File; previewUrl: string };
 
+// Mirrors INTERIOR_IMAGES_MIN/MAX in the backend's create-painting.dto.ts —
+// the server rejects anything outside this, so the form shouldn't let it get
+// that far.
+const INTERIOR_MIN = 2;
+const INTERIOR_MAX = 6;
+
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1899 }, (_, i) => {
   const year = CURRENT_YEAR - i;
@@ -58,6 +64,11 @@ export default function CreatePaintingForm({
   >((painting?.images ?? []).filter((url) => url !== painting?.cardImage));
   const [galleryImages, setGalleryImages] = useState<PendingImage[]>([]);
 
+  const [existingInteriorImages, setExistingInteriorImages] = useState<
+    string[]
+  >(painting?.interiorImages ?? []);
+  const [interiorImages, setInteriorImages] = useState<PendingImage[]>([]);
+
   const [existingAnimationImage, setExistingAnimationImage] = useState<
     string | null
   >(painting?.animation3dImage ?? null);
@@ -74,6 +85,7 @@ export default function CreatePaintingForm({
 
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  const interiorFileInputRef = useRef<HTMLInputElement>(null);
   const animationFileInputRef = useRef<HTMLInputElement>(null);
 
   // Each preview URL is created exactly once, when its file is selected,
@@ -84,6 +96,7 @@ export default function CreatePaintingForm({
   // change is what made newly added photos intermittently fail to render.
   const coverImageRef = useRef(coverImage);
   const galleryImagesRef = useRef(galleryImages);
+  const interiorImagesRef = useRef(interiorImages);
   const animationImageRef = useRef(animationImage);
   useEffect(() => {
     coverImageRef.current = coverImage;
@@ -91,6 +104,9 @@ export default function CreatePaintingForm({
   useEffect(() => {
     galleryImagesRef.current = galleryImages;
   }, [galleryImages]);
+  useEffect(() => {
+    interiorImagesRef.current = interiorImages;
+  }, [interiorImages]);
   useEffect(() => {
     animationImageRef.current = animationImage;
   }, [animationImage]);
@@ -104,6 +120,9 @@ export default function CreatePaintingForm({
         URL.revokeObjectURL(animationImageRef.current.previewUrl);
       }
       galleryImagesRef.current.forEach((item) =>
+        URL.revokeObjectURL(item.previewUrl),
+      );
+      interiorImagesRef.current.forEach((item) =>
         URL.revokeObjectURL(item.previewUrl),
       );
     };
@@ -154,6 +173,34 @@ export default function CreatePaintingForm({
     });
   };
 
+  // Capped as they're picked rather than rejected on save: telling someone
+  // they chose too many after they've waited for six uploads is a worse
+  // conversation than quietly taking the first six.
+  const handleInteriorFilesSelected = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+
+    const room = INTERIOR_MAX - existingInteriorImages.length - interiorImages.length;
+    if (room <= 0) {
+      if (interiorFileInputRef.current) interiorFileInputRef.current.value = '';
+      return;
+    }
+
+    const selected = Array.from(fileList)
+      .slice(0, room)
+      .map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+
+    setInteriorImages((prev) => [...prev, ...selected]);
+    if (interiorFileInputRef.current) interiorFileInputRef.current.value = '';
+  };
+
+  const handleRemoveInteriorImage = (index: number) => {
+    setInteriorImages((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const handleAnimationImageSelected = (fileList: FileList | null) => {
     const file = fileList?.[0];
     if (!file) return;
@@ -176,6 +223,16 @@ export default function CreatePaintingForm({
 
     if (!existingCover && !coverImage) {
       setError('Додайте фото обкладинки');
+      return;
+    }
+
+    // Checked before anything is uploaded, so a wrong count costs nothing.
+    const interiorCount =
+      existingInteriorImages.length + interiorImages.length;
+    if (interiorCount > 0 && interiorCount < INTERIOR_MIN) {
+      setError(
+        `Фото в інтер'єрі: потрібно щонайменше ${INTERIOR_MIN}, або приберіть усі`,
+      );
       return;
     }
 
@@ -215,6 +272,30 @@ export default function CreatePaintingForm({
         return;
       }
 
+      // Same one-at-a-time reasoning as the gallery above: a failure part-way
+      // keeps what already uploaded instead of costing the whole batch.
+      const uploadedInteriorUrls: string[] = [];
+      const failedInteriorImages: PendingImage[] = [];
+
+      for (const item of interiorImages) {
+        try {
+          const { url } = await uploadImage(item.file);
+          uploadedInteriorUrls.push(url);
+          URL.revokeObjectURL(item.previewUrl);
+        } catch {
+          failedInteriorImages.push(item);
+        }
+      }
+
+      if (failedInteriorImages.length > 0) {
+        setExistingInteriorImages((prev) => [...prev, ...uploadedInteriorUrls]);
+        setInteriorImages(failedInteriorImages);
+        setError(
+          `Не вдалося завантажити ${failedInteriorImages.length} з ${interiorImages.length} фото інтер'єру. Решта збережені — спробуйте ще раз.`,
+        );
+        return;
+      }
+
       let animationImageUrl = existingAnimationImage;
       if (animationImage) {
         const { url } = await uploadImage(animationImage.file);
@@ -223,12 +304,16 @@ export default function CreatePaintingForm({
       }
 
       const gallery = [...existingGalleryImages, ...uploadedGalleryUrls];
+      const interior = [...existingInteriorImages, ...uploadedInteriorUrls];
 
       const payload = {
         title,
         description,
         cardImage: coverUrl!,
         images: [coverUrl!, ...gallery],
+        // Always sent, including as [] — that's how removing every interior
+        // photo clears the section rather than leaving the old ones in place.
+        interiorImages: interior,
         animation3dImage: animationImageUrl ?? undefined,
         price: Number(price),
         isFeatured,
@@ -351,6 +436,74 @@ export default function CreatePaintingForm({
                   <button
                     type="button"
                     onClick={() => handleRemoveGalleryImage(index)}
+                    className={styles.removeImageButton}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <span className={styles.fileLabel}>
+            Фото в інтер'єрі
+            <span className={styles.fileHint}>
+              {' '}
+              — {INTERIOR_MIN}–{INTERIOR_MAX} фото, гортаються автоматично.
+              Залиште порожнім, щоб не показувати.
+            </span>
+          </span>
+
+          <input
+            ref={interiorFileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => handleInteriorFilesSelected(e.target.files)}
+            className={styles.hiddenFileInput}
+          />
+
+          {existingInteriorImages.length + interiorImages.length <
+            INTERIOR_MAX && (
+            <button
+              type="button"
+              onClick={() => interiorFileInputRef.current?.click()}
+              className={styles.filePickerButton}
+            >
+              + Додати фото ({existingInteriorImages.length + interiorImages.length}
+              /{INTERIOR_MAX})
+            </button>
+          )}
+
+          {(existingInteriorImages.length > 0 || interiorImages.length > 0) && (
+            <div className={styles.imagePreviews}>
+              {existingInteriorImages.map((url) => (
+                <div key={url} className={styles.imagePreviewWrap}>
+                  <img src={url} alt="" className={styles.imagePreview} />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExistingInteriorImages((prev) =>
+                        prev.filter((item) => item !== url),
+                      )
+                    }
+                    className={styles.removeImageButton}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {interiorImages.map((item, index) => (
+                <div key={item.previewUrl} className={styles.imagePreviewWrap}>
+                  <img
+                    src={item.previewUrl}
+                    alt=""
+                    className={styles.imagePreview}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveInteriorImage(index)}
                     className={styles.removeImageButton}
                   >
                     ×

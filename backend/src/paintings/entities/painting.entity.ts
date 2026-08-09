@@ -28,6 +28,18 @@ export class Painting {
   @Column('simple-json')
   images: string[];
 
+  // Photographs of this work hanging in a room, set by the admin when the
+  // painting is created or edited. Not a self-service preview the visitor
+  // composes — these are chosen shots, so the room, the light and the scale
+  // are all deliberate.
+  //
+  // Null or empty means the painting simply has no interior section. Two is
+  // the minimum worth showing as a sequence, and six is where a carousel
+  // stops being something anyone waits through; both are enforced on the way
+  // in, in PaintingsService.
+  @Column({ name: 'interior_images', type: 'simple-json', nullable: true })
+  interiorImages: string[] | null;
+
   // Reserved for a future 3D-animation feature; intentionally not exposed
   // anywhere in the public UI yet, just persisted as the admin sets it.
   @Column({ name: 'animation_3d_image', type: 'varchar', length: 500, nullable: true })

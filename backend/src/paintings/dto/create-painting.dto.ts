@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsInt,
@@ -7,6 +8,11 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+
+// Two is the fewest that reads as a sequence rather than a stray photo; six is
+// where an auto-advancing carousel stops being something anyone sits through.
+export const INTERIOR_IMAGES_MIN = 2;
+export const INTERIOR_IMAGES_MAX = 6;
 
 export class CreatePaintingDto {
   @IsString()
@@ -21,6 +27,16 @@ export class CreatePaintingDto {
 
   @IsArray()
   images: string[];
+
+  // Photographs of the work in a room. The 2..6 rule isn't expressible here
+  // without also rejecting the empty array that means "no interior section",
+  // so the count is checked in PaintingsService; this only guarantees the
+  // shape and an upper bound.
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMaxSize(INTERIOR_IMAGES_MAX)
+  interiorImages?: string[];
 
   @IsOptional()
   @IsString()

@@ -1,0 +1,133 @@
+import { useEffect, useRef, useState } from 'react';
+
+import { cdnImage } from '../utils/imageUrl';
+import styles from './InteriorCarousel.module.scss';
+
+// How long each photo holds before the carousel moves on. Long enough to
+// actually look at a room, short enough that the last one isn't a wait.
+const SLIDE_MS = 4000;
+
+type Props = {
+  images: string[];
+};
+
+// The work seen hanging in a room, as an auto-advancing sequence with a
+// progress bar per photo — one fills while its photo is up, then the next
+// takes over.
+//
+// The bars are the whole reason this can advance on its own: a carousel that
+// moves without warning is a carousel that moves just as you started looking.
+// Here you can see the current photo running out, how many are left, and you
+// can jump straight to any of them.
+export default function InteriorCarousel({ images }: Props) {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  // Bumped on every manual jump so the active bar's fill animation restarts
+  // from zero — without it, React reuses the element and the CSS animation
+  // carries on from wherever it had got to.
+  const [runId, setRunId] = useState(0);
+
+  const reducedMotion = useRef(false);
+
+  useEffect(() => {
+    reducedMotion.current = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+  }, []);
+
+  useEffect(() => {
+    // Someone who asked for less motion gets the photos and the controls, but
+    // nothing that moves on its own.
+    if (paused || reducedMotion.current || images.length < 2) return;
+
+    const timer = window.setTimeout(() => {
+      setActive((current) => (current + 1) % images.length);
+      setRunId((id) => id + 1);
+    }, SLIDE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [active, paused, runId, images.length]);
+
+  const goTo = (index: number) => {
+    setActive(index);
+    setRunId((id) => id + 1);
+  };
+
+  if (images.length === 0) return null;
+
+  return (
+    <div
+      className={styles.carousel}
+      // Hovering is someone looking properly — moving the photo out from
+      // under them at that exact moment is the one thing to avoid.
+      onMouseEnter={() => setPaused(true)}
+      // Restarts the slide rather than resuming it. The CSS fill and the JS
+      // timer measure the same four seconds independently, so resuming would
+      // leave them disagreeing — the timer starting a fresh 4s while the bar
+      // carries on from where it stopped, finishing early and then sitting
+      // full. Restarting both is the one way they stay honest about each
+      // other, and re-reading a photo from the top is no loss.
+      onMouseLeave={() => {
+        setPaused(false);
+        setRunId((id) => id + 1);
+      }}
+    >
+      <div className={styles.bars}>
+        {images.map((url, index) => (
+          <button
+            key={url}
+            type="button"
+            onClick={() => goTo(index)}
+            className={styles.bar}
+            aria-label={`Фото ${index + 1} з ${images.length}`}
+            aria-current={index === active ? 'true' : undefined}
+          >
+            <span
+              // Keyed on runId so a jump remounts the fill and the animation
+              // starts over rather than resuming mid-way.
+              key={index === active ? runId : 'idle'}
+              className={[
+                styles.barFill,
+                index < active ? styles.barFilled : '',
+                index === active ? styles.barActive : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={
+                index === active
+                  ? {
+                      animationDuration: `${SLIDE_MS}ms`,
+                      animationPlayState: paused ? 'paused' : 'running',
+                    }
+                  : undefined
+              }
+            />
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.frame}>
+        {images.map((url, index) => (
+          <img
+            key={url}
+            src={cdnImage(url, 1400)}
+            alt={
+              index === active
+                ? 'Картина в інтер’єрі'
+                : ''
+            }
+            aria-hidden={index === active ? undefined : 'true'}
+            // All of them are stacked and cross-faded rather than swapped, so
+            // the next photo is already decoded when its turn comes and the
+            // transition doesn't stall on a fetch.
+            loading={index === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            className={`${styles.photo} ${
+              index === active ? styles.visible : ''
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}

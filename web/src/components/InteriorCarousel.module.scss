@@ -1,0 +1,110 @@
+.carousel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// The row of progress bars, above the photo. Thin and full-width — they read
+// as a measure of how long is left rather than as buttons, which is what they
+// mostly are; being clickable is a bonus, not the point.
+.bars {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.bar {
+  position: relative;
+  height: 2px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: $radius-pill;
+  background-color: var(--color-border);
+  cursor: pointer;
+  // A 2px target is unclickable, so the hit area is padded out above and
+  // below without the bar itself getting any taller.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -10px 0;
+  }
+
+  &:hover {
+    background-color: var(--color-border-strong);
+  }
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  transform: scaleX(0);
+  background-color: var(--color-primary);
+}
+
+// Photos already seen stay filled, so the row reads as progress through a
+// sequence rather than a single travelling dot.
+.barFilled {
+  transform: scaleX(1);
+}
+
+// The one currently on screen fills over the slide's duration, which is set
+// inline — the stylesheet doesn't know how long a slide lasts.
+.barActive {
+  animation-name: fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+// A fixed frame, for the same reason the artwork above it has one: these are
+// photographs of rooms and they won't share proportions, so without it the
+// page would jump every four seconds on its own.
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background-color: var(--color-background-alt);
+  aspect-ratio: 4 / 3;
+
+  @include respond-up($breakpoint-md) {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  // cover, unlike the artwork itself: this is a photograph of a room, and
+  // filling the frame is what keeps it looking like a window into one.
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.photo.visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo {
+    transition: none;
+  }
+
+  // The component already stops advancing; this makes sure a fill that was
+  // mid-animation when the preference changed doesn't keep running.
+  .barActive {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

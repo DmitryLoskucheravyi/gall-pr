@@ -122,54 +122,71 @@
   object-fit: contain;
 }
 
+// Tall and narrow, with no pill behind them: a chip floating over a painting
+// is chrome sitting on the artwork, which is the one thing this page is for.
+// The chevron carries its own legibility instead — a soft shadow keeps it
+// readable over a pale canvas as well as a dark one.
+//
+// Visibility is driven from JS (see .visible) rather than :hover, because
+// they have to fade back out on their own after a moment of stillness, and
+// because a touch device never hovers at all.
 .navArrow {
   position: absolute;
-  top: 50%;
+  top: 0;
+  bottom: 0;
   z-index: 2;
   display: flex;
-  height: 40px;
-  width: 40px;
-  margin-top: -20px;
-  flex-shrink: 0;
+  width: 56px;
   align-items: center;
   justify-content: center;
-  border-radius: $radius-pill;
   border: none;
-  background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
+  background: none;
   color: #fff;
   cursor: pointer;
   opacity: 0;
+  pointer-events: none;
   transition:
-    background-color 0.2s ease,
-    transform 0.2s ease,
-    opacity 0.2s ease;
+    opacity 0.45s ease,
+    transform 0.25s ease;
 
-  .imageWrap:hover & {
-    opacity: 1;
+  &.visible {
+    opacity: 0.85;
+    pointer-events: auto;
   }
 
   &:hover {
-    background-color: var(--color-primary);
-    transform: scale(1.08);
-  }
-
-  &:active {
-    transform: scale(0.94);
+    opacity: 1;
   }
 
   svg {
-    height: 20px;
-    width: 20px;
+    height: 40px;
+    width: 40px;
+    // Without this the chevron disappears against a light painting. Cheaper
+    // and less intrusive than putting a box behind it.
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
   }
 }
 
 .navArrowLeft {
-  left: $spacing-lg;
+  left: 0;
+
+  &:hover {
+    transform: translateX(-2px);
+  }
 }
 
 .navArrowRight {
-  right: $spacing-lg;
+  right: 0;
+
+  &:hover {
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navArrow {
+    transition: none;
+  }
 }
 
 .thumbs {
@@ -341,6 +358,24 @@
   }
 }
 
+.interior {
+  margin-top: $spacing-huge;
+  padding-top: $spacing-huge;
+}
+
+.interiorTitle {
+  font-family: $font-display;
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.interiorHint {
+  margin-top: $spacing-xs;
+  margin-bottom: $spacing-xl;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
 .animation3d {
   margin-top: $spacing-huge;
   padding-top: $spacing-huge;
@@ -393,8 +428,73 @@
   padding: $spacing-xxl;
 }
 
+// Same snapping scroller as the slider on the page, so the lightbox swipes
+// the same way rather than being a dead-end full-screen image.
+.lightboxTrack {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.lightboxSlide {
+  display: flex;
+  flex: 0 0 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
 .lightboxImage {
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: $spacing-lg;
+  right: $spacing-lg;
+  z-index: 2;
+  display: flex;
+  height: 44px;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  svg {
+    height: 24px;
+    width: 24px;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+  }
+}
+
+// Position within the set, since the thumbnails aren't visible from in here.
+.lightboxCount {
+  position: absolute;
+  bottom: $spacing-xl;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.75);
+  font-variant-numeric: tabular-nums;
 }

@@ -14,8 +14,33 @@ import {
 } from 'typeorm';
 
 import { Painting } from './entities/painting.entity';
-import { CreatePaintingDto } from './dto/create-painting.dto';
+import {
+  CreatePaintingDto,
+  INTERIOR_IMAGES_MAX,
+  INTERIOR_IMAGES_MIN,
+} from './dto/create-painting.dto';
 import { UpdatePaintingDto } from './dto/update-painting.dto';
+
+// Empty (or absent) means the painting has no interior section at all, which
+// is the normal case. Anything else has to be a sequence worth playing — a
+// single photo isn't a carousel, it's a photo that happens to auto-advance to
+// itself. The upper bound is in the DTO; this is the part it can't express
+// without also rejecting the empty array.
+function assertInteriorImageCount(images: string[] | undefined): void {
+  if (!images || images.length === 0) return;
+
+  if (images.length < INTERIOR_IMAGES_MIN) {
+    throw new BadRequestException(
+      `Фото в інтер'єрі: додайте щонайменше ${INTERIOR_IMAGES_MIN}, або жодного`,
+    );
+  }
+
+  if (images.length > INTERIOR_IMAGES_MAX) {
+    throw new BadRequestException(
+      `Фото в інтер'єрі: не більше ${INTERIOR_IMAGES_MAX}`,
+    );
+  }
+}
 
 @Injectable()
 export class PaintingsService {
@@ -33,11 +58,16 @@ export class PaintingsService {
       throw new BadRequestException('Painting with this title already exists');
     }
 
+    assertInteriorImageCount(dto.interiorImages);
+
     const painting = this.paintingsRepository.create({
       ...dto,
       amount: 1,
       isAvailable: true,
       isFeatured: dto.isFeatured ?? false,
+      // Stored as null rather than [] so "no interior section" is one value in
+      // the column, not two that mean the same thing.
+      interiorImages: dto.interiorImages?.length ? dto.interiorImages : null,
     });
 
     return this.paintingsRepository.save(painting);
@@ -120,7 +150,17 @@ export class PaintingsService {
       }
     }
 
+    assertInteriorImageCount(dto.interiorImages);
+
     Object.assign(painting, dto);
+
+    // Only when the caller actually sent the field — a PATCH that leaves it
+    // out must not clear an interior sequence someone set earlier.
+    if (dto.interiorImages !== undefined) {
+      painting.interiorImages = dto.interiorImages.length
+        ? dto.interiorImages
+        : null;
+    }
 
     return this.paintingsRepository.save(painting);
   }

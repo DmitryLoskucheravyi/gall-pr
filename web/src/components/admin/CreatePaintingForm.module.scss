@@ -35,11 +35,23 @@
 
 .fileLabel {
   display: flex;
+  // The interior label carries a sentence of explanation after it, which has
+  // to be allowed to fall to a second line on a narrow form.
+  flex-wrap: wrap;
   align-items: center;
   gap: $spacing-sm;
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
+}
+
+// Sits inline after a label: says what the field expects, without competing
+// with it for weight.
+.fileHint {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
 }
 
 .soonBadge {

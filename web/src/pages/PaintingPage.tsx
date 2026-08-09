@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import PaintingCard from '../components/PaintingCard';
 import Painting3DViewer from '../components/Painting3DViewer';
+import InteriorCarousel from '../components/InteriorCarousel';
 import LikeButton from '../components/ui/LikeButton';
 import Skeleton from '../components/ui/Skeleton';
 import { usePainting } from '../hooks/queries/usePainting';
@@ -26,6 +27,24 @@ export default function PaintingPage() {
   );
   const { related } = useRelatedPaintings(painting);
 
+  // Derived above every hook, and tolerant of `painting` still being
+  // undefined, because the hooks below read these in their dependency arrays —
+  // which are evaluated during render. Declared after the early return for the
+  // loading state, as they used to be, they sit in the temporal dead zone at
+  // that point and the whole page throws.
+  const images = !painting
+    ? []
+    : painting.images.length > 0
+      ? painting.images
+      : [painting.cardImage];
+
+  // Set by the admin per painting; most works simply won't have any, and the
+  // section is left out entirely then.
+  const interiorImages = painting?.interiorImages ?? [];
+
+  // How long the slider arrows linger after the last sign of interest.
+  const ARROW_IDLE_MS = 2200;
+
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDescOpen, setIsDescOpen] = useState(true);
@@ -39,6 +58,15 @@ export default function PaintingPage() {
   const trackRef = useRef<HTMLDivElement>(null);
   const scrollFrame = useRef(0);
 
+  const [arrowsVisible, setArrowsVisible] = useState(false);
+  const arrowTimer = useRef(0);
+
+  const lightboxTrackRef = useRef<HTMLDivElement>(null);
+  const lightboxFrame = useRef(0);
+  // Captured at the moment the lightbox opens, so the positioning effect can
+  // read it without depending on activeImage and re-running on every swipe.
+  const activeImageOnOpen = useRef(0);
+
   useEscapeKey(() => setLightboxOpen(false), lightboxOpen);
 
   useEffect(() => {
@@ -48,7 +76,14 @@ export default function PaintingPage() {
     trackRef.current?.scrollTo({ left: 0, behavior: 'instant' as ScrollBehavior });
   }, [id]);
 
-  useEffect(() => () => cancelAnimationFrame(scrollFrame.current), []);
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(scrollFrame.current);
+      cancelAnimationFrame(lightboxFrame.current);
+      window.clearTimeout(arrowTimer.current);
+    },
+    [],
+  );
 
   // Arrows and thumbnails move the scroller; they don't set the index. The
   // scroll handler below does that, so the two can never disagree — which is
@@ -61,7 +96,94 @@ export default function PaintingPage() {
     track.scrollTo({ left: track.clientWidth * index, behavior: 'smooth' });
   };
 
+  // The lightbox is the same idea as the slider below it: a snapping scroller,
+  // so it swipes on a phone without a line of gesture code. It shares
+  // activeImage with the page, so opening it lands on the shot you were
+  // looking at and closing it leaves the page on whatever you swiped to.
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    const track = lightboxTrackRef.current;
+    if (!track) return;
+
+    track.scrollTo({
+      left: track.clientWidth * activeImageOnOpen.current,
+      behavior: 'instant' as ScrollBehavior,
+    });
+    // activeImage is deliberately not a dependency: this positions the track
+    // when the lightbox opens, and must not fight the user's swipes after.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen]);
+
+  // Arrow keys move through the shots while the lightbox is up; Escape is
+  // already handled by useEscapeKey above.
+  useEffect(() => {
+    if (!lightboxOpen || images.length < 2) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        goToLightboxImage((activeImage - 1 + images.length) % images.length);
+      } else if (event.key === 'ArrowRight') {
+        goToLightboxImage((activeImage + 1) % images.length);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // Rebound whenever the current shot changes, so the handler always knows
+    // which one it's stepping from. goToLightboxImage only touches a ref, so
+    // it doesn't need to be here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen, activeImage, images.length]);
+
+  const openLightbox = () => {
+    activeImageOnOpen.current = activeImage;
+    setLightboxOpen(true);
+  };
+
+  // Closing carries the position back to the page's own slider, so the two
+  // never disagree about which shot you were on.
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    goToImage(activeImage);
+  };
+
+  const goToLightboxImage = (index: number) => {
+    const track = lightboxTrackRef.current;
+    if (!track) return;
+
+    track.scrollTo({ left: track.clientWidth * index, behavior: 'smooth' });
+  };
+
+  const handleLightboxScroll = () => {
+    if (lightboxFrame.current) return;
+
+    lightboxFrame.current = requestAnimationFrame(() => {
+      lightboxFrame.current = 0;
+
+      const track = lightboxTrackRef.current;
+      if (!track || track.clientWidth === 0) return;
+
+      setActiveImage(Math.round(track.scrollLeft / track.clientWidth));
+    });
+  };
+
+  // The arrows show themselves when there's a sign of interest — the pointer
+  // moving over the artwork, a swipe, a tap — and fade back out once that
+  // stops. Hover alone wouldn't do: a touch device never hovers, so they'd
+  // either be invisible there or permanently painted over the work.
+  const revealArrows = () => {
+    setArrowsVisible(true);
+    window.clearTimeout(arrowTimer.current);
+    arrowTimer.current = window.setTimeout(
+      () => setArrowsVisible(false),
+      ARROW_IDLE_MS,
+    );
+  };
+
   const handleTrackScroll = () => {
+    revealArrows();
+
     // Scroll fires far more often than the screen repaints, and every one of
     // these would otherwise be a React render.
     if (scrollFrame.current) return;
@@ -124,7 +246,6 @@ export default function PaintingPage() {
 
   if (!painting) return <p className={styles.muted}>Картину не знайдено</p>;
 
-  const images = painting.images.length > 0 ? painting.images : [painting.cardImage];
   const price = Number(painting.price);
 
   // Product structured data — lets search engines show the painting as a rich
@@ -159,7 +280,11 @@ export default function PaintingPage() {
 
       <div className={styles.grid}>
         <div>
-          <div className={styles.imageWrap}>
+          <div
+            className={styles.imageWrap}
+            onPointerMove={revealArrows}
+            onPointerLeave={() => setArrowsVisible(false)}
+          >
             <button
               onClick={() => navigate(-1)}
               className={styles.backButton}
@@ -185,7 +310,7 @@ export default function PaintingPage() {
                 <button
                   key={url}
                   type="button"
-                  onClick={() => setLightboxOpen(true)}
+                  onClick={openLightbox}
                   className={styles.slide}
                   aria-label={`Відкрити зображення ${index + 1} на весь екран`}
                 >
@@ -210,7 +335,9 @@ export default function PaintingPage() {
                   onClick={() =>
                     goToImage((activeImage - 1 + images.length) % images.length)
                   }
-                  className={`${styles.navArrow} ${styles.navArrowLeft}`}
+                  className={`${styles.navArrow} ${styles.navArrowLeft} ${
+                    arrowsVisible ? styles.visible : ''
+                  }`}
                   aria-label="Попереднє зображення"
                 >
                   <svg viewBox="0 0 24 24" fill="none">
@@ -227,7 +354,9 @@ export default function PaintingPage() {
                 <button
                   type="button"
                   onClick={() => goToImage((activeImage + 1) % images.length)}
-                  className={`${styles.navArrow} ${styles.navArrowRight}`}
+                  className={`${styles.navArrow} ${styles.navArrowRight} ${
+                    arrowsVisible ? styles.visible : ''
+                  }`}
                   aria-label="Наступне зображення"
                 >
                   <svg viewBox="0 0 24 24" fill="none">
@@ -328,6 +457,16 @@ export default function PaintingPage() {
         </div>
       </div>
 
+      {interiorImages.length > 0 && (
+        <section className={styles.interior}>
+          <h2 className={styles.interiorTitle}>В інтер'єрі</h2>
+          <p className={styles.interiorHint}>
+            Як робота виглядає на стіні — щоб уявити її у себе
+          </p>
+          <InteriorCarousel images={interiorImages} />
+        </section>
+      )}
+
       {painting.animation3dImage && (
         <section className={styles.animation3d}>
           <h2 className={styles.animation3dTitle}>3D перегляд</h2>
@@ -350,12 +489,95 @@ export default function PaintingPage() {
       )}
 
       {lightboxOpen && (
-        <div onClick={() => setLightboxOpen(false)} className={styles.lightbox}>
-          <img
-            src={images[activeImage]}
-            alt={painting.title}
-            className={styles.lightboxImage}
-          />
+        <div
+          // Only the backdrop itself closes. Anything inside — the photo, the
+          // arrows — must not, or a swipe that ends on the image would shut
+          // the whole thing.
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeLightbox();
+          }}
+          className={styles.lightbox}
+        >
+          <button
+            type="button"
+            onClick={closeLightbox}
+            className={styles.lightboxClose}
+            aria-label="Закрити"
+          >
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M6 6l12 12M18 6L6 18"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+
+          <div
+            ref={lightboxTrackRef}
+            onScroll={handleLightboxScroll}
+            className={styles.lightboxTrack}
+          >
+            {images.map((url, index) => (
+              <div key={url} className={styles.lightboxSlide}>
+                <img
+                  src={url}
+                  alt={index === activeImage ? painting.title : ''}
+                  aria-hidden={index === activeImage ? undefined : 'true'}
+                  className={styles.lightboxImage}
+                />
+              </div>
+            ))}
+          </div>
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  goToLightboxImage(
+                    (activeImage - 1 + images.length) % images.length,
+                  )
+                }
+                className={`${styles.navArrow} ${styles.navArrowLeft} ${styles.visible}`}
+                aria-label="Попереднє зображення"
+              >
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="m15 6-6 6 6 6"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  goToLightboxImage((activeImage + 1) % images.length)
+                }
+                className={`${styles.navArrow} ${styles.navArrowRight} ${styles.visible}`}
+                aria-label="Наступне зображення"
+              >
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="m9 6 6 6-6 6"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <span className={styles.lightboxCount}>
+                {activeImage + 1} / {images.length}
+              </span>
+            </>
+          )}
         </div>
       )}
     </div>

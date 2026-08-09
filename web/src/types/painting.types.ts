@@ -8,6 +8,10 @@ export type Painting = {
 
   cardImage: string;
   images: string[];
+  // Photographs of the work hanging in a room, chosen by the admin. Null or
+  // empty means the painting has no interior section; otherwise 2..6, which
+  // the backend enforces.
+  interiorImages: string[] | null;
   animation3dImage: string | null;
 
   price: string;

@@ -7,6 +7,9 @@ export type CreatePaintingDto = {
 
   images: string[];
 
+  // Empty array clears the interior section; otherwise 2..6.
+  interiorImages?: string[];
+
   animation3dImage?: string;
 
   price: number;
