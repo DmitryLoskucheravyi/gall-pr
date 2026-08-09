@@ -1,0 +1,27 @@
+# Terminates TLS on the droplet and passes requests to the Nest container.
+#
+# This is the half of "Cloudflare SSL/TLS mode: Full (strict)" that lives in
+# the repository. Strict means Cloudflare verifies the origin's certificate
+# instead of accepting anything — so the origin has to present a real one, and
+# that is what Caddy is here for. The mode itself is a dashboard setting; see
+# deploy/README.md.
+#
+# Flexible mode would make Cloudflare talk plain HTTP to the droplet. That
+# leaves the last leg unencrypted and, more immediately, breaks the refresh
+# cookie: Secure cookies need a secure context end to end.
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# The backend runs plain HTTP inside the compose network — TLS is this
+	# file's job. main.ts only serves HTTPS itself when a cert directory is
+	# mounted, which production deliberately doesn't do.
+	reverse_proxy backend:3001 {
+		# Websockets (support chat) are proxied without special handling by
+		# modern Caddy, but the client's address has to survive the hop or
+		# rate limiting counts everyone as the proxy. Cloudflare's own
+		# CF-Connecting-IP is what the app actually reads; these keep the
+		# chain intact for anything that falls back to X-Forwarded-For.
+		header_up X-Real-IP {remote_host}
+	}
+}

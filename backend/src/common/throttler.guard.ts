@@ -1,6 +1,8 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
+import { clientAddressOf } from '../config/proxy';
+
 // ThrottlerGuard reads req/res off the HTTP context. Registered globally it
 // also lands on the support gateway's @SubscribeMessage handlers, where
 // switchToHttp() has nothing to hand it — so every socket message would fail.
@@ -20,5 +22,13 @@ export class HttpOnlyThrottlerGuard extends ThrottlerGuard {
     }
 
     return super.canActivate(context);
+  }
+
+  // Who to count requests against. Behind Cloudflare the socket address is
+  // Cloudflare's, which would put every visitor on earth in one bucket — the
+  // first busy one spends the allowance and everybody else gets a 429. See
+  // config/proxy.ts for why this is only read when a proxy is declared.
+  protected getTracker(req: Record<string, any>): Promise<string> {
+    return Promise.resolve(clientAddressOf(req));
   }
 }

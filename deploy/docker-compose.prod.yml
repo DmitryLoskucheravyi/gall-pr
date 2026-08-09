@@ -1,0 +1,43 @@
+# Production stack for the droplet: Caddy terminates TLS, the backend runs
+# plain HTTP behind it. Bring it up from the repository root:
+#
+#   API_DOMAIN=api.viktorumm.com docker compose -f deploy/docker-compose.prod.yml up -d
+#
+# The frontend isn't here — it's static, built by Cloudflare Pages.
+
+services:
+  backend:
+    build: ../backend
+    env_file:
+      - ../backend/.env
+    # No published port: nothing reaches this except Caddy, over the compose
+    # network. Publishing 3001 would let the internet bypass Cloudflare and
+    # with it every protection that assumes traffic arrives through it.
+    expose:
+      - '3001'
+    # Deliberately no cert mount, unlike the dev compose — TLS belongs to Caddy
+    # here, and main.ts falls back to plain HTTP when the directory is absent.
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - backend
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      # The API's hostname, e.g. api.viktorumm.com. Caddy obtains and renews
+      # its certificate for exactly this name.
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and ACME account keys. Losing this volume means
+      # re-issuing on every restart, which runs into Let's Encrypt rate limits.
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

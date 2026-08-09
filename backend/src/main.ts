@@ -5,8 +5,11 @@ import cookieParser from 'cookie-parser';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
+import type { NestExpressApplication } from '@nestjs/platform-express';
+
 import { AppModule } from './app.module';
 import { corsOriginDelegate } from './config/cors';
+import { trustProxySetting } from './config/proxy';
 
 // HTTPS is opt-in on the presence of a cert in ./cert, which in dev is the
 // machine's Tailscale certificate — a real Let's Encrypt one for its tailnet
@@ -21,7 +24,7 @@ const certPath = join(process.cwd(), 'cert', 'cert.pem');
 const hasCert = existsSync(keyPath) && existsSync(certPath);
 
 async function bootstrap() {
-  const app = await NestFactory.create(
+  const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     hasCert
       ? {
@@ -32,6 +35,16 @@ async function bootstrap() {
         }
       : undefined,
   );
+
+  // In production this sits behind Caddy, which sits behind Cloudflare, so the
+  // socket address is a proxy's and every forwarded header has to be resolved
+  // against how many hops are actually in front. Off unless TRUST_PROXY says
+  // otherwise — see config/proxy.ts for why the default has to be the
+  // suspicious one.
+  const trustProxy = trustProxySetting();
+  if (trustProxy !== false) {
+    app.set('trust proxy', trustProxy);
+  }
 
   // X-Content-Type-Options, X-Frame-Options, Referrer-Policy and friends.
   //

@@ -18,6 +18,7 @@ import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { TelegramService } from '../telegram/telegram.service';
 import { isValidGuestToken, type Identity } from '../common/identity.util';
 import { corsOriginDelegate } from '../config/cors';
+import { clientAddressOf } from '../config/proxy';
 
 // userId is null for a guest — the chat itself is the handle we route by, and
 // a guest's messages simply have no account behind them.
@@ -31,13 +32,15 @@ import { corsOriginDelegate } from '../config/cors';
 // TEXT column isn't a place to store arbitrary payloads.
 const MAX_MESSAGE_LENGTH = 2000;
 
-// Behind a reverse proxy this needs the forwarded address to mean anything;
-// direct, handshake.address is the peer.
+// Goes through the same rule as the HTTP throttler: forwarded headers are only
+// believed when a proxy has actually been declared, because otherwise anyone
+// can write one and hand themselves a private rate-limit bucket. This used to
+// read x-forwarded-for unconditionally, which was exactly that hole.
 function addressOf(client: Socket): string {
-  const forwarded = client.handshake.headers['x-forwarded-for'];
-  const first = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-
-  return first?.split(',')[0].trim() || client.handshake.address || 'unknown';
+  return clientAddressOf({
+    headers: client.handshake.headers,
+    ip: client.handshake.address,
+  });
 }
 
 type SocketData = {
