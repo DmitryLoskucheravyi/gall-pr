@@ -5,6 +5,19 @@ services:
       - ./backend/.env
     ports:
       - '3001:3001'
+    # Docker normally forwards DNS to the host's resolver. Tailscale takes DNS
+    # over on the host when MagicDNS is on, and that forwarding chain breaks —
+    # the container stops resolving anything public, which shows up as
+    # ENOTFOUND for the TiDB gateway and, downstream, as support sockets that
+    # close the moment they open because their first query throws.
+    #
+    # Everything this service talks to is on the public internet (the database,
+    # Cloudinary, Telegram, SMTP, Nova Poshta), so a public resolver is not a
+    # workaround here — it's the correct answer, and it stops the container
+    # depending on whatever the host's DNS happens to be doing.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       # The Tailscale TLS cert, read-only. Mounted rather than built into the
       # image so the private key never becomes an image layer, and so renewing
