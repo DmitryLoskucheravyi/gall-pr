@@ -69,6 +69,16 @@ export class Order {
   @Column({ name: 'guest_address', type: 'varchar', length: 500, nullable: true })
   guestAddress: string | null;
 
+  // Telegram or Instagram, whichever the customer would rather be reached on.
+  // One field rather than two: nobody wants to be asked for both, and which
+  // one it is is obvious from what they typed.
+  //
+  // Its own column rather than folded into the comment, because it's a way to
+  // reach someone — the admin acts on it, and it shouldn't have to be found by
+  // reading prose.
+  @Column({ name: 'contact_handle', type: 'varchar', length: 120, nullable: true })
+  contactHandle: string | null;
+
   // Nova Poshta waybill, set by the admin at the moment the order is marked
   // SHIPPED — the shipped email is worthless without it.
   @Column({ name: 'tracking_number', type: 'varchar', length: 64, nullable: true })

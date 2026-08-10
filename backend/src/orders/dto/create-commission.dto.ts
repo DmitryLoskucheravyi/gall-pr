@@ -46,6 +46,13 @@ export class CreateCommissionDto {
   @Min(0)
   offeredPrice?: number;
 
+  // Telegram or Instagram — one field, because being asked for both is a
+  // small insult and which one it is is plain from what gets typed.
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  contactHandle?: string;
+
   // Where it should eventually go. Refs rather than names, for the same
   // reason checkout takes refs: the address written down is resolved from
   // Nova Poshta, never from a string the client typed.

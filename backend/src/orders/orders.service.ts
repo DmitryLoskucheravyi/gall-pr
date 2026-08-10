@@ -392,6 +392,9 @@ export class OrdersService {
         : null,
       '',
       buyer,
+      // Right under the rest of the contact details, since it's often the one
+      // the customer actually wants to be written to on.
+      order.contactHandle ? `💬 ${order.contactHandle}` : null,
       order.guestAddress ? `🏠 ${order.guestAddress}` : null,
       '',
       itemsList,
@@ -610,6 +613,7 @@ export class OrdersService {
       guestEmail: dto.email.trim(),
       guestPhone: dto.phone.trim(),
       guestAddress: null,
+      contactHandle: dto.contactHandle?.trim() || null,
       comment: dto.comment?.trim() || null,
       status: OrderStatus.PENDING,
       isCommission: true,

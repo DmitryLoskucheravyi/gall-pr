@@ -38,6 +38,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
   );
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  const [contactHandle, setContactHandle] = useState('');
   // What the work cost the first time, which is both the starting figure and
   // the floor. A repeat is at least as much work as the original, so it can
   // go up but never down.
@@ -99,6 +100,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        contactHandle: contactHandle.trim() || undefined,
         offeredPrice: Number(amount) || originalPrice,
         // Sent as a pair or not at all — a city without a branch is not an
         // address, and the server resolves the names from these refs.
@@ -184,6 +186,16 @@ export default function CommissionModal({ painting, onClose }: Props) {
                 placeholder="Телефон"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                className={styles.input}
+              />
+
+              {/* One field for both networks. Asking for a Telegram and an
+                  Instagram separately makes someone fill in a box they don't
+                  use, and which one this is is plain from what they type. */}
+              <input
+                placeholder="Telegram або Instagram — якщо зручніше там"
+                value={contactHandle}
+                onChange={(e) => setContactHandle(e.target.value)}
                 className={styles.input}
               />
 

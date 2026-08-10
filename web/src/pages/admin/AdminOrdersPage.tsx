@@ -262,6 +262,10 @@ export default function AdminOrdersPage() {
                     <p className={styles.guestLine}>
                       {order.guestName} · {order.guestPhone}
                       {order.guestEmail ? ` · ${order.guestEmail}` : ''}
+                      {/* Often the one they actually want writing to, so it
+                          sits with the rest of the contacts rather than
+                          buried in the comment. */}
+                      {order.contactHandle ? ` · ${order.contactHandle}` : ''}
                       {' · '}
                       <span className={styles.guestBadge}>Гість</span>
                       {order.guestAddress && (

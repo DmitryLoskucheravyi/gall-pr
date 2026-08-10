@@ -43,6 +43,8 @@ export type Order = {
   trackingNumber?: string | null;
   guestPhone?: string | null;
   guestAddress?: string | null;
+  // Telegram or Instagram, whichever the customer would rather be reached on.
+  contactHandle?: string | null;
   comment?: string | null;
   status: OrderStatus;
   paymentProvider: PaymentProvider;
@@ -95,6 +97,8 @@ export type CreateCommissionDto = {
   name: string;
   email: string;
   phone: string;
+  // Telegram or Instagram, whichever they prefer — one field for both.
+  contactHandle?: string;
   // What the customer is willing to pay. At least the original’s price —
   // the server enforces the floor, since only it knows what that is.
   offeredPrice?: number;
