@@ -10,7 +10,10 @@ export type PaymentProvider =
   | 'LIQPAY'
   | 'WAYFORPAY'
   | 'CASH_ON_DELIVERY'
-  | 'CARD_TRANSFER';
+  | 'CARD_TRANSFER'
+  // Commissioned repeats only: the work doesn't exist yet, so its price and
+  // timing are settled before any money moves.
+  | 'ON_AGREEMENT';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED';
 export type DeliveryMethod = 'NOVA_POSHTA';
 
@@ -46,6 +49,9 @@ export type Order = {
   paymentStatus: PaymentStatus;
   paymentProofUrl?: string | null;
   isArchived: boolean;
+  // A request to paint a sold-out work again: never touched the cart, took
+  // nothing out of stock, and its total is a starting point, not a sum due.
+  isCommission: boolean;
   deliveryMethod: DeliveryMethod;
   callMeRequested: boolean;
   novaPoshtaCity?: string | null;
@@ -79,4 +85,19 @@ export type CheckoutDto = {
   // always describe the same destination.
   novaPoshtaCityRef?: string;
   novaPoshtaWarehouseRef?: string;
+};
+
+// A request to have a sold-out work painted again. Nothing to do with the
+// cart: it names one painting, and the price and timing are settled by hand
+// afterwards, so there is no payment method to choose here.
+export type CreateCommissionDto = {
+  paintingId: number;
+  name: string;
+  email: string;
+  phone: string;
+  // Optional — someone commissioning a painting often doesn't know yet where
+  // it should go, and that gets settled along with everything else.
+  novaPoshtaCityRef?: string;
+  novaPoshtaWarehouseRef?: string;
+  comment?: string;
 };

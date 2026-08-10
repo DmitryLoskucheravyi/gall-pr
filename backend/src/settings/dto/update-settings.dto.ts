@@ -42,4 +42,8 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   supportTelegramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  instagramUrl?: string;
 }

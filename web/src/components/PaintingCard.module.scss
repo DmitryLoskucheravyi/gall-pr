@@ -27,10 +27,35 @@
   }
 }
 
-.soldBadge {
+// See GalleryCard: the edition marker sits under "Продано" as a footnote to
+// it, not beside it as a rival claim.
+.badges {
   position: absolute;
   top: $spacing-md;
   left: $spacing-md;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-xs;
+}
+
+.editionBadge {
+  border-radius: $radius-sm;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  padding: 2px $spacing-sm;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.editionRepeatable {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.soldBadge {
   border-radius: $radius-sm;
   background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(2px);

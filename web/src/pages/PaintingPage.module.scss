@@ -358,6 +358,36 @@
   }
 }
 
+// Takes the buy button's place when the work is gone and won't be repeated.
+// Not a disabled button: there's nothing to press, and a greyed-out one only
+// invites the attempt.
+.soldNotice {
+  margin-top: $spacing-lg;
+  border-radius: $radius-sm;
+  border: 1px solid var(--color-border);
+  padding: $spacing-md;
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+// A fact about the work, sitting with the other facts about it.
+.edition {
+  margin-top: $spacing-lg;
+  border-left: 2px solid var(--color-border-strong);
+  padding-left: $spacing-md;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.editionRepeatable {
+  border-left-color: var(--color-primary);
+  color: var(--color-text);
+}
+
 .interior {
   margin-top: $spacing-huge;
   padding-top: $spacing-huge;

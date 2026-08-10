@@ -7,6 +7,7 @@ export type PublicAppSettings = {
   supportEmail: string;
   supportPhone: string;
   supportTelegramUrl: string;
+  instagramUrl: string;
   // The three paintings behind the home hero. Null means "pick automatically"
   // for that slot.
   heroPaintingId1: number | null;

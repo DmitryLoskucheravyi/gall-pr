@@ -4,6 +4,7 @@ import type { Painting } from '../types/painting.types';
 import LikeButton from './ui/LikeButton';
 import styles from './GalleryCard.module.scss';
 import { cdnImage } from '../utils/imageUrl';
+import { editionLabel } from '../utils/edition';
 
 type Props = {
   painting: Painting;
@@ -24,8 +25,20 @@ export default function GalleryCard({ painting, natural = false }: Props) {
           className={natural ? styles.imageNatural : styles.image}
         />
 
+        {/* Only once it's gone. While a work is still for sale, whether it's
+            unique is a detail; the moment it isn't, whether another one can
+            be had is the only thing the viewer wants to know. */}
         {!painting.isAvailable && (
-          <span className={styles.soldBadge}>Продано</span>
+          <div className={styles.badges}>
+            <span className={styles.soldBadge}>Продано</span>
+            <span
+              className={`${styles.editionBadge} ${
+                painting.isRepeatable ? styles.editionRepeatable : ''
+              }`}
+            >
+              {editionLabel(painting.isRepeatable)}
+            </span>
+          </div>
         )}
 
         <div className={styles.overlay}>

@@ -5,11 +5,19 @@ import type {
   Order,
   OrderStatus,
   PaymentStatus,
+  CreateCommissionDto,
 } from '../types/order.types';
 
 class OrdersService {
   async checkout(dto: CheckoutDto): Promise<CheckoutResponse> {
     const response = await api.post('/orders/checkout', dto);
+    return response.data;
+  }
+
+  // Its own route, not checkout: no cart, nothing taken out of stock, and
+  // nothing owed yet.
+  async createCommission(dto: CreateCommissionDto): Promise<Order> {
+    const response = await api.post('/orders/commission', dto);
     return response.data;
   }
 

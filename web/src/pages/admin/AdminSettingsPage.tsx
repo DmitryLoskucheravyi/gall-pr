@@ -30,6 +30,7 @@ export default function AdminSettingsPage() {
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportTelegramUrl, setSupportTelegramUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
   // Three hero slots, held as one array so the picker below is a loop rather
   // than three near-identical blocks.
   const [heroPaintingIds, setHeroPaintingIds] = useState<Array<number | null>>([
@@ -65,6 +66,7 @@ export default function AdminSettingsPage() {
       setSupportEmail(settings.supportEmail);
       setSupportPhone(settings.supportPhone);
       setSupportTelegramUrl(settings.supportTelegramUrl);
+      setInstagramUrl(settings.instagramUrl);
       setHeroPaintingIds([
         settings.heroPaintingId1,
         settings.heroPaintingId2,
@@ -83,6 +85,7 @@ export default function AdminSettingsPage() {
       supportEmail: supportEmail.trim(),
       supportPhone: supportPhone.trim(),
       supportTelegramUrl: supportTelegramUrl.trim(),
+      instagramUrl: instagramUrl.trim(),
       heroPaintingId1: heroPaintingIds[0],
       heroPaintingId2: heroPaintingIds[1],
       heroPaintingId3: heroPaintingIds[2],
@@ -266,6 +269,21 @@ export default function AdminSettingsPage() {
                   placeholder="https://t.me/viktorumm_bot"
                   className={styles.input}
                 />
+              </div>
+
+              <div>
+                <label className={styles.label}>Посилання на Instagram</label>
+                <input
+                  type="url"
+                  value={instagramUrl}
+                  onChange={(e) => setInstagramUrl(e.target.value)}
+                  placeholder="https://instagram.com/viktorumm"
+                  className={styles.input}
+                />
+                <p className={styles.hint}>
+                  Показується у вікні замовлення повтору як спосіб написати
+                  напряму. Порожнє — рядок просто не зʼявиться.
+                </p>
               </div>
             </div>
           </div>

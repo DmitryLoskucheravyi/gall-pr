@@ -16,6 +16,8 @@ export type CreatePaintingDto = {
 
   isFeatured?: boolean;
 
+  isRepeatable?: boolean;
+
   techniqueId?: number;
 
   materialId?: number;

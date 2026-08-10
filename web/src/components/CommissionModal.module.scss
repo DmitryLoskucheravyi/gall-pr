@@ -1,0 +1,159 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: $spacing-lg;
+  overflow-y: auto;
+}
+
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  // Taller than the viewport on a small phone once the address fields are
+  // open, so the dialog scrolls rather than pushing its own submit button
+  // off the bottom of the screen.
+  max-height: calc(100dvh - #{$spacing-xxl});
+  overflow-y: auto;
+  border-radius: $radius-lg;
+  background-color: var(--color-surface);
+  padding: $spacing-xxl;
+  box-shadow: var(--shadow-lg);
+}
+
+.close {
+  position: absolute;
+  top: $spacing-md;
+  right: $spacing-md;
+  display: flex;
+  height: 36px;
+  width: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pill;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-background-alt);
+    color: var(--color-text);
+  }
+}
+
+.title {
+  padding-right: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.lead {
+  margin-top: $spacing-sm;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.form {
+  display: flex;
+  margin-top: $spacing-xl;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.input {
+  @include input-base;
+  // 16px or larger, or iOS Safari zooms the page on focus and the dialog
+  // never quite recovers its position.
+  font-size: 16px;
+}
+
+.textarea {
+  @include input-base;
+  min-height: 84px;
+  font-family: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.optional {
+  margin-top: $spacing-sm;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.submit {
+  @include button-primary;
+  margin-top: $spacing-sm;
+  width: 100%;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--color-danger, #b3261e);
+}
+
+// The way out, given the same weight as the form rather than tucked under it:
+// plenty of people would sooner write two lines in a direct message than fill
+// in anything, and burying this loses them.
+.alternative {
+  display: flex;
+  margin-top: $spacing-xl;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  border-top: 1px solid var(--color-border);
+  padding-top: $spacing-lg;
+}
+
+.or {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $spacing-sm;
+}
+
+.link {
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border-strong);
+  padding: $spacing-sm $spacing-lg;
+  font-size: 14px;
+  color: var(--color-text);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
+
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.note {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}

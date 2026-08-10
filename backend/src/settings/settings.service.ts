@@ -33,6 +33,7 @@ export type PublicSettings = {
   supportEmail: string;
   supportPhone: string;
   supportTelegramUrl: string;
+  instagramUrl: string;
   heroPaintingId1: number | null;
   heroPaintingId2: number | null;
   heroPaintingId3: number | null;
@@ -99,6 +100,7 @@ export class SettingsService {
         supportEmail: '',
         supportPhone: '',
         supportTelegramUrl: '',
+        instagramUrl: '',
         adminTelegramChatId: '',
         adminTelegramLinkCode: null,
         adminTelegramLinkCodeExpiresAt: null,
@@ -122,6 +124,7 @@ export class SettingsService {
       supportEmail: settings.supportEmail,
       supportPhone: settings.supportPhone,
       supportTelegramUrl: settings.supportTelegramUrl,
+      instagramUrl: settings.instagramUrl,
       heroPaintingId1: settings.heroPaintingId1,
       heroPaintingId2: settings.heroPaintingId2,
       heroPaintingId3: settings.heroPaintingId3,

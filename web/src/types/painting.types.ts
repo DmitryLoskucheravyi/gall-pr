@@ -20,6 +20,9 @@ export type Painting = {
 
   isAvailable: boolean;
   isFeatured: boolean;
+  // False means one of a kind: sold is gone. True means a sold-out work can
+  // still be commissioned as a repeat.
+  isRepeatable: boolean;
   likesCount: number;
 
   techniqueId: number | null;

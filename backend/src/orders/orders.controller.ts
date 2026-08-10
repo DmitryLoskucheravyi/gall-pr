@@ -21,6 +21,7 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { CheckoutDto } from './dto/checkout.dto';
 import { ClaimGuestOrdersDto } from './dto/claim-guest-orders.dto';
+import { CreateCommissionDto } from './dto/create-commission.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -41,6 +42,24 @@ export class OrdersController {
     @Body() dto: CheckoutDto,
   ) {
     return this.ordersService.checkout(resolveIdentity(req), dto);
+  }
+
+  // A repeat of a sold-out work. Separate from checkout on purpose: it starts
+  // from a painting rather than a cart, takes nothing out of stock, and owes
+  // nothing yet. Open to guests, like checkout — someone commissioning a
+  // painting shouldn't have to register first.
+  //
+  // Throttled harder than checkout: each one of these pings the artist's
+  // Telegram and queues a letter, and nobody legitimately commissions five
+  // paintings an hour.
+  @Throttle({ default: { ttl: 3_600_000, limit: 5 } })
+  @UseGuards(OptionalJwtAuthGuard)
+  @Post('commission')
+  createCommission(
+    @Request() req: OptionalAuthenticatedRequest,
+    @Body() dto: CreateCommissionDto,
+  ) {
+    return this.ordersService.createCommission(resolveIdentity(req), dto);
   }
 
   @UseGuards(OptionalJwtAuthGuard)

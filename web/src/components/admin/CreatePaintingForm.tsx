@@ -53,6 +53,11 @@ export default function CreatePaintingForm({
   const [year, setYear] = useState(painting?.year?.toString() ?? '');
   const [weight, setWeight] = useState(painting?.weight?.toString() ?? '0.5');
   const [isFeatured, setIsFeatured] = useState(painting?.isFeatured ?? false);
+  // Unique unless said otherwise — promising a repeat that isn't on offer is
+  // worse than staying quiet about one that is.
+  const [isRepeatable, setIsRepeatable] = useState(
+    painting?.isRepeatable ?? false,
+  );
 
   const [existingCover, setExistingCover] = useState<string | null>(
     painting?.cardImage ?? null,
@@ -317,6 +322,7 @@ export default function CreatePaintingForm({
         animation3dImage: animationImageUrl ?? undefined,
         price: Number(price),
         isFeatured,
+        isRepeatable,
         techniqueId: techniqueId ? Number(techniqueId) : undefined,
         materialId: materialId ? Number(materialId) : undefined,
         width: Number(width) || undefined,
@@ -632,6 +638,40 @@ export default function CreatePaintingForm({
             />
             Featured
           </label>
+
+          {/* Radio rather than a checkbox: these are two answers to one
+              question, and "not unique" is not the same statement as
+              "available as a repeat". Spelling both out means the choice is
+              made deliberately for every work. */}
+          <span className={styles.fileLabel}>
+            Тираж
+            <span className={styles.fileHint}>
+              {' '}
+              — визначає, що станеться зі сторінкою, коли роботу продадуть
+            </span>
+          </span>
+
+          <div className={styles.editionChoice}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="radio"
+                name="edition"
+                checked={!isRepeatable}
+                onChange={() => setIsRepeatable(false)}
+              />
+              Єдиний екземпляр — продано означає продано
+            </label>
+
+            <label className={styles.checkboxLabel}>
+              <input
+                type="radio"
+                name="edition"
+                checked={isRepeatable}
+                onChange={() => setIsRepeatable(true)}
+              />
+              Доступна для повтору — після продажу можна замовити ще одну
+            </label>
+          </div>
 
           {error && <p className={styles.error}>{error}</p>}
 

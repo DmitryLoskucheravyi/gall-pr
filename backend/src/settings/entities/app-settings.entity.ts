@@ -41,6 +41,11 @@ export class AppSettings {
   @Column({ name: 'support_telegram_url', default: '' })
   supportTelegramUrl: string;
 
+  // Offered in the commission dialog as the alternative to filling in the
+  // form — some people would simply rather write than fill anything in.
+  @Column({ name: 'instagram_url', default: '' })
+  instagramUrl: string;
+
   // Telegram chat id the bot sends admin notifications to (new orders, payment
   // proofs, new support messages). Set exclusively via the "Прив'язати бота"
   // deep-link flow on this settings page — never entered manually, and the

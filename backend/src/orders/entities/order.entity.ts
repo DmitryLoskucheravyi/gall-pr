@@ -25,6 +25,11 @@ export enum PaymentProvider {
   WAYFORPAY = 'WAYFORPAY',
   CASH_ON_DELIVERY = 'CASH_ON_DELIVERY',
   CARD_TRANSFER = 'CARD_TRANSFER',
+  // Commissioned repeats only. The work doesn't exist yet, so its price and
+  // timing are settled between the artist and the customer before any money
+  // moves — there's nothing to charge at the moment the order is placed, and
+  // saying "card transfer" would be a promise nobody made.
+  ON_AGREEMENT = 'ON_AGREEMENT',
 }
 
 export enum PaymentStatus {
@@ -111,6 +116,14 @@ export class Order {
   // POST /orders/:id/payment-proof; forwarded to the admin's Telegram on upload.
   @Column({ name: 'payment_proof_url', type: 'varchar', nullable: true })
   paymentProofUrl: string | null;
+
+  // A request to paint a sold-out work again, rather than a purchase of one
+  // that exists. It shares this table because it is an order in every way the
+  // admin cares about — a customer, an address, a status, a thread of emails —
+  // but it never touched the cart, took nothing out of stock, and its price is
+  // a starting point rather than a total.
+  @Column({ name: 'is_commission', default: false })
+  isCommission: boolean;
 
   // Soft-hide for the admin's default order list. Only settable once an
   // order reaches COMPLETED — the order itself is never deleted, it just

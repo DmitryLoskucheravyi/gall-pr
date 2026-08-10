@@ -19,6 +19,7 @@ import { OrderItem } from './entities/order-item.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Painting } from '../paintings/entities/painting.entity';
 import { CheckoutDto } from './dto/checkout.dto';
+import { CreateCommissionDto } from './dto/create-commission.dto';
 import { Identity } from '../common/identity.util';
 import { PaymentsService } from '../payments/payments.service';
 import { NovaPoshtaService } from '../nova-poshta/nova-poshta.service';
@@ -34,6 +35,7 @@ const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
   [PaymentProvider.WAYFORPAY]: 'WayForPay',
   [PaymentProvider.CASH_ON_DELIVERY]: 'Оплата при отриманні',
   [PaymentProvider.CARD_TRANSFER]: 'Переказ на карту',
+  [PaymentProvider.ON_AGREEMENT]: 'За домовленістю',
 };
 
 const ORDER_STATUS_MESSAGE: Record<OrderStatus, string> = {
@@ -364,8 +366,16 @@ export class OrdersService {
         ? `Нова пошта, ${order.novaPoshtaCity ?? '—'} — ${order.novaPoshtaWarehouse ?? '—'}`
         : order.deliveryMethod;
 
+    // A commission needs telling apart at a glance: nothing has been taken
+    // out of stock, no money is due yet, and the first move is the artist's —
+    // reading it as an ordinary sale would be the wrong response entirely.
     const lines = [
-      `🛒 Нове замовлення №${order.id}`,
+      order.isCommission
+        ? `🎨 Замовлення ПОВТОРУ роботи №${order.id}`
+        : `🛒 Нове замовлення №${order.id}`,
+      order.isCommission
+        ? 'Робота ще не написана — узгодьте ціну й терміни з клієнтом.'
+        : null,
       '',
       buyer,
       order.guestAddress ? `🏠 ${order.guestAddress}` : null,
@@ -381,7 +391,9 @@ export class OrdersService {
       order.callMeRequested ? '☎️ Просив(ла) зателефонувати' : null,
       order.comment ? `Коментар: ${order.comment}` : null,
       '',
-      `Сума: ${Number(order.total).toLocaleString('uk-UA')} ₴`,
+      order.isCommission
+        ? `Орієнтовно: ${Number(order.total).toLocaleString('uk-UA')} ₴ (ціна оригіналу)`
+        : `Сума: ${Number(order.total).toLocaleString('uk-UA')} ₴`,
     ].filter((line): line is string => line !== null);
 
     await this.telegramService.notifyAdmin(lines.join('\n'));
@@ -515,6 +527,106 @@ export class OrdersService {
     } catch (error) {
       this.logger.warn(`Failed to remove temp upload ${file.path}`, error);
     }
+  }
+
+  // A request to paint a sold-out work again.
+  //
+  // Everything checkout does about stock is deliberately absent: there is no
+  // cart to empty, nothing to reserve, and nothing to decrement — the painting
+  // being ordered doesn't exist yet. What's stored is a conversation waiting to
+  // happen, with a customer, an address and a price to start from.
+  async createCommission(
+    identity: Identity,
+    dto: CreateCommissionDto,
+  ): Promise<Order> {
+    const painting = await this.dataSource
+      .getRepository(Painting)
+      .findOne({ where: { id: dto.paintingId } });
+
+    if (!painting) {
+      throw new NotFoundException('Painting not found');
+    }
+
+    // Checked server-side rather than trusted from the page that offered the
+    // button: the flag is what makes the offer real.
+    if (!painting.isRepeatable) {
+      throw new BadRequestException('Ця робота не доступна для повтору');
+    }
+
+    const isGuest = !('userId' in identity);
+
+    let deliveryAddress: { city: string; warehouse: string } | null = null;
+
+    // Optional here, unlike checkout. Someone commissioning a painting often
+    // doesn't know yet where it should go — that gets settled along with the
+    // price and the timing.
+    if (dto.novaPoshtaCityRef?.trim() && dto.novaPoshtaWarehouseRef?.trim()) {
+      const [city, warehouse] = await Promise.all([
+        this.novaPoshtaService.getCityByRef(dto.novaPoshtaCityRef),
+        this.novaPoshtaService.getWarehouseByRef(
+          dto.novaPoshtaCityRef,
+          dto.novaPoshtaWarehouseRef,
+        ),
+      ]);
+
+      if (city && warehouse) {
+        deliveryAddress = { city: city.name, warehouse: warehouse.name };
+      }
+    }
+
+    const order = this.ordersRepository.create({
+      userId: isGuest ? null : (identity as { userId: number }).userId,
+      guestToken: isGuest ? (identity as { guestToken: string }).guestToken : null,
+      // Stored for every commission, account or not: these are the details
+      // the customer gave for this particular conversation.
+      guestName: dto.name.trim(),
+      guestEmail: dto.email.trim(),
+      guestPhone: dto.phone.trim(),
+      guestAddress: null,
+      comment: dto.comment?.trim() || null,
+      status: OrderStatus.PENDING,
+      isCommission: true,
+      paymentProvider: PaymentProvider.ON_AGREEMENT,
+      deliveryMethod: DeliveryMethod.NOVA_POSHTA,
+      novaPoshtaCity: deliveryAddress?.city ?? null,
+      novaPoshtaWarehouse: deliveryAddress?.warehouse ?? null,
+      deliveryCost: 0,
+      codFee: 0,
+      // The listed price of the original, as a starting point. A repeat is
+      // quoted properly once the artist and the customer have talked.
+      total: Number(painting.price),
+      items: [
+        this.ordersRepository.manager.create(OrderItem, {
+          paintingId: painting.id,
+          quantity: 1,
+          price: painting.price,
+        }),
+      ],
+    });
+
+    const saved = await this.ordersRepository.save(order);
+
+    this.notifyAdminOfNewOrder(saved.id).catch(() => {});
+    this.emailCommissionPlaced(saved.id, painting.title).catch(() => {});
+
+    return saved;
+  }
+
+  private async emailCommissionPlaced(orderId: number, title: string) {
+    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    if (!order) return;
+
+    const recipient = await this.recipientOf(order);
+    if (!recipient) return;
+
+    await this.mailService.sendCommissionPlaced(recipient.email, {
+      id: order.id,
+      customerName: recipient.name,
+      paintingTitle: title,
+      referencePrice: Number(order.total),
+      deliveryPlace: this.deliveryPlaceOf(order),
+      comment: order.comment,
+    });
   }
 
   // Signing in takes the guest's orders with it, the same way the cart and the

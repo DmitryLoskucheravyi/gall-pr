@@ -267,6 +267,72 @@ export class MailService {
     );
   }
 
+  // The commission acknowledgement. Deliberately not shaped like the receipt:
+  // nothing has been bought, no total is owed and no payment link would mean
+  // anything yet. What the customer needs to know is that a person read it,
+  // what happens next, and roughly what it will cost — so the price is named
+  // as the original's, not as a sum due.
+  async sendCommissionPlaced(
+    to: string,
+    commission: {
+      id: number;
+      customerName?: string | null;
+      paintingTitle: string;
+      referencePrice: number;
+      deliveryPlace?: string | null;
+      comment?: string | null;
+    },
+  ): Promise<void> {
+    const heading = commission.customerName
+      ? `Дякуємо, ${commission.customerName}!`
+      : 'Дякуємо за звернення!';
+
+    const body = `
+      <p style="font-size:15px;line-height:1.7;color:${INK};">
+        Ми отримали ваше замовлення на повтор роботи
+        <strong>«${escapeHtml(commission.paintingTitle)}»</strong> (№${commission.id}).
+      </p>
+      <div style="margin:24px 0;padding:16px;background:${PAPER};">
+        <div style="font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};">Що далі</div>
+        <div style="margin-top:10px;font-size:14px;line-height:1.9;color:${INK};">
+          • Ми звʼяжемося з вами, щоб узгодити розмір, терміни й точну вартість<br/>
+          • Кожен повтор пишеться вручну, тож він буде близьким до оригіналу, але не тотожним<br/>
+          • Оплата — після того, як домовимось про все решта
+        </div>
+      </div>
+      <p style="font-size:14px;line-height:1.7;color:${MUTED};">
+        Орієнтир за ціною — вартість оригіналу, ${money(commission.referencePrice)}.
+        ${commission.deliveryPlace ? `<br/>Доставка: ${escapeHtml(commission.deliveryPlace)}` : ''}
+        ${commission.comment ? `<br/>Ваші побажання: ${escapeHtml(commission.comment)}` : ''}
+      </p>`;
+
+    const text = [
+      heading,
+      '',
+      `Ми отримали ваше замовлення на повтор роботи «${commission.paintingTitle}» (№${commission.id}).`,
+      '',
+      'Що далі:',
+      '• Ми звʼяжемося з вами, щоб узгодити розмір, терміни й точну вартість',
+      '• Кожен повтор пишеться вручну — він буде близьким до оригіналу, але не тотожним',
+      '• Оплата — після того, як домовимось про все решта',
+      '',
+      `Орієнтир за ціною — вартість оригіналу, ${money(commission.referencePrice)}.`,
+      commission.deliveryPlace ? `Доставка: ${commission.deliveryPlace}` : '',
+      commission.comment ? `Ваші побажання: ${commission.comment}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    await this.send(
+      MailKind.COMMISSION_PLACED,
+      to,
+      `Замовлення повтору «${commission.paintingTitle}» — ${BRAND}`,
+      text,
+      this.layout(escapeHtml(heading), body),
+      commission.id,
+    );
+  }
+
   // 2. Closes the most anxious gap in the card-transfer path: money has left
   // the customer's account and nothing has acknowledged it yet.
   async sendPaymentProofReceived(

@@ -41,6 +41,7 @@ const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
   WAYFORPAY: 'WayForPay',
   CASH_ON_DELIVERY: 'Оплата при отриманні',
   CARD_TRANSFER: 'Переказ на карту',
+  ON_AGREEMENT: 'За домовленістю',
 };
 
 const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
@@ -237,7 +238,14 @@ export default function AdminOrdersPage() {
               <div key={order.id} className={styles.order}>
                 <div className={styles.orderHeader}>
                   <span className={styles.orderNumber}>
-                    Замовлення №{order.id}
+                    {/* A commission needs telling apart at a glance: nothing
+                        has left stock, nothing is owed yet, and the first move
+                        is the artist's. Reading it as an ordinary sale would
+                        be the wrong response entirely. */}
+                    {order.isCommission ? 'Повтор' : 'Замовлення'} №{order.id}
+                    {order.isCommission && (
+                      <span className={styles.commissionTag}>на замовлення</span>
+                    )}
                   </span>
                   <span className={styles.orderTotal}>
                     {Number(order.total).toLocaleString()} ₴

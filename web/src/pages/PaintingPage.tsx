@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import PaintingCard from '../components/PaintingCard';
 import Painting3DViewer from '../components/Painting3DViewer';
 import InteriorCarousel from '../components/InteriorCarousel';
+import CommissionModal from '../components/CommissionModal';
 import LikeButton from '../components/ui/LikeButton';
 import Skeleton from '../components/ui/Skeleton';
 import { usePainting } from '../hooks/queries/usePainting';
@@ -49,6 +50,7 @@ export default function PaintingPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDescOpen, setIsDescOpen] = useState(true);
   const [isCharOpen, setIsCharOpen] = useState(true);
+  const [commissionOpen, setCommissionOpen] = useState(false);
 
   // The slider is a real horizontal scroller rather than one image swapped in
   // place, so a phone can swipe through the shots with the momentum and
@@ -410,13 +412,29 @@ export default function PaintingPage() {
 
           <p className={styles.price}>{price.toLocaleString()} ₴</p>
 
-          <button
-            onClick={() => addToCart.mutate(painting)}
-            disabled={!painting.isAvailable}
-            className={styles.buyButton}
-          >
-            {painting.isAvailable ? 'Купити' : 'Продано'}
-          </button>
+          {/* Three states, not two. In stock is always a purchase — buying the
+              work that exists beats commissioning a copy of it. Sold splits on
+              whether the artist will paint it again: an offer to order one, or
+              a plain statement that it's gone. */}
+          {painting.isAvailable ? (
+            <button
+              onClick={() => addToCart.mutate(painting)}
+              className={styles.buyButton}
+            >
+              Купити
+            </button>
+          ) : painting.isRepeatable ? (
+            <button
+              onClick={() => setCommissionOpen(true)}
+              className={styles.buyButton}
+            >
+              Замовити
+            </button>
+          ) : (
+            // Not a disabled button: there is nothing to press, and a greyed
+            // one invites the attempt anyway.
+            <p className={styles.soldNotice}>Продано</p>
+          )}
 
           <SectionHeader
             title="Опис"
@@ -454,6 +472,18 @@ export default function PaintingPage() {
               )}
             </dl>
           )}
+
+          {/* Under the characteristics, because that's what it is: a fact
+              about the work, alongside its size and technique. */}
+          <p
+            className={`${styles.edition} ${
+              painting.isRepeatable ? styles.editionRepeatable : ''
+            }`}
+          >
+            {painting.isRepeatable
+              ? 'Доступна для повтору — автор може написати її знову на замовлення'
+              : 'Єдиний екземпляр — існує в одному примірнику'}
+          </p>
         </div>
       </div>
 
@@ -486,6 +516,13 @@ export default function PaintingPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {commissionOpen && (
+        <CommissionModal
+          painting={painting}
+          onClose={() => setCommissionOpen(false)}
+        />
       )}
 
       {lightboxOpen && (

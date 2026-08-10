@@ -351,3 +351,18 @@
   font-size: 14px;
   color: var(--color-text-secondary);
 }
+
+// Marks an order that is a request to paint something, not a sale of
+// something. Nothing has left stock and nothing is owed yet, so it wants
+// reading differently from the row above it.
+.commissionTag {
+  margin-left: $spacing-sm;
+  border-radius: $radius-pill;
+  background-color: var(--color-primary);
+  padding: 2px $spacing-sm;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-on-primary);
+}

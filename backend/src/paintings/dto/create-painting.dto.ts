@@ -50,6 +50,13 @@ export class CreatePaintingDto {
   @IsBoolean()
   isFeatured?: boolean;
 
+  // One of a kind unless the admin says otherwise — the safer default for a
+  // gallery, since promising a repeat that isn't on offer is worse than not
+  // mentioning one that is.
+  @IsOptional()
+  @IsBoolean()
+  isRepeatable?: boolean;
+
   @IsOptional()
   @IsInt()
   techniqueId?: number;

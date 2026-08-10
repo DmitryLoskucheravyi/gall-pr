@@ -28,6 +28,16 @@ export class Painting {
   @Column('simple-json')
   images: string[];
 
+  // Whether the artist will paint this one again to order.
+  //
+  // False — the default — means the work is one of a kind: when it's sold,
+  // it's gone. True means a sold-out work can still be commissioned as a
+  // repeat, which is a different transaction entirely (nothing in stock, no
+  // cart, price and timing agreed with the customer), so it gets its own
+  // route rather than pretending to be a purchase.
+  @Column({ name: 'is_repeatable', default: false })
+  isRepeatable: boolean;
+
   // Photographs of this work hanging in a room, set by the admin when the
   // painting is created or edited. Not a self-service preview the visitor
   // composes — these are chosen shots, so the room, the light and the scale

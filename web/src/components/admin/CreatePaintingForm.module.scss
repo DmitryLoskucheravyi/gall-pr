@@ -47,6 +47,16 @@
 
 // Sits inline after a label: says what the field expects, without competing
 // with it for weight.
+// Two answers to one question, stacked so neither reads as the default.
+.editionChoice {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  border-radius: $radius-sm;
+  border: 1px solid var(--color-border);
+  padding: $spacing-md;
+}
+
 .fileHint {
   font-size: 12px;
   font-weight: 400;

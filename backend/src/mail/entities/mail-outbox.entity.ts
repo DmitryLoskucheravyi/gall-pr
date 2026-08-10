@@ -24,6 +24,9 @@ export enum MailKind {
   ORDER_SHIPPED = 'order_shipped',
   ORDER_COMPLETED = 'order_completed',
   ORDER_CANCELLED = 'order_cancelled',
+  // A request to paint a sold-out work again. Not a receipt — nothing has
+  // been bought yet — so it says what happens next instead of what was paid.
+  COMMISSION_PLACED = 'commission_placed',
   // Hand-sent only: the catch-all for when something went wrong in a way no
   // status covers.
   ORDER_APOLOGY = 'order_apology',

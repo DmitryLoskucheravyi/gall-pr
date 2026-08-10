@@ -5,6 +5,7 @@ import { useAuthorName } from '../hooks/queries/useSettings';
 import LikeButton from './ui/LikeButton';
 import styles from './PaintingCard.module.scss';
 import { cdnImage } from '../utils/imageUrl';
+import { editionLabel } from '../utils/edition';
 
 type Props = {
   painting: Painting;
@@ -38,7 +39,16 @@ export default function PaintingCard({
             className={styles.image}
           />
           {!painting.isAvailable && (
-            <span className={styles.soldBadge}>Продано</span>
+            <div className={styles.badges}>
+              <span className={styles.soldBadge}>Продано</span>
+              <span
+                className={`${styles.editionBadge} ${
+                  painting.isRepeatable ? styles.editionRepeatable : ''
+                }`}
+              >
+                {editionLabel(painting.isRepeatable)}
+              </span>
+            </div>
           )}
         </Link>
 
