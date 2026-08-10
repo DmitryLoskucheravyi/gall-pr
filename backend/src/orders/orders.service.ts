@@ -46,6 +46,20 @@ const ORDER_STATUS_MESSAGE: Record<OrderStatus, string> = {
   [OrderStatus.COMPLETED]: 'виконано. Дякуємо за покупку!',
 };
 
+// Someone offering more than the asking price is saying something — a rush, a
+// larger canvas, or simply that they want it — and it would be a shame for
+// that to arrive looking like any other number. Below the original it can't
+// go; equal to it, there is nothing to remark on.
+function commissionAmountLine(order: Order): string {
+  const offered = Number(order.total);
+  const original = Number(order.items?.[0]?.price ?? offered);
+  const money = (value: number) => `${value.toLocaleString('uk-UA')} ₴`;
+
+  return Math.round(offered * 100) > Math.round(original * 100)
+    ? `💰 Клієнт пропонує ${money(offered)} — більше за оригінал (${money(original)})`
+    : `Орієнтовно: ${money(offered)} (ціна оригіналу)`;
+}
+
 // Money is added up in integer cents, never floats. Prices come out of MySQL
 // as DECIMAL strings, and 0.1 + 0.2 is as untrue here as anywhere else.
 function toCents(value: number | string): number {
@@ -392,7 +406,7 @@ export class OrdersService {
       order.comment ? `Коментар: ${order.comment}` : null,
       '',
       order.isCommission
-        ? `Орієнтовно: ${Number(order.total).toLocaleString('uk-UA')} ₴ (ціна оригіналу)`
+        ? commissionAmountLine(order)
         : `Сума: ${Number(order.total).toLocaleString('uk-UA')} ₴`,
     ].filter((line): line is string => line !== null);
 
@@ -553,6 +567,19 @@ export class OrdersService {
       throw new BadRequestException('Ця робота не доступна для повтору');
     }
 
+    // Compared in whole cents, like every other money comparison here: the
+    // price is a DECIMAL that arrives as a string, and a float round-trip is
+    // how an offer of exactly the asking price ends up a hundredth short and
+    // rejected.
+    const originalPrice = Number(painting.price);
+    const offeredPrice = dto.offeredPrice ?? originalPrice;
+
+    if (Math.round(offeredPrice * 100) < Math.round(originalPrice * 100)) {
+      throw new BadRequestException(
+        `Сума не може бути меншою за вартість оригіналу — ${originalPrice.toLocaleString('uk-UA')} ₴`,
+      );
+    }
+
     const isGuest = !('userId' in identity);
 
     let deliveryAddress: { city: string; warehouse: string } | null = null;
@@ -592,13 +619,17 @@ export class OrdersService {
       novaPoshtaWarehouse: deliveryAddress?.warehouse ?? null,
       deliveryCost: 0,
       codFee: 0,
-      // The listed price of the original, as a starting point. A repeat is
-      // quoted properly once the artist and the customer have talked.
-      total: Number(painting.price),
+      // What the customer put forward, which is the original's price unless
+      // they chose to offer more. Still a starting point either way — the
+      // repeat is quoted properly once the artist and the customer have
+      // talked.
+      total: offeredPrice,
       items: [
         this.ordersRepository.manager.create(OrderItem, {
           paintingId: painting.id,
           quantity: 1,
+          // The original's price, kept alongside the offer so the difference
+          // between the two survives on the record.
           price: painting.price,
         }),
       ],
@@ -607,12 +638,18 @@ export class OrdersService {
     const saved = await this.ordersRepository.save(order);
 
     this.notifyAdminOfNewOrder(saved.id).catch(() => {});
-    this.emailCommissionPlaced(saved.id, painting.title).catch(() => {});
+    this.emailCommissionPlaced(saved.id, painting.title, originalPrice).catch(
+      () => {},
+    );
 
     return saved;
   }
 
-  private async emailCommissionPlaced(orderId: number, title: string) {
+  private async emailCommissionPlaced(
+    orderId: number,
+    title: string,
+    originalPrice: number,
+  ) {
     const order = await this.ordersRepository.findOne({ where: { id: orderId } });
     if (!order) return;
 
@@ -623,7 +660,8 @@ export class OrdersService {
       id: order.id,
       customerName: recipient.name,
       paintingTitle: title,
-      referencePrice: Number(order.total),
+      originalPrice,
+      offeredPrice: Number(order.total),
       deliveryPlace: this.deliveryPlaceOf(order),
       comment: order.comment,
     });

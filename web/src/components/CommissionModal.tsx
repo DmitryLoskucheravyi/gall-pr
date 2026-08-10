@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { Painting } from '../types/painting.types';
 import type { NovaPoshtaOption } from '../types/novaPoshta.types';
@@ -38,6 +38,12 @@ export default function CommissionModal({ painting, onClose }: Props) {
   );
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  // What the work cost the first time, which is both the starting figure and
+  // the floor. A repeat is at least as much work as the original, so it can
+  // go up but never down.
+  const originalPrice = Number(painting.price);
+  const [amount, setAmount] = useState(String(originalPrice));
+
   const [city, setCity] = useState<NovaPoshtaOption | null>(null);
   const [warehouseRef, setWarehouseRef] = useState('');
   const [comment, setComment] = useState('');
@@ -46,7 +52,34 @@ export default function CommissionModal({ painting, onClose }: Props) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  // The panel is much shorter after sending than the form was, and whatever
+  // the scroll position was for the form is meaningless for it — left alone,
+  // the thank-you opens part-way down with its heading above the screen.
+  useEffect(() => {
+    if (sent) backdropRef.current?.scrollTo({ top: 0 });
+  }, [sent]);
+
+  // A dialog over a page that still scrolls underneath is a phone-sized
+  // annoyance: the background slides away behind the panel at the first
+  // stray touch.
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
   const { data: warehouses = [] } = useNovaPoshtaWarehouses(city?.ref ?? null);
+
+  // Blocks the submit and shows why, rather than letting the request go and
+  // come back rejected — the server enforces the same floor, but finding out
+  // after a round trip is a worse way to learn it.
+  const belowOriginal =
+    amount.trim() !== '' && Number(amount) < originalPrice;
 
   const telegramUrl = safeExternalUrl(settings?.supportTelegramUrl);
   const instagramUrl = safeExternalUrl(settings?.instagramUrl);
@@ -54,6 +87,9 @@ export default function CommissionModal({ painting, onClose }: Props) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (belowOriginal) return;
+
     setError(null);
     setSending(true);
 
@@ -63,6 +99,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        offeredPrice: Number(amount) || originalPrice,
         // Sent as a pair or not at all — a city without a branch is not an
         // address, and the server resolves the names from these refs.
         ...(city && warehouseRef
@@ -83,6 +120,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
 
   return (
     <div
+      ref={backdropRef}
       className={styles.backdrop}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -149,6 +187,39 @@ export default function CommissionModal({ painting, onClose }: Props) {
                 className={styles.input}
               />
 
+              <span className={styles.optional}>Сума</span>
+
+              <div className={styles.amountRow}>
+                <input
+                  required
+                  type="number"
+                  inputMode="numeric"
+                  min={originalPrice}
+                  step={100}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className={`${styles.input} ${
+                    belowOriginal ? styles.inputInvalid : ''
+                  }`}
+                />
+                <span className={styles.currency}>₴</span>
+              </div>
+
+              <p className={styles.amountHint}>
+                {belowOriginal ? (
+                  <span className={styles.error}>
+                    Не менше за вартість оригіналу —{' '}
+                    {originalPrice.toLocaleString('uk-UA')} ₴
+                  </span>
+                ) : (
+                  <>
+                    Оригінал коштував{' '}
+                    <strong>{originalPrice.toLocaleString('uk-UA')} ₴</strong>.
+                    Можна запропонувати більше — це прискорює чергу.
+                  </>
+                )}
+              </p>
+
               <span className={styles.optional}>
                 Доставка — якщо вже знаєте, куди
               </span>
@@ -187,7 +258,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
 
               <button
                 type="submit"
-                disabled={sending}
+                disabled={sending || belowOriginal}
                 className={styles.submit}
               >
                 {sending ? 'Надсилаємо…' : 'Надіслати замовлення'}

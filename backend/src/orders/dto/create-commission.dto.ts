@@ -1,9 +1,11 @@
 import {
   IsEmail,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -30,6 +32,19 @@ export class CreateCommissionDto {
   @MinLength(6)
   @MaxLength(32)
   phone: string;
+
+  // What the customer is willing to pay. Prefilled with the original's price
+  // and allowed to go up but never down — a repeat is at least as much work as
+  // the first one, and offering more is how someone signals a rush or a
+  // larger canvas before anyone has spoken.
+  //
+  // The floor can't live here: it's the painting's own price, which this DTO
+  // has no way of knowing. OrdersService checks it once the painting is
+  // loaded.
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  offeredPrice?: number;
 
   // Where it should eventually go. Refs rather than names, for the same
   // reason checkout takes refs: the address written down is resolved from

@@ -95,6 +95,9 @@ export type CreateCommissionDto = {
   name: string;
   email: string;
   phone: string;
+  // What the customer is willing to pay. At least the original’s price —
+  // the server enforces the floor, since only it knows what that is.
+  offeredPrice?: number;
   // Optional — someone commissioning a painting often doesn't know yet where
   // it should go, and that gets settled along with everything else.
   novaPoshtaCityRef?: string;

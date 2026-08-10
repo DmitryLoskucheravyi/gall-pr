@@ -278,11 +278,22 @@ export class MailService {
       id: number;
       customerName?: string | null;
       paintingTitle: string;
-      referencePrice: number;
+      originalPrice: number;
+      offeredPrice: number;
       deliveryPlace?: string | null;
       comment?: string | null;
     },
   ): Promise<void> {
+    // Reading back their own number matters more than the reference one: it's
+    // what they decided, and seeing it repeated is how they know it arrived
+    // intact. The original is only worth naming when the two differ.
+    const offeredMore =
+      Math.round(commission.offeredPrice * 100) >
+      Math.round(commission.originalPrice * 100);
+
+    const priceLine = offeredMore
+      ? `Ваша пропозиція — ${money(commission.offeredPrice)} (вартість оригіналу ${money(commission.originalPrice)}).`
+      : `Орієнтир за ціною — вартість оригіналу, ${money(commission.originalPrice)}.`;
     const heading = commission.customerName
       ? `Дякуємо, ${commission.customerName}!`
       : 'Дякуємо за звернення!';
@@ -301,7 +312,7 @@ export class MailService {
         </div>
       </div>
       <p style="font-size:14px;line-height:1.7;color:${MUTED};">
-        Орієнтир за ціною — вартість оригіналу, ${money(commission.referencePrice)}.
+        ${priceLine}
         ${commission.deliveryPlace ? `<br/>Доставка: ${escapeHtml(commission.deliveryPlace)}` : ''}
         ${commission.comment ? `<br/>Ваші побажання: ${escapeHtml(commission.comment)}` : ''}
       </p>`;
@@ -316,7 +327,7 @@ export class MailService {
       '• Кожен повтор пишеться вручну — він буде близьким до оригіналу, але не тотожним',
       '• Оплата — після того, як домовимось про все решта',
       '',
-      `Орієнтир за ціною — вартість оригіналу, ${money(commission.referencePrice)}.`,
+      priceLine,
       commission.deliveryPlace ? `Доставка: ${commission.deliveryPlace}` : '',
       commission.comment ? `Ваші побажання: ${commission.comment}` : '',
     ]

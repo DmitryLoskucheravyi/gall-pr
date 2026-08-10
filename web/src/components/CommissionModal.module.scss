@@ -1,24 +1,35 @@
+// The only thing that scrolls. It used to scroll and so did the dialog inside
+// it, which is what left the heading above the top of the screen and
+// unreachable: two nested scrollers, one of them centred, and no way to tell
+// which had the offset.
+//
+// align-items: flex-start with auto vertical margins on the dialog is the
+// combination that behaves. Centring with align-items: center pushes the top
+// of an over-tall item outside the scrollable area, where nothing can bring it
+// back; auto margins centre it just the same while leaving it reachable.
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: 60;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.6);
   padding: $spacing-lg;
+  // Clear of the home indicator, and of the bottom bar this sits over.
+  padding-bottom: max(#{$spacing-lg}, env(safe-area-inset-bottom));
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
+// Height comes from the content and nothing else. Giving it a max-height of
+// its own is what produced the blank space under a short panel: the box stayed
+// viewport-sized while what was in it had shrunk.
 .dialog {
   position: relative;
   width: 100%;
   max-width: 460px;
-  // Taller than the viewport on a small phone once the address fields are
-  // open, so the dialog scrolls rather than pushing its own submit button
-  // off the bottom of the screen.
-  max-height: calc(100dvh - #{$spacing-xxl});
-  overflow-y: auto;
+  margin: auto 0;
   border-radius: $radius-lg;
   background-color: var(--color-surface);
   padding: $spacing-xxl;
@@ -155,5 +166,32 @@
 .note {
   font-size: 14px;
   line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+
+// The amount and its currency sit on one line, so the field reads as money
+// rather than as any other number.
+.amountRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.amountRow .input {
+  flex: 1;
+}
+
+.currency {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+}
+
+.inputInvalid {
+  border-color: var(--color-danger, #b3261e);
+}
+
+.amountHint {
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--color-text-secondary);
 }
