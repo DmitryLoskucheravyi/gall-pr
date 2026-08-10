@@ -45,9 +45,17 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
-# Multer's upload staging area (see common/upload.options.ts). Files here are
-# in flight to Cloudinary and deleted straight after; none of it belongs in git.
-/temp
+# /temp does double duty: multer stages uploads here on their way to Cloudinary,
+# and it is also where this project keeps its schema migrations. So ignore the
+# contents but keep the .sql files — the uploads are transient and none of
+# git's business, while the migrations are the record of how the database got
+# to be the shape it is.
+#
+# Ignoring the whole directory, as this did at first, quietly dropped three new
+# migrations out of the repository while the fourteen already committed stayed
+# behind and made it look fine.
+/temp/*
+!/temp/*.sql
 
 # Local dev TLS certificate, regenerate with `node generate-cert.js`. Self-signed
 # and only used to get a secure context when serving over a LAN IP — but a
