@@ -7,6 +7,7 @@ import { randomInt } from 'crypto';
 import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
 import { TelegramPendingLink } from './entities/telegram-pending-link.entity';
+import { Painting } from '../paintings/entities/painting.entity';
 
 const PENDING_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
 
@@ -30,6 +31,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly usersService: UsersService,
     @InjectRepository(TelegramPendingLink)
     private readonly pendingLinkRepository: Repository<TelegramPendingLink>,
+    @InjectRepository(Painting)
+    private readonly paintingsRepository: Repository<Painting>,
   ) {}
 
   async onModuleInit() {
@@ -59,6 +62,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     bot.command('start', async (ctx) => {
       const payload = ctx.match?.toString().trim();
       const chatId = String(ctx.chat.id);
+
+      // Someone who followed "write in Telegram" from the repeat dialog. The
+      // painting travels in the deep link, so neither of them has to type out
+      // which one it was — the visitor presses Start and the artist gets a
+      // message naming the work and whom to answer.
+      const repeat = /^repeat_(\d+)$/.exec(payload ?? '');
+      if (repeat) {
+        await this.handleRepeatEnquiry(ctx, Number(repeat[1]));
+        return;
+      }
 
       if (!payload) {
         // No linking code in the /start payload — the user opened the bot
@@ -149,6 +162,52 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  // The repeat enquiry, arriving through the deep link in the commission
+  // dialog rather than through the form.
+  //
+  // The whole point is that neither side has to explain anything: the visitor
+  // presses one button, and the artist gets a message saying which work and
+  // whom to answer. Whether that's possible turns on the @username — an admin
+  // can open a chat from one, and can't from a numeric id — so when it's
+  // missing the message says so plainly instead of leaving her to discover it.
+  private async handleRepeatEnquiry(
+    ctx: { chat: { id: number }; from?: { first_name: string; last_name?: string; username?: string }; reply: (text: string) => Promise<unknown> },
+    paintingId: number,
+  ) {
+    const painting = await this.paintingsRepository.findOne({
+      where: { id: paintingId },
+    });
+
+    const title = painting?.title ?? `#${paintingId}`;
+    const from = ctx.from;
+    const name = `${from?.first_name ?? ''} ${from?.last_name ?? ''}`.trim() || 'Без імені';
+
+    // Anything this chat writes from here reaches the artist, so the promise
+    // above survives the customer answering it. Without this the bot would
+    // meet their next message with "type /support first" — an odd thing to
+    // say to someone it has just told it would be in touch.
+    this.supportModeChats.add(String(ctx.chat.id));
+
+    await ctx.reply(
+      painting
+        ? `Ви цікавитесь повтором роботи «${title}».\n\nМи вже передали це автору — вона невдовзі з вами звʼяжеться.`
+        : 'Ви цікавитесь повтором роботи.\n\nМи вже передали це автору — вона невдовзі з вами звʼяжеться.',
+    );
+
+    await this.notifyAdminWithImage(
+      [
+        '🎨 Запит на повтор через Telegram',
+        '',
+        `Робота: «${title}»`,
+        `Від: ${name}`,
+        from?.username
+          ? `Написати: @${from.username}`
+          : `⚠️ Без @username — відповісти можна лише через цей бот (chat id ${ctx.chat.id})`,
+      ].join('\n'),
+      painting?.cardImage,
+    );
+  }
+
   // Prefer the linked site account (real name/email/phone) when we have one;
   // otherwise fall back to whatever Telegram itself hands us for this chat.
   private async buildContactLine(
@@ -179,6 +238,43 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (!chatId) return;
 
     await this.send(chatId, text, photo);
+  }
+
+  // Same as notifyAdmin, but takes the image as a URL and fetches it here.
+  //
+  // A repeat enquiry is about one specific painting, and the artist shouldn't
+  // have to recognise it from a title alone. The bytes are pushed rather than
+  // the URL handed over for the reason noted on send(): Telegram fetching a
+  // Cloudinary URL itself is unreliable.
+  //
+  // A picture that won't load must never cost the message — the whole point of
+  // the notification is the enquiry, not the photograph.
+  async notifyAdminWithImage(text: string, imageUrl?: string | null) {
+    await this.notifyAdmin(text, await this.fetchImage(imageUrl));
+  }
+
+  private async fetchImage(imageUrl?: string | null): Promise<Buffer | undefined> {
+    if (!imageUrl) return undefined;
+
+    try {
+      // A downsized JPEG, not the original: catalogue images are several
+      // megabytes, Telegram caps sendPhoto at ten, and f_jpg avoids handing it
+      // an AVIF or WebP it may refuse.
+      const marker = '/image/upload/';
+      const at = imageUrl.indexOf(marker);
+      const url =
+        at === -1
+          ? imageUrl
+          : `${imageUrl.slice(0, at + marker.length)}f_jpg,q_auto,w_1280/${imageUrl.slice(at + marker.length)}`;
+
+      const response = await fetch(url);
+      if (!response.ok) return undefined;
+
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error) {
+      this.logger.warn(`Could not fetch image for a Telegram notification`, error);
+      return undefined;
+    }
   }
 
   async notifyUser(userId: number, text: string, photo?: Buffer) {

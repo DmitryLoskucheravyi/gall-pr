@@ -12,6 +12,10 @@ import Select from './ui/Select';
 import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './CommissionModal.module.scss';
 
+const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
+  | string
+  | undefined;
+
 type Props = {
   painting: Painting;
   onClose: () => void;
@@ -82,7 +86,16 @@ export default function CommissionModal({ painting, onClose }: Props) {
   const belowOriginal =
     amount.trim() !== '' && Number(amount) < originalPrice;
 
-  const telegramUrl = safeExternalUrl(settings?.supportTelegramUrl);
+  // Straight to the bot, carrying which painting this is about, so neither
+  // side has to explain it: one tap on Start and the artist gets a message
+  // naming the work and whom to answer. Telegram allows [A-Za-z0-9_-] in a
+  // start payload, which `repeat_<id>` stays inside.
+  //
+  // Falls back to whatever URL the settings hold when the bot's username isn't
+  // configured — the link still works, it just arrives without the context.
+  const telegramUrl = TELEGRAM_BOT_USERNAME
+    ? `https://t.me/${TELEGRAM_BOT_USERNAME}?start=repeat_${painting.id}`
+    : safeExternalUrl(settings?.supportTelegramUrl);
   const instagramUrl = safeExternalUrl(settings?.instagramUrl);
   const hasDirectContact = !!telegramUrl || !!instagramUrl;
 

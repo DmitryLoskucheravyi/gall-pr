@@ -413,6 +413,17 @@ export class OrdersService {
         : `Сума: ${Number(order.total).toLocaleString('uk-UA')} ₴`,
     ].filter((line): line is string => line !== null);
 
+    // A commission is a request for one particular work, so the artist sees
+    // which one rather than reading its name. An ordinary order is a cart —
+    // possibly several paintings — and gets the list in text as before.
+    if (order.isCommission) {
+      await this.telegramService.notifyAdminWithImage(
+        lines.join('\n'),
+        order.items?.[0]?.painting?.cardImage,
+      );
+      return;
+    }
+
     await this.telegramService.notifyAdmin(lines.join('\n'));
   }
 
