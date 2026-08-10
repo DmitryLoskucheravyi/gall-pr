@@ -7,31 +7,50 @@
 // Mobile hero title's italic serif accent word only (see HomePage.module.scss).
 @import '@fontsource/cormorant-garamond/600-italic.css';
 
+// Light theme — built on the "Porcelain Veil / Stone Moss / Warm Pebble"
+// palette. The three named colours carry the identity; every other token is
+// derived from them so the whole surface reads as one material family.
+//
+// The accent is split into three roles on purpose. Stone Moss is dark enough
+// to carry pale text on top of it, but not dark enough to be readable *as*
+// text on the page background (4.2:1, under AA) — so --color-accent is the
+// fill, --color-accent-text is a deepened cut used for links, active nav and
+// icons. The dark theme has the same split for the opposite reason, and the
+// two stay swappable because every consumer picks by role, not by shade.
 :root {
-  --color-background: #f6f4ef;
-  --color-background-alt: #eceae2;
-  --color-surface: #fffefb;
+  --color-background: #eee9e4; // Porcelain Veil
+  --color-background-alt: #e3e2d6;
+  --color-surface: #f6f6f1;
 
-  --color-primary: #1c1a16;
-  --color-primary-soft: #eae7de;
-  --color-on-primary: #f9f8f4;
+  // Primary is the moss, not ink. It is the solid behind every primary button,
+  // active chip and filled surface, so this is what actually makes the palette
+  // read as green rather than as a warm grey with green trim. It doubles as a
+  // text/border colour in ~35 places, hence the deep cut: Stone Moss itself is
+  // only 4.2:1 on the page and would fail as text.
+  --color-primary: #4f5340;
+  --color-primary-soft: #dde0d2;
+  --color-on-primary: #f8f6f2;
 
-  --color-accent: #551126;
-  --color-accent-soft: #ecd6dd;
-  --color-on-accent: #ffffff;
+  --color-accent: #6d705a; // Stone Moss
+  --color-accent-hover: #5b5e49;
+  --color-accent-text: #545845;
+  --color-accent-soft: #d9dccb;
+  --color-on-accent: #f8f6f2;
 
-  --color-text: #1c1a16;
-  --color-text-secondary: #6d6961;
-  --color-text-muted: #9b968c;
+  // Body copy stays ink — a page of green text reads as a tint bug, not a brand.
+  // The secondary/muted steps lean green so the greys sit in the same family.
+  --color-text: #24231e;
+  --color-text-secondary: #5c5f50;
+  --color-text-muted: #85857a;
 
-  --color-border: #e3e0d6;
-  --color-border-strong: #cfcabd;
+  --color-border: #d5d7c7;
+  --color-border-strong: #c8c0b3; // Warm Pebble
 
-  --color-success: #2f7a4d;
-  --color-error: #c0392b;
-  --color-warning: #b8860b;
+  --color-success: #4a7a55;
+  --color-error: #a8443a;
+  --color-warning: #8a6320;
 
-  --color-ring: rgba(28, 26, 22, 0.14);
+  --color-ring: rgba(79, 83, 64, 0.18);
 
   // Text color for the mobile hero's photo background. Deliberately the same
   // in both themes and not derived from --color-text: this copy always sits
@@ -40,41 +59,55 @@
   // text. No .dark override on purpose.
   --hero-photo-text: #fffaf3;
 
-  --shadow-sm: 0 1px 2px rgba(28, 26, 22, 0.05), 0 2px 8px rgba(28, 26, 22, 0.04);
+  // Shadows tint with the ink rather than pure black — on a warm cream ground
+  // a neutral-black shadow reads as grey dirt. Slightly deeper than the old
+  // set: the background is darker now, so the previous opacities vanished.
+  --shadow-sm: 0 1px 2px rgba(36, 35, 30, 0.06), 0 2px 8px rgba(36, 35, 30, 0.05);
   --shadow-md:
-    0 2px 6px rgba(28, 26, 22, 0.05), 0 12px 28px -10px rgba(28, 26, 22, 0.14);
+    0 2px 6px rgba(36, 35, 30, 0.06), 0 12px 28px -10px rgba(36, 35, 30, 0.16);
   --shadow-lg:
-    0 4px 12px rgba(28, 26, 22, 0.06), 0 28px 56px -16px rgba(28, 26, 22, 0.22);
+    0 4px 12px rgba(36, 35, 30, 0.08), 0 28px 56px -16px rgba(36, 35, 30, 0.24);
   // Tighter, less-blurred shadow for product-card hover
   --shadow-card-hover:
-    0 4px 10px -4px rgba(28, 26, 22, 0.12), 0 12px 22px -12px rgba(28, 26, 22, 0.22);
+    0 4px 10px -4px rgba(36, 35, 30, 0.14), 0 12px 22px -12px rgba(36, 35, 30, 0.24);
 }
 
+// Dark theme — "Obsidian Veil / Moss Shadow / Graphite Ash". Obsidian is a
+// warm graphite black rather than #000, Graphite Ash is the neutral lift for
+// elevated chrome, and the moss stays the same hue family as Stone Moss so
+// toggling themes reads as the same brand under different light.
 .dark {
-  --color-background: #121110;
-  --color-background-alt: #191816;
-  --color-surface: #1d1b19;
+  --color-background: #1b1a17; // Obsidian Veil
+  --color-background-alt: #1f211c;
+  --color-surface: #24271f;
 
-  --color-primary: #f2efe7;
-  --color-primary-soft: #2a2823;
-  --color-on-primary: #161511;
+  // Same move as the light theme, mirrored: primary carries the green. Dark
+  // primary has to be the *light* cut, because these fills take dark labels
+  // and the same token is also read as text/border straight on Obsidian.
+  --color-primary: #93a67f;
+  --color-primary-soft: #2b3524;
+  --color-on-primary: #1b1a17;
 
-  --color-accent: #983751;
-  --color-accent-soft: #261519;
-  --color-on-accent: #ffffff;
+  // Moss Shadow is a fill colour only — it is far too dark to sit on Obsidian
+  // as text, so links and active states use the lifted sage instead.
+  --color-accent: #333f2c; // Moss Shadow
+  --color-accent-hover: #4c5e41; // Moss Hover
+  --color-accent-text: #93a67f;
+  --color-accent-soft: #2a3522;
+  --color-on-accent: #edeae2;
 
-  --color-text: #f0ede5;
-  --color-text-secondary: #a8a297;
-  --color-text-muted: #726d64;
+  --color-text: #edeae2; // Text Primary
+  --color-text-secondary: #9ba093; // Text Muted, nudged green
+  --color-text-muted: #6d7064;
 
-  --color-border: #2b2925;
-  --color-border-strong: #3d3a33;
+  --color-border: #343a2f;
+  --color-border-strong: #45423c; // Graphite Ash
 
-  --color-success: #5fae7f;
-  --color-error: #e2685a;
-  --color-warning: #d9a441;
+  --color-success: #7fa97f;
+  --color-error: #d4776a;
+  --color-warning: #c9a05a;
 
-  --color-ring: rgba(242, 239, 231, 0.18);
+  --color-ring: rgba(147, 166, 127, 0.22);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.22);
   --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 28px -10px rgba(0, 0, 0, 0.5);
@@ -143,8 +176,10 @@ img {
   color: var(--color-on-accent);
 }
 
+// The readable cut of the accent, not the fill: Moss Shadow against Obsidian
+// is a ~1.6:1 outline, i.e. no visible focus ring at all in dark mode.
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-accent-text);
   outline-offset: 2px;
 }
 

@@ -40,7 +40,7 @@
 
   &::after {
     content: '.';
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 }
 
@@ -145,7 +145,7 @@
   }
 
   &.active {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     background-color: var(--color-accent-soft);
   }
 }
@@ -303,7 +303,7 @@
   }
 
   &.active {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     background-color: var(--color-accent-soft);
   }
 }
@@ -470,7 +470,7 @@
     transform 0.45s $ease-spring;
 
   &:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     background-color: var(--color-accent-soft);
     transform: scale(1.14);
   }

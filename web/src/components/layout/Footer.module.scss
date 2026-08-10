@@ -1,12 +1,18 @@
 // Deliberately inverted (deep ink in both themes) — a grounded, modern
 // close to every page. Local literals instead of theme tokens on purpose.
+//
+// Because the ground here is always Obsidian, the accent has to be the dark
+// theme's lifted sage in *both* themes: the light theme's --color-accent-text
+// is a deepened moss meant for a cream page and drops to ~2.4:1 here. Rebinding
+// the token on .footer keeps the descendants written against roles, not hexes.
 .footer {
   position: relative;
   z-index: 1;
   margin-top: $spacing-huge;
-  border-top: 1px solid rgba(240, 237, 229, 0.12);
-  background-color: #16140f;
-  color: #f0ede5;
+  border-top: 1px solid rgba(237, 234, 226, 0.12);
+  background-color: #1b1a17;
+  color: #edeae2;
+  --color-accent-text: #93a67f;
 }
 
 // The footer is the last thing on the page, so it's where the fixed bottom
@@ -66,16 +72,16 @@
   font-weight: 700;
   font-size: 34px;
   letter-spacing: 0.01em;
-  color: #fdfcf8;
+  color: #f8f6f0;
 
   &::after {
     content: '.';
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 }
 
 .tagline {
-  color: rgba(240, 237, 229, 0.6);
+  color: rgba(237, 234, 226, 0.6);
   line-height: 1.65;
   font-size: 14px;
 }
@@ -107,23 +113,23 @@
   font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(240, 237, 229, 0.45);
+  color: rgba(237, 234, 226, 0.45);
 }
 
 .link {
   font-size: 14px;
-  color: rgba(240, 237, 229, 0.72);
+  color: rgba(237, 234, 226, 0.72);
   transition:
     color 0.2s ease,
     transform 0.25s $ease-out;
 
   &:hover {
-    color: #fdfcf8;
+    color: #f8f6f0;
     transform: translateX(3px);
   }
 
   &.active {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 }
 
@@ -133,7 +139,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: $spacing-lg;
-  border-top: 1px solid rgba(240, 237, 229, 0.14);
+  border-top: 1px solid rgba(237, 234, 226, 0.14);
   padding: $spacing-xxl 0;
 
   @include respond-up($breakpoint-sm) {
@@ -153,12 +159,12 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(240, 237, 229, 0.4);
+  color: rgba(237, 234, 226, 0.4);
 }
 
 .infoValue {
   font-size: 14px;
-  color: rgba(240, 237, 229, 0.85);
+  color: rgba(237, 234, 226, 0.85);
 }
 
 // ---------- Bottom bar ----------
@@ -168,7 +174,7 @@
   flex-direction: column-reverse;
   align-items: flex-start;
   gap: $spacing-lg;
-  border-top: 1px solid rgba(240, 237, 229, 0.14);
+  border-top: 1px solid rgba(237, 234, 226, 0.14);
   padding-top: $spacing-xl;
 
   @include respond-up($breakpoint-sm) {
@@ -180,7 +186,7 @@
 
 .copyright {
   font-size: 13px;
-  color: rgba(240, 237, 229, 0.45);
+  color: rgba(237, 234, 226, 0.45);
 }
 
 .topButton {
@@ -188,13 +194,13 @@
   align-items: center;
   gap: $spacing-sm;
   border-radius: $radius-pill;
-  border: 1px solid rgba(240, 237, 229, 0.25);
+  border: 1px solid rgba(237, 234, 226, 0.25);
   padding: $spacing-sm $spacing-lg;
   font-family: $font-accent;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(240, 237, 229, 0.75);
+  color: rgba(237, 234, 226, 0.75);
   cursor: pointer;
   transition:
     color 0.2s ease,
@@ -208,9 +214,9 @@
   }
 
   &:hover {
-    color: #16140f;
-    border-color: #fdfcf8;
-    background-color: #fdfcf8;
+    color: #1b1a17;
+    border-color: #f8f6f0;
+    background-color: #f8f6f0;
     transform: translateY(-2px);
   }
 

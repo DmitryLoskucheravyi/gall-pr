@@ -202,7 +202,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
 
   em {
     font-style: italic;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     // The editorial counterpoint: a bigger lowercase italic serif word set
     // against the chunky uppercase — line-height 0 keeps the oversized word
     // from stretching its line box out of the stack's rhythm.
@@ -571,7 +571,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   justify-content: center;
   border-radius: $radius-md;
   background-color: var(--color-accent-soft);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 
   svg {
     height: 24px;
@@ -605,18 +605,20 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   align-items: center;
   gap: $spacing-xxl;
   border-radius: $radius-xxl;
+  // Always-dark band in both themes, so the glow is keyed to Moss Hover — the
+  // lifted cut — rather than Moss Shadow, which barely separates from Obsidian.
   background:
     radial-gradient(
       520px 280px at 14% -10%,
-      rgba(95, 18, 44, 0.5),
+      rgba(76, 94, 65, 0.55),
       transparent 65%
     ),
     radial-gradient(
       520px 300px at 90% 115%,
-      rgba(95, 18, 44, 0.34),
+      rgba(76, 94, 65, 0.38),
       transparent 62%
     ),
-    #16140f;
+    #1b1a17;
   padding: $spacing-huge $spacing-xl;
   text-align: center;
 
@@ -632,11 +634,11 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   font-size: clamp(30px, 4.5vw, 52px);
   line-height: 1.1;
   letter-spacing: -0.015em;
-  color: #f7f4ec;
+  color: #edeae2;
 
   em {
     font-style: italic;
-    color: #cf7089;
+    color: #a8bb92;
   }
 }
 
@@ -644,8 +646,8 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   @include button-base;
   @include button-fill(var(--color-accent), var(--color-on-accent));
   padding: $spacing-lg $spacing-xxxl;
-  background-color: #f7f4ec;
-  color: #16140f;
+  background-color: #edeae2;
+  color: #1b1a17;
   font-size: 16px;
 
   svg {
