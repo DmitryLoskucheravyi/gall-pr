@@ -2,6 +2,24 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
+
+  // At the container's full 1600px the 16:10 frame below works out ~980px
+  // tall — more room than a laptop viewport has left once the sticky header
+  // and this section's heading are on screen, so the room photo ran off the
+  // bottom and had to be scrolled through to be seen whole.
+  //
+  // Same fix as Painting3DViewer's .stage: cap the *width* at whatever keeps
+  // the derived height inside the viewport budget, rather than capping the
+  // height. The ratio and the photo's framing survive; capping height would
+  // just hand `cover` more of the room to crop away. The 220px covers the
+  // sticky header, the section title and hint, and the bars above the frame.
+  //
+  // The cap lives here rather than on .frame so the progress bars stay exactly
+  // as wide as the photo they are measuring.
+  @include respond-up($breakpoint-md) {
+    max-width: calc((100dvh - 220px) * 16 / 10);
+    margin-inline: auto;
+  }
 }
 
 // The row of progress bars, above the photo. Thin and full-width — they read
