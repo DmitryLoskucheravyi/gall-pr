@@ -8,3 +8,16 @@ graphify-out/
 
 # Working documents kept alongside the repo but not part of it.
 *.pdf
+
+# Raw generator output kept for reference — the source clips behind the
+# hero and the corridor, at full 1080p, plus the design mockups. What the
+# site actually serves is the re-encoded copies under web/public, which are
+# committed; these are the masters they were cut from and run to tens of
+# megabytes. Leading slash on purpose: anchored to the root so it can never
+# match a "design" folder somewhere inside web/.
+/design/
+
+# Higgsfield's own skill pack, installed by `npx skills add` into the repo.
+# Third-party, reinstallable, and nothing in the app or the build reads it.
+/.agents/
+/skills-lock.json
