@@ -33,6 +33,7 @@ export type UpdateSettingsDto = {
   supportEmail: string;
   supportPhone: string;
   supportTelegramUrl: string;
+  instagramUrl: string;
   heroPaintingId1: number | null;
   heroPaintingId2: number | null;
   heroPaintingId3: number | null;
