@@ -1,0 +1,790 @@
+// A corridor the reader walks down, with the featured works hung along it.
+//
+// The footage carries the walls, the floor and the light; everything hanging
+// on those walls is a real painting, placed here in a perspective of its own
+// laid over the video. The two are not composited — they are two scenes
+// advanced by one scroll, which is why the corridor had to be filmed bare.
+
+$corridor-stage-height: calc(
+  100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+);
+
+// The heavy sans the mobile hero already uses. Asked for as "грубий" — the
+// weight is the point, set against the corridor's soft light.
+$corridor-title-font: 'Rubik', sans-serif;
+
+// The runway, in screens of scrolling.
+//
+// The number comes from the component, which derives the corridor's loop
+// count from the same figure. That is the whole reason it isn't worked out
+// here: lengthening the walk and leaving the loop count alone would slow the
+// walls down to match, and a longer walk is supposed to mean more time with
+// the paintings, not a slower corridor.
+.track {
+  position: relative;
+  margin-inline: calc(50% - 50vw);
+  height: calc(var(--screens, 12) * #{$corridor-stage-height});
+}
+
+.stage {
+  position: sticky;
+  top: var(--header-height, 64px);
+  height: $corridor-stage-height;
+  overflow: hidden;
+  // size, not inline-size: the wall offset below has to be worked out from
+  // the height too, and cqh is only available when the container holds both.
+  // Safe here because the stage height is declared outright above and never
+  // depends on its contents.
+  container-type: size;
+  // Read once and inherited, so the timings below stay short enough to read.
+  --p: var(--hero-progress, 0);
+  // The closing move, over the last tenth of the track: the invitation
+  // leaves, the depth of field lets go, and the corridor turns and comes in
+  // until there is nothing but black. Everything that takes part reads this
+  // one number, so nothing can fall out of step with the rest.
+  --outro: clamp(0, calc((var(--p) - 0.9) / 0.1), 1);
+}
+
+.corridor {
+  // Dimmed at the source. The clip was generated bright and airy, which was
+  // right for finding it and wrong for living in: the works have to be the
+  // lit thing in here, and white type needs a wall dark enough to sit on.
+  //
+  // A filter rather than a sheet of black over the top, so the corridor
+  // keeps its own fall of light from the skylight down the walls instead of
+  // flattening to one grey.
+  filter: brightness(0.82) saturate(0.9);
+  // Turning clockwise and coming in through the outro. The zoom runs ahead
+  // of the rotation on purpose: a rotated full-bleed box would otherwise
+  // show its own corners, and by the time the angle is worth seeing the
+  // scale has long since covered them.
+  transform: rotate(calc(var(--outro) * 26deg))
+    scale(calc(1 + var(--outro) * 1.9));
+  // The still the canvas wears until its first frame is drawn.
+  background-size: cover;
+  background-position: center;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// The olive wash.
+//
+// multiply rather than a translucent black: black takes the colour out as it
+// darkens, and what was wanted here is the opposite — the corridor going
+// deeper *into* the palette. Multiplying by the project's own moss darkens
+// every pixel in proportion to how light it was, so the skylight dims to a
+// warm olive and the shadows keep their weight.
+.tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-color: #4f5340;
+  mix-blend-mode: multiply;
+  opacity: 0.62;
+}
+
+// Depth of field for footage that was shot with none. A radial mask centred
+// on the vanishing point blurs only the far end, so the corridor softens
+// into the distance the way a lens would.
+//
+// It sits above the footage and below the works, which is what makes it
+// behave: a painting still far down the hall is blurred by its own ramp,
+// while one arriving in the foreground is in front of this and stays sharp.
+//
+// It also, usefully, dissolves the doorway at the end of the corridor — the
+// one thing three rounds of prompting could not talk the generator out of.
+.haze {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  // Disperses as the corridor closes: the blurred distance is a thing you
+  // are walking toward, and at the end there is no longer a distance.
+  opacity: calc(1 - var(--outro));
+  pointer-events: none;
+  backdrop-filter: blur(11px);
+  -webkit-backdrop-filter: blur(11px);
+  // The blur is applied only where the mask is opaque, and the mask is a
+  // soft disc over the vanishing point.
+  mask-image: radial-gradient(
+    42% 52% at 50% 46%,
+    #000 0%,
+    #000 34%,
+    transparent 78%
+  );
+  -webkit-mask-image: radial-gradient(
+    42% 52% at 50% 46%,
+    #000 0%,
+    #000 34%,
+    transparent 78%
+  );
+  // Shade over the same disc rather than the porcelain it used to carry:
+  // the far end now falls away into the dark, which is what gives a dimmed
+  // corridor its depth.
+  background: radial-gradient(
+    40% 48% at 50% 46%,
+    rgba(12, 16, 10, 0.55),
+    transparent 74%
+  );
+}
+
+// The works' own space. Its vanishing point is the middle of the frame,
+// which is where the footage's own is — that agreement is what lets a flat
+// video and a 3D scene read as one room.
+//
+// Nothing in here takes the pointer: the paintings are decoration for this
+// section, and the one thing to act on is the invitation at the end.
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  // Short, and deliberately so. A long perspective flattens everything it
+  // projects: at 1200 a canvas on the wall came out 50px wide with its near
+  // and far edges differing by 11%, which is a rectangle as far as anyone
+  // looking can tell. At 700 the same canvas reads as the trapezoid it
+  // actually is.
+  perspective: 700px;
+  // Measured off a frame rather than guessed: both wall-to-floor lines in
+  // the footage extrapolate to x=50%, y=42%. The scene has to vanish where
+  // the corridor does, or the two are different rooms.
+  perspective-origin: 50% 42%;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+// One work on a wall.
+//
+// --at is the progress at which it reaches the reader. The works are spread
+// between fixed marks — 0.20 to 0.70 of the track — rather than dividing it
+// among however many there are.
+//
+// Dividing by the count sounds equivalent and is not: it pushed the last
+// work further back the more there were. Past six of them that work was
+// still arriving while the invitation faded in, and at ten it was dissolving
+// inside the closing black. Fixed marks keep the ending clear whatever the
+// admin flags, and simply pack the works closer together. --near is how far
+// off that we are: negative while it is still ahead, zero as it passes.
+//
+// Depth follows from that directly — 11000px of travel per unit of progress
+// — so the browser's own projection does the approach. Nothing here animates
+// a size: the painting grows because it is getting nearer, which is the only
+// way it grows correctly.
+//
+// rotateY lays it against the wall. A plane's face points at the viewer by
+// default, so turning it +82° points it right, which is what a work on the
+// left wall (--side: -1) must do — hence the sign flip. Not a full 90, so it
+// stays fractionally turned toward the reader and never goes edge-on.
+//
+// The approach is deliberately long. --enter opens 0.20 of the track out and
+// takes 0.15 to complete, so a work is on its way toward the reader for a
+// screen and a half before it is fully there.
+//
+// --leave is what makes it pass rather than stop: it holds until the work is
+// at the reader and only then gives out, over the stretch in which --near
+// goes positive. Positive --near is depth *behind* the camera plane, so the
+// work is still growing — to about 1.4× — while it dissolves. That is the
+// difference between something going by and something being switched off.
+//
+// 72°, not the 82 it was: past about 75 the face turns edge-on and there is
+// nothing left to foreshorten — the canvas becomes a sliver of stretcher.
+// The angle trades face against depth, and the perspective above is what
+// buys back the depth this gives up.
+.work {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  // Real px, handed down from the component, because the edges below hinge
+  // off half the width and half the height. Everything scales together
+  // through --box, so a phone gets a smaller canvas and a proportionally
+  // smaller stretcher rather than a thick edge on a small picture.
+  width: var(--w, 208px);
+  height: var(--h, 260px);
+  // The stretcher's depth. 22 against a 260-tall canvas is about what a
+  // gallery-wrapped frame really measures.
+  --d: 22px;
+  transform-style: preserve-3d;
+
+  --at: calc(var(--band-start) + (var(--i) + 0.5) * var(--span));
+  --near: calc((var(--p) - var(--at)) * var(--inv-span));
+
+  // The four beats of one work, all cut from --near:
+  //
+  //   -0.20 → -0.05   coming up the corridor on the wall, out of focus
+  //   -0.05 →  0.01   turning to face the reader
+  //    0.01 →  0.05   held there, floating, while its name arrives
+  //    0.05 →  0.09   dispersing, and the walk goes on
+  --enter: clamp(0, calc((var(--near) + 3.2) / 2.3), 1);
+  --turn: clamp(0, calc((var(--near) + 0.9) / 0.82), 1);
+  --leave: clamp(0, calc((0.62 - var(--near)) / 0.28), 1);
+
+  // Depth stops at --hold-spans of the way between works and stays there.
+  // Without the min() the work would keep coming and sail past the reader
+  // mid-sentence; with it, it arrives, stands still to be looked at, and
+  // only then goes. min() is doing the work of a keyframe that CSS has no
+  // way to write against a scroll.
+  //
+  // Both it and --gap come from the component, and because the hold is a
+  // fraction of the gap, a work settles the same distance from the reader
+  // whether there are three of them or fifteen.
+  // Where the wall is — 40.8% of the *footage* out from centre, measured off
+  // a frame — which is not 40.8% of the stage once the two differ in shape.
+  //
+  // The clip is 16:9 and fitted with cover, so on anything narrower than
+  // that it is scaled to the height and cropped at the sides: the walls move
+  // outward, past the edges of the screen. Taking the offset from the stage
+  // width alone left the works hanging in the middle of the corridor on a
+  // phone, drifting further off the wall the narrower it got.
+  //
+  // max() picks whichever dimension cover scaled by, which is the same rule
+  // cover itself follows: 100cqw against 177.8cqh, the width the footage is
+  // actually drawn at. So the works stay stuck to the wall at any shape of
+  // screen — including, correctly, off the edge of a narrow one.
+  --wall: max(40.8cqw, 72.55cqh);
+  // The angle it turns between. Not down to zero: square-on hides the very
+  // thing the box was built for — the stretcher edge goes out of sight and a
+  // canvas with no visible side is a flat picture again.
+  --angle-wall: 72deg;
+  --angle-shown: 15deg;
+  --z: calc(min(var(--near), var(--hold-spans)) * var(--gap));
+
+  // Turning out of the wall and into the reader's view. At --turn 0 it lies
+  // at 82° against the plaster; at 1 it is square to the eye. The same
+  // number lifts it a little off the wall, so it reads as having come away
+  // rather than swivelled on a hinge.
+  transform: translate3d(
+      calc(var(--side) * var(--wall) * (1 - var(--turn) * var(--centre, 0.55))),
+      var(--rise, -4cqw),
+      var(--z)
+    )
+    rotateY(
+      calc(
+        var(--side) * -1 *
+          (var(--angle-wall) - var(--turn) * (var(--angle-wall) - var(--angle-shown)))
+      )
+    )
+    scale(var(--box, 1)) translate(-50%, -50%);
+  // Neither opacity nor filter may live on this element, however natural it
+  // looks to put them here. Both silently force transform-style back to flat
+  // — the spec lists them among the properties that do — and a flattened box
+  // is no box at all: the four stretcher edges collapse into the face and
+  // the painting renders as a plain rectangle instead of a canvas standing
+  // at an angle on a wall.
+  //
+  // So they are pushed down to the faces, which are leaves and have no 3D
+  // relationships left to lose. The values are the same; only the elements
+  // carrying them changed.
+  --show: calc(var(--enter) * var(--leave));
+  // Focus follows the turn: soft for the whole time it is a painting you
+  // are walking past, resolving as it squares up to you and becomes the
+  // thing being looked at.
+  //
+  // This costs nothing in shape, which was the worry. The blur lives on the
+  // picture inside a face that clips it, not on the face, so the silhouette
+  // stays hard however soft the paint is — the foreshortened trapezoid reads
+  // the whole way in and only its contents are withheld.
+  //
+  // Unitless, so the same number is spent as a blur radius and as the
+  // overscan that hides its fringe.
+  --soften: calc(((1 - var(--turn)) * 11) + ((1 - var(--leave)) * 14));
+}
+
+// The idle sway, but only once it has turned to face the reader.
+//
+// A painting still coming up the corridor is fixed to a wall and has no
+// business drifting; it is the one that has come away and is being shown to
+// you that floats. The keyframes below are written against --sway, so at 0
+// every value in them is 0 and the animation runs to no effect — the same
+// animation, simply given nothing to do.
+.float {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  --sway: var(--turn, 0);
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: corridor-float 9s ease-in-out infinite;
+    // Started at a different point per work, so a corridor of them never
+    // sways in unison.
+    animation-delay: calc(var(--i, 0) * -1.7s);
+  }
+}
+
+@keyframes corridor-float {
+  0%,
+  100% {
+    transform: rotateX(calc(var(--sway) * 1.2deg))
+      rotateY(calc(var(--sway) * -2deg)) translateY(0);
+  }
+  35% {
+    transform: rotateX(calc(var(--sway) * -0.8deg))
+      rotateY(calc(var(--sway) * 2deg))
+      translateY(calc(var(--sway) * -8px));
+  }
+  70% {
+    transform: rotateX(calc(var(--sway) * 1.6deg))
+      rotateY(calc(var(--sway) * -0.5deg))
+      translateY(calc(var(--sway) * -3px));
+  }
+}
+
+// ---------- The canvas as a box ----------
+//
+// The same construction Painting3DViewer uses on the painting's own page:
+// the picture stands half the stretcher's depth proud of centre, and four
+// edges hinge around it off the measured half-width and half-height. Seen at
+// 82° on a wall, the edge is most of what there is to see.
+
+// The painted face.
+.face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform: translateZ(calc(var(--d) / 2));
+  opacity: var(--show);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+// Out of focus without losing its edges.
+//
+// A filter on the face would blur the face — silhouette and all — and a
+// canvas with soft edges stops being a rectangle standing on a wall and
+// becomes a smudge. Blurring the picture inside a face that clips is the
+// difference: the shape stays hard, the paint goes soft.
+//
+// The scale is the other half of it. A blur samples past the image, so its
+// own edge fades to nothing and a pale rim appears inside the frame;
+// overscanning by a little more than the blur radius pushes that rim outside
+// the clip. It rides the same number, so a sharp painting is not cropped.
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(calc(var(--soften) * 1px));
+  transform: scale(calc(1 + var(--soften) * 0.007));
+}
+
+// Each edge shows a blurred sliver of the painting itself — the gallery wrap
+// of a real stretched canvas, paint folding over the side — rather than four
+// flat grey walls. background-size pinned to the face's own box means the
+// sliver is exactly the strip adjoining that edge.
+.edge {
+  position: absolute;
+  overflow: hidden;
+  background-color: #6f655a;
+  opacity: var(--show);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--img);
+    background-size: var(--w, 208px) var(--h, 260px);
+    filter: blur(calc(3px + var(--soften) * 1px)) brightness(0.72)
+      saturate(0.85);
+  }
+
+  // Static shading per side, so the fixed light of the corridor reads on the
+  // box even while it is still. Lit from above.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.edgeLeft,
+.edgeRight {
+  top: 0;
+  left: calc(50% - var(--d) / 2);
+  width: var(--d);
+  height: 100%;
+}
+
+.edgeLeft {
+  transform: rotateY(-90deg) translateZ(calc(var(--w, 208px) / 2));
+
+  &::before {
+    background-position: left center;
+  }
+
+  &::after {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.edgeRight {
+  transform: rotateY(90deg) translateZ(calc(var(--w, 208px) / 2));
+
+  &::before {
+    background-position: right center;
+  }
+
+  &::after {
+    background: rgba(0, 0, 0, 0.26);
+  }
+}
+
+.edgeTop,
+.edgeBottom {
+  left: 0;
+  top: calc(50% - var(--d) / 2);
+  width: 100%;
+  height: var(--d);
+}
+
+.edgeTop {
+  transform: rotateX(90deg) translateZ(calc(var(--h, 260px) / 2));
+
+  &::before {
+    background-position: center top;
+  }
+
+  &::after {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.edgeBottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--h, 260px) / 2));
+
+  &::before {
+    background-position: center bottom;
+  }
+
+  &::after {
+    background: rgba(0, 0, 0, 0.34);
+  }
+}
+
+// The caption sits on the glass in front of the corridor, not in it: text at
+// a wall's angle and distance would be least readable exactly when it
+// mattered most. It takes the side opposite its painting, so the two balance
+// rather than collide.
+//
+// Its window is tighter than the painting's — in later, out sooner — so only
+// one is ever really being read, and the corridor is never a wall of text.
+.caption {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + var(--side) * -25cqw);
+  z-index: 4;
+  width: min(74cqw, 360px);
+  pointer-events: none;
+
+  --at: calc(var(--band-start) + (var(--i) + 0.5) * var(--span));
+  --near: calc((var(--p) - var(--at)) * var(--inv-span));
+  // Deliberately behind the painting's own beats: the work turns to face the
+  // reader first, and only once it is square does its name begin to arrive.
+  // Naming a thing still edge-on to you reads as a label on a wall; naming
+  // it once it has turned reads as an introduction.
+  --enter: clamp(0, calc((var(--near) + 0.04) / 0.24), 1);
+  --leave: clamp(0, calc((0.58 - var(--near)) / 0.22), 1);
+
+  opacity: var(--leave);
+  transform: translate(-50%, -50%);
+  isolation: isolate;
+
+  // What the white is legible against. The corridor is daylit sage and
+  // nothing about it can be relied on — a wall here, the bright skylight
+  // there — so the text brings its own ground: a soft pool of shade with no
+  // edge to it, sized past the text on every side.
+  //
+  // It rides --enter rather than the block's own opacity, which sits at 1
+  // for most of the walk. Left on that it would be a dark smudge drifting
+  // down an empty corridor long before there was anything to read.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -14% -12%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      rgba(10, 14, 8, 0.48),
+      rgba(10, 14, 8, 0.24) 58%,
+      transparent 100%
+    );
+    opacity: calc(var(--enter) * var(--leave));
+  }
+}
+
+// White, with a dark halo and the pool of shade behind it doing the rest.
+// Dark ink was the first instinct on a daylit corridor, but the walls are
+// mid-tone sage rather than pale, and white sits on them far more cleanly
+// than near-black ever did.
+.title {
+  font-family: $corridor-title-font;
+  font-weight: 900;
+  font-size: clamp(24px, 4cqw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(10, 14, 8, 0.5),
+    0 2px 26px rgba(10, 14, 8, 0.65);
+  // The whole line comes out of a blur as it arrives. One filter for the
+  // line rather than one per letter: a blur is expensive, and a dozen of
+  // them per title would buy nothing visible.
+  filter: blur(calc((1 - var(--enter)) * 7px));
+}
+
+// Words stay whole so a long title still breaks where a line should, and
+// each is a mask its own letters rise out of.
+//
+// The padding/margin pair keeps that mask off the type: clipping flush to
+// the line box would shave the descenders of р, у and ц.
+.word {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  padding-block: 0.14em;
+  margin-block: -0.14em;
+}
+
+// One letter, rising from behind the word's edge in its turn.
+//
+// --l is its place in the title and --n how many letters the title has, so
+// the stagger always fits inside the arrival however long the name: the last
+// letter starts just past half of --enter and has the rest to finish in.
+// Without dividing by --n a long title would never assemble — its final
+// letters would be waiting on a value the ramp never reaches.
+//
+// --t is that raw ramp and --e the same thing smoothed. t²(3−2t) is
+// smoothstep: it leaves and arrives at rest instead of starting and stopping
+// abruptly, and that is most of the difference between this and a letter
+// that simply slides.
+.letter {
+  display: inline-block;
+  --t: clamp(
+    0,
+    calc((var(--enter) - var(--l, 0) / var(--n, 16) * 0.55) / 0.45),
+    1
+  );
+  --e: calc(var(--t) * var(--t) * (3 - 2 * var(--t)));
+
+  transform: translateY(calc((1 - var(--e)) * 110%))
+    rotate(calc((1 - var(--e)) * -5deg));
+  // Only at the very start; the mask does nearly all the work.
+  opacity: clamp(0, calc(var(--t) * 4), 1);
+}
+
+// Follows the title rather than accompanying it: its own ramp runs off the
+// back half of --enter, so the name lands first and the description arrives
+// under a name already standing.
+.excerpt {
+  margin-top: $spacing-md;
+  font-family: $font-display;
+  font-size: clamp(13px, 1.5cqw, 16px);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow:
+    0 1px 2px rgba(10, 14, 8, 0.5),
+    0 2px 20px rgba(10, 14, 8, 0.6);
+
+  --after: clamp(0, calc((var(--enter) - 0.5) / 0.45), 1);
+  opacity: var(--after);
+  transform: translateY(calc((1 - var(--after)) * 14px));
+}
+
+// The invitation, at the end of the walk. It is the one thing in this
+// section the pointer can reach, and only once it has actually arrived —
+// the attribute is set by useHeroSequence at CTA_ARRIVED.
+.cta {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xxl;
+  padding-inline: $spacing-xl;
+  text-align: center;
+  pointer-events: none;
+
+  --arrive: clamp(0, calc((var(--p) - 0.78) / 0.1), 1);
+  opacity: calc(var(--arrive) * (1 - var(--outro)));
+  transform: translateY(calc((1 - var(--arrive)) * 26px));
+  filter: blur(calc((1 - var(--arrive)) * 5px));
+}
+
+.track[data-past='true'] .cta {
+  pointer-events: auto;
+}
+
+.ctaTitle {
+  max-width: 15em;
+  font-family: $font-display;
+  font-size: clamp(28px, 5cqw, 54px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: #fff;
+  text-shadow:
+    0 1px 3px rgba(10, 14, 8, 0.5),
+    0 2px 28px rgba(10, 14, 8, 0.7);
+
+  em {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 600;
+    // A pale moss rather than the dark one: it has to read as an accent
+    // against white now, not against porcelain.
+    color: #c2cfae;
+  }
+}
+
+.ctaButton {
+  @include button-base;
+  @include button-fill(#3a3f2f, #eee9e4);
+  padding: $spacing-lg $spacing-xxxl;
+  background-color: #4f5340;
+  color: #eee9e4;
+  font-size: 16px;
+
+  svg {
+    height: 18px;
+    width: 18px;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover svg {
+    transform: translateX(3px);
+  }
+}
+
+// Without the scroll driving it every ramp above sits at 0 and the corridor
+// would be an empty room. Reduced motion gets the works as an ordinary
+// column instead — out of the perspective altogether, since a 3D scene with
+// nothing moving through it is just a row of skewed rectangles.
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    height: auto;
+  }
+
+  .stage {
+    position: static;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-huge;
+    padding-block: $spacing-huge;
+    padding-inline: $spacing-xl;
+  }
+
+  .corridor {
+    position: absolute;
+    opacity: 0.25;
+  }
+
+  .scene {
+    display: none;
+  }
+
+  .letter,
+  .excerpt,
+  .title {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .haze {
+    display: none;
+  }
+
+  .caption {
+    position: static;
+    width: auto;
+    max-width: 46ch;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .cta {
+    position: static;
+    opacity: 1;
+    transform: none;
+    filter: none;
+    pointer-events: auto;
+  }
+}
+
+// ---------- Narrow screens ----------
+//
+// The corridor is the same walk on a phone, but the furniture has to move.
+// Side by side does not fit: a caption offset a quarter of the way out from
+// centre and 74% of the width wide reaches past the left edge, which is
+// where the clipped text was coming from.
+//
+// So the two stack instead — the work lifted into the upper half, its name
+// laid across the bottom — and both are given room rather than squeezed.
+@media (max-width: $breakpoint-md) {
+  .work {
+    // All the way to centre when it turns, not part of the way. The wall on
+    // a narrow screen sits outside the frame entirely (see --wall), so a
+    // work that only came halfway in would be shown half off the edge.
+    --centre: 1;
+    // Lifted into the upper half, clear of the caption below.
+    --rise: -16cqw;
+    // Smaller box, and the stretcher scales with it rather than staying a
+    // thick edge on a small picture.
+    --box: 0.66;
+  }
+
+  .caption {
+    top: auto;
+    bottom: 7%;
+    left: 50%;
+    width: min(88cqw, 420px);
+    // Only the horizontal half-shift now that it sits on the bottom edge.
+    transform: translateX(-50%);
+    text-align: center;
+  }
+
+  .caption::before {
+    inset: -18% -8%;
+  }
+}
+
+
+// ---------- Closing ----------
+
+// What the corridor finally goes out under. Squared so the black arrives
+// late: for most of the closing move it is still a corridor turning and
+// coming in, and only at the very end does it become nothing.
+//
+// Above everything else in the stage, the invitation included — it has to
+// take the whole picture, not slide behind part of it.
+.veil {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background-color: #000;
+  opacity: calc(var(--outro) * var(--outro));
+}
+
+// The handover to the page below.
+//
+// The stage ends black and this begins black, so the seam where the pin
+// releases is invisible; by its foot it has resolved into the page's own
+// colour, and the footer arrives out of that rather than being cut to.
+//
+// It is a plain block in the flow — no pinning, no progress — because by
+// this point there is nothing left to drive.
+.tail {
+  margin-inline: calc(50% - 50vw);
+  height: 60vh;
+  background-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 12%,
+    var(--color-background) 100%
+  );
+}

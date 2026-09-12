@@ -6,23 +6,30 @@ import { useHeroSequence } from '../hooks/useHeroSequence';
 import { usePaintings } from '../hooks/queries/usePaintings';
 import { useGiveaways } from '../hooks/queries/useGiveaways';
 import { useNews } from '../hooks/queries/useNews';
-import FeaturedStack, {
-  FeaturedStackSkeleton,
-} from '../components/FeaturedStack';
 import GiveawayHighlight, {
   GiveawayHighlightSkeleton,
 } from '../components/GiveawayHighlight';
 import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
+import CorridorSection from '../components/CorridorSection';
 import Reveal from '../components/ui/Reveal';
 import styles from './HomePage.module.scss';
 
 const MARQUEE_QUOTE = 'Мистецтво - це лінія навколо твоїх думок';
 const MARQUEE_AUTHOR = 'Густав Клімт';
 
-// The featured strip is a fanned stack, not a grid, so it needs a ceiling.
-// The flag itself is free for the admin to set on as many works as they
-// like; this is the display cap.
-const FEATURED_LIMIT = 10;
+// How many works the corridor is hung with. The flag itself is free for the
+// admin to set on as many as they like; this is the display cap, and it is
+// really a cap on how long the walk is — each work adds a couple of screens
+// of scrolling to it.
+const FEATURED_LIMIT = 15;
+
+// Module scope so the object keeps its identity between renders — the hook
+// watches it, and a fresh literal each time would re-attach the source and
+// restart the footage on every render.
+const HERO_FOOTAGE = {
+  scrub: '/hero-paint.mp4',
+  frames: { base: '/frames/hero', count: 48 },
+};
 
 // The hero headline, as lines of parts — stacked and staggered by
 // .titleLine.
@@ -194,7 +201,7 @@ function HeroTitle({ start }: { start: boolean }) {
 }
 
 export default function HomePage() {
-  const { data: paintingsResponse, isLoading: loading } = usePaintings({
+  const { data: paintingsResponse } = usePaintings({
     page: 1,
     limit: 200,
     isAvailable: true,
@@ -205,8 +212,11 @@ export default function HomePage() {
   // A touch screen has no hovering pointer to follow, so the sequence there
   // is driven by scroll alone rather than sitting dead.
   const coarsePointer = useCoarsePointer();
-  const { trackRef, stickyRef, videoRef } = useHeroSequence({
+  const { trackRef, stickyRef, videoRef, canvasRef } = useHeroSequence({
     noPointer: coarsePointer,
+    sources: HERO_FOOTAGE,
+    // The first screen — it does not wait for anything.
+    eager: true,
   });
 
   // Memoized so heroSlide below keeps a stable identity between renders —
@@ -297,23 +307,36 @@ export default function HomePage() {
                 front. See .heroStage. */}
             <div className={styles.heroStage}>
               {/* Macro oil paint on canvas, filling the frame. It never
-                  plays by itself — useHeroSequence walks the playhead in
-                  step with the scroll, so the drift across the impasto is
-                  something the reader drives rather than watches.
-                  Decorative and silent, so there is nothing to caption and
-                  no controls to expose. */}
-              <video
-                className={styles.heroWall}
-                ref={videoRef}
-                src="/hero-paint.mp4"
-                poster="/hero-paint.jpg"
-                muted
-                playsInline
-                // Seeking needs the frames already in hand: on `metadata`
-                // the first scroll would stall against the network instead
-                // of moving the picture.
-                preload="auto"
-              />
+                  plays by itself — useHeroSequence walks it in step with the
+                  scroll, so the drift across the impasto is something the
+                  reader drives rather than watches. Decorative and silent,
+                  so there is nothing to caption and no controls to expose.
+
+                  Two elements for the one shot: a video where it can be
+                  scrubbed, and the same seconds as drawn stills where it
+                  can't. See the note on Sources in useHeroSequence. */}
+              {coarsePointer ? (
+                <canvas
+                  className={styles.heroWall}
+                  ref={canvasRef}
+                  // Stands in until the first frame is drawn, and is all a
+                  // reduced-motion visitor ever sees. A canvas has no poster
+                  // of its own, so it wears one.
+                  style={{ backgroundImage: 'url(/hero-paint.jpg)' }}
+                />
+              ) : (
+                <video
+                  className={styles.heroWall}
+                  ref={videoRef}
+                  poster="/hero-paint.jpg"
+                  muted
+                  playsInline
+                  // Seeking needs the frames already in hand: on `metadata`
+                  // the first scroll would stall against the network instead
+                  // of moving the picture.
+                  preload="auto"
+                />
+              )}
               <div className={styles.heroOverlay} />
             </div>
           </div>
@@ -405,146 +428,13 @@ export default function HomePage() {
           </Reveal>
         ) : null}
 
-        <section className={styles.section}>
-          <Reveal className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Рекомендовані</h2>
-            <Link
-              to="/catalog"
-              aria-label="Всі роботи"
-              className={styles.sectionLink}
-            >
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M5 12h13M13 6l6 6-6 6"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Link>
-          </Reveal>
-
-          {loading ? (
-            <FeaturedStackSkeleton />
-          ) : featured.length > 0 ? (
-            <FeaturedStack paintings={featured.slice(0, FEATURED_LIMIT)} />
-          ) : (
-            <p className={styles.muted}>Скоро тут з'являться нові роботи</p>
-          )}
-        </section>
-
-        <Reveal as="section" className={styles.values}>
-          <div className={styles.valueCard}>
-            <span className={styles.valueIcon}>
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3c-4 4.5-6 7.5-6 10a6 6 0 0 0 12 0c0-2.5-2-5.5-6-10Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M9.5 13.5a2.5 2.5 0 0 0 2.5 2.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-            <h3 className={styles.valueTitle}>Оригінальний живопис</h3>
-            <p className={styles.valueText}>
-              Жодних принтів чи копій — тільки авторські роботи, написані
-              фарбами на полотні.
-            </p>
-          </div>
-
-          <div className={styles.valueCard}>
-            <span className={styles.valueIcon}>
-              <svg viewBox="0 0 24 24" fill="none">
-                <rect
-                  x="3.5"
-                  y="6"
-                  width="13"
-                  height="11"
-                  rx="1.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M16.5 9.5H19a1.5 1.5 0 0 1 1.2.6l0.8 1.07a1.5 1.5 0 0 1 .3.9v3.43a1.5 1.5 0 0 1-1.5 1.5h-1.3"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx="8"
-                  cy="17"
-                  r="1.8"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <circle
-                  cx="17"
-                  cy="17"
-                  r="1.8"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-              </svg>
-            </span>
-            <h3 className={styles.valueTitle}>Доставка Новою поштою</h3>
-            <p className={styles.valueText}>
-              Надійне пакування і відправка у будь-яке відділення по всій
-              Україні.
-            </p>
-          </div>
-
-          <div className={styles.valueCard}>
-            <span className={styles.valueIcon}>
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3.5 5 6.5v5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9v-5l-7-3Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="m9 12 2.2 2.2L15.5 9.8"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <h3 className={styles.valueTitle}>Зручна оплата</h3>
-            <p className={styles.valueText}>
-              Оплата при отриманні або переказ на карту — як вам зручніше.
-            </p>
-          </div>
-        </Reveal>
       </div>
 
-      <div className={`${styles.pageContent} ${styles.pageContentClose}`}>
-        <Reveal as="section" className={styles.ctaBand}>
-          <h2 className={styles.ctaTitle}>
-            Знайдіть картину, яка <em>заговорить</em> до вас
-          </h2>
-          <Link to="/catalog" className={styles.ctaBandButton}>
-            До каталогу
-            <svg viewBox="0 0 24 24" fill="none">
-              <path
-                d="M5 12h13M13 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-        </Reveal>
-      </div>
+      {/* The corridor: the featured works hung along a walk the reader
+          takes, and the invitation waiting at the end of it. This is where
+          the featured paintings live now — the strip that used to show them
+          further up the page is gone. */}
+      <CorridorSection paintings={featured.slice(0, FEATURED_LIMIT)} />
     </div>
   );
 }

@@ -124,6 +124,11 @@ $hero-stage-height: calc(
 // only occupies one corner, and the gradient in .heroOverlay handles that
 // corner. brightness alone here keeps the rest of the picture open.
 .heroWall {
+  // A canvas has no poster of its own — where one stands in for the video
+  // (touch devices) the still is set as a background from the component, and
+  // these are the rules that make it behave like one.
+  background-size: cover;
+  background-position: center;
   position: absolute;
   inset: 0;
   width: 100%;
@@ -171,31 +176,34 @@ $hero-stage-height: calc(
   align-items: flex-start;
 }
 
-// Kicker, headline and lede: the part that travels. It comes toward the
-// reader as the track is scrolled and passes them — the other half of
-// walking into the picture. It grows from its own bottom-left corner, where
-// it already sits, so the words stay anchored to their spot instead of
-// sliding across the frame while they enlarge, and it grows upward, away
-// from the links parked underneath.
+// Kicker, headline and lede: the part that leaves. It doesn't travel toward
+// the reader any more — it dissolves where it stands.
 //
-// The fade runs ahead of the scale rather than with it: held to 25%, then
-// gone by 55%, so the words leave while they are still whole. Letting them
-// run on simply pushed the headline off three sides of the screen, which is
-// the one thing this move must not do. The ceiling of +0.55 is part of the
-// same restraint — enough travel to read as approach, not enough to turn
-// the lede into wall-sized fragments.
+// The words used to grow as the scroll advanced, which read as approach but
+// cost the thing it was spent on: at any size worth noticing the headline
+// was already running off three sides of the screen, so the fade had to be
+// rushed to hide it. Softening in place has no such ceiling. It can take its
+// time, the letters stay their own size and shape to the last frame, and the
+// footage behind is left to carry the forward move on its own.
 //
-// clamp() does the piecewise part: below 0.25 the middle term exceeds 1 and
-// the max wins, past 0.55 it goes negative and the min does. The 0.55 here
-// and HERO_COPY_GONE in useHeroSequence are the same number and have to
-// stay that way.
+// --hold is the ramp: 1 while the copy stands, falling to 0 across 25%–55%
+// of the track. clamp() does the piecewise part — below 0.25 the middle term
+// exceeds 1 and the max wins, past 0.55 it goes negative and the min does.
+// That 0.55 and HERO_COPY_GONE in useHeroSequence are the same number and
+// have to stay that way.
+//
+// Spending its inverse on blur and a small lift is what turns a plain fade
+// into something dissolving: going out of focus as it goes, and drifting up
+// out of frame rather than simply thinning away.
 .heroText {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  transform-origin: 0% 100%;
-  transform: scale(calc(1 + var(--hero-progress, 0) * 0.55));
-  opacity: clamp(0, calc((0.55 - var(--hero-progress, 0)) / 0.3), 1);
+  --hold: clamp(0, calc((0.55 - var(--hero-progress, 0)) / 0.3), 1);
+
+  opacity: var(--hold);
+  filter: blur(calc((1 - var(--hold)) * 13px));
+  transform: translateY(calc((1 - var(--hold)) * -34px));
 }
 
 // Once the copy has faded it must stop swallowing clicks: by then it has
@@ -203,7 +211,7 @@ $hero-stage-height: calc(
 // across the stage catching the pointer on its way to the links below.
 // The flag is set by useHeroSequence — a plain attribute rather than a style
 // query, which is still too new to rely on.
-.hero[data-hero-past='true'] .heroText {
+.hero[data-past='true'] .heroText {
   pointer-events: none;
 }
 
@@ -463,29 +471,6 @@ $hero-stage-height: calc(
 .pageContentOpen {
   padding-bottom: $spacing-huge * 2;
 }
-
-// The closing sheet (everything after the window, up to the footer). Two
-// jobs beyond carrying the background:
-//
-// flow-root — the CTA band's own top margin would otherwise collapse out
-// through this sheet's top edge and land in the transparent window, reading
-// as a bigger cutout instead of a gap below it. A block formatting context
-// keeps that margin inside, so the band's normal spacing becomes the opaque
-// breathing room under the window.
-//
-// The padding/margin pair extends the sheet's background down through
-// .main's bottom padding (40px) and the footer's margin-top (48px), so the
-// backdrop can't leak through that strip — the window is the only
-// intentional gap. Net layout shift is zero.
-.pageContentClose {
-  display: flow-root;
-  // Adds to the band's own retained top margin, matching the opaque gap
-  // above the window.
-  padding-top: $spacing-huge;
-  padding-bottom: 88px;
-  margin-bottom: -88px;
-}
-
 // ---------- Marquee strip ----------
 
 .marquee {
@@ -569,214 +554,5 @@ $hero-stage-height: calc(
 
   @include respond-up($breakpoint-lg) {
     margin-top: 72px;
-  }
-}
-
-.sectionHeader {
-  margin-bottom: $spacing-xxl;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sectionTitle {
-  font-family: $font-display;
-  font-size: clamp(28px, 4vw, 40px);
-  letter-spacing: -0.01em;
-  color: var(--color-text);
-}
-
-.sectionLink {
-  display: flex;
-  height: 44px;
-  width: 44px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: $radius-pill;
-  border: 1px solid var(--color-border-strong);
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  transition:
-    background-color 0.25s ease,
-    border-color 0.25s ease,
-    color 0.25s ease,
-    box-shadow 0.25s ease,
-    transform 0.25s $ease-spring;
-
-  svg {
-    height: 18px;
-    width: 18px;
-    transition: transform 0.25s ease;
-  }
-
-  &:hover {
-    transform: translateX(4px);
-    border-color: var(--color-primary);
-    background-color: var(--color-primary);
-    color: var(--color-on-primary);
-    box-shadow: var(--shadow-md);
-
-    svg {
-      transform: translateX(2px);
-    }
-  }
-
-  &:active {
-    transform: translateX(2px) scale(0.94);
-  }
-}
-
-.muted {
-  color: var(--color-text-secondary);
-}
-
-// ---------- Values strip ----------
-
-.values {
-  margin-top: $spacing-huge;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: $spacing-lg;
-  // Shared vanishing point, so the three cards tip toward one common
-  // horizon instead of each pivoting about its own centre — a row of
-  // independently-rotating cards reads as three accidents, not one surface.
-  perspective: 1000px;
-
-  @include respond-up($breakpoint-md) {
-    grid-template-columns: repeat(3, 1fr);
-    gap: $spacing-xxl;
-  }
-
-  @include respond-up($breakpoint-lg) {
-    margin-top: 72px;
-  }
-}
-
-// Deliberately not @include card-hover: that lifts on Y alone, and next to
-// a hero built out of real depth a flat 4px nudge is what gives the trick
-// away. Same vocabulary as the hero instead — the card tips back from its
-// bottom edge and rises toward the reader.
-.valueCard {
-  @include card;
-  padding: $spacing-xxl;
-  transform-origin: 50% 100%;
-  transition:
-    transform $duration-base $ease-out,
-    box-shadow $duration-base $ease-out,
-    border-color $duration-base ease;
-
-  &:hover {
-    transform: translateY(-4px) rotateX(4deg);
-    border-color: var(--color-border-strong);
-    box-shadow: var(--shadow-card-hover);
-  }
-
-  // A tilt is motion, and the shadow alone still marks the hovered card for
-  // anyone who asked for less of it.
-  @media (prefers-reduced-motion: reduce) {
-    transition: box-shadow $duration-base ease, border-color $duration-base ease;
-
-    &:hover {
-      transform: none;
-    }
-  }
-}
-
-.valueIcon {
-  display: flex;
-  height: 48px;
-  width: 48px;
-  align-items: center;
-  justify-content: center;
-  border-radius: $radius-md;
-  background-color: var(--color-accent-soft);
-  color: var(--color-accent-text);
-
-  svg {
-    height: 24px;
-    width: 24px;
-  }
-}
-
-.valueTitle {
-  margin-top: $spacing-lg;
-  font-family: $font-display;
-  font-size: 20px;
-  color: var(--color-text);
-}
-
-.valueText {
-  margin-top: $spacing-sm;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
-}
-
-// ---------- Closing CTA band ----------
-
-.ctaBand {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-  margin-top: $spacing-huge;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-xxl;
-  border-radius: $radius-xxl;
-  // Always-dark band in both themes, so the glow is keyed to Moss Hover — the
-  // lifted cut — rather than Moss Shadow, which barely separates from Obsidian.
-  background:
-    radial-gradient(
-      520px 280px at 14% -10%,
-      rgba(76, 94, 65, 0.55),
-      transparent 65%
-    ),
-    radial-gradient(
-      520px 300px at 90% 115%,
-      rgba(76, 94, 65, 0.38),
-      transparent 62%
-    ),
-    #1b1a17;
-  padding: $spacing-huge $spacing-xl;
-  text-align: center;
-
-  @include respond-up($breakpoint-lg) {
-    margin-top: 72px;
-    padding: 88px $spacing-huge;
-  }
-}
-
-.ctaTitle {
-  max-width: 15em;
-  font-family: $font-display;
-  font-size: clamp(30px, 4.5vw, 52px);
-  line-height: 1.1;
-  letter-spacing: -0.015em;
-  color: #edeae2;
-
-  em {
-    font-style: italic;
-    color: #a8bb92;
-  }
-}
-
-.ctaBandButton {
-  @include button-base;
-  @include button-fill(var(--color-accent), var(--color-on-accent));
-  padding: $spacing-lg $spacing-xxxl;
-  background-color: #edeae2;
-  color: #1b1a17;
-  font-size: 16px;
-
-  svg {
-    height: 18px;
-    width: 18px;
-    transition: transform 0.25s ease;
-  }
-
-  &:hover svg {
-    transform: translateX(3px);
   }
 }
