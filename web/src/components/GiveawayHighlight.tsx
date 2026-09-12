@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Giveaway } from '../types/giveaway.types';
 import styles from './GiveawayHighlight.module.scss';
 import { cdnImage } from '../utils/imageUrl';
+import { plural } from '../utils/plural';
 
 function formatDeadline(iso: string) {
   return new Date(iso).toLocaleString('uk-UA', {
@@ -28,71 +29,81 @@ export default function GiveawayHighlight({
   giveaway: Giveaway;
 }) {
   const days = daysLeft(giveaway.deadline);
+  const closing = days === 0;
 
   return (
-    <Link to={`/giveaways/${giveaway.id}`} className={styles.banner}>
-      <div className={styles.imageWrap}>
+    <Link to={`/giveaways/${giveaway.id}`} className={styles.card}>
+      <div className={styles.media}>
         <img
           src={cdnImage(giveaway.painting.cardImage, 900)}
           alt={giveaway.painting.title}
           className={styles.image}
+          loading="lazy"
+          decoding="async"
         />
-        <span className={styles.daysBadge}>
-          {days > 0 ? `${days} дн.` : 'Завершується'}
-        </span>
+        <span className={styles.mediaFade} aria-hidden="true" />
       </div>
 
       <div className={styles.body}>
-        <div className={styles.top}>
-          <h2 className={styles.title}>{giveaway.title}</h2>
-          <span className={styles.prize}>Приз: {giveaway.painting.title}</span>
-          <p className={styles.description}>{giveaway.description}</p>
+        <span className={styles.kicker}>
+          <span className={styles.dot} aria-hidden="true" />
+          Розіграш
+        </span>
+
+        <h2 className={styles.title}>{giveaway.title}</h2>
+
+        <p className={styles.prize}>
+          <span className={styles.prizeLabel}>Приз</span>
+          <span className={styles.prizeName}>{giveaway.painting.title}</span>
+        </p>
+
+        <p className={styles.description}>{giveaway.description}</p>
+
+        <div className={styles.meta}>
+          <span className={styles.metaItem}>
+            <strong>{giveaway.participantsCount}</strong>{' '}
+            {plural(
+              giveaway.participantsCount,
+              'учасник',
+              'учасники',
+              'учасників',
+            )}
+          </span>
+          <span className={styles.metaItem}>
+            до {formatDeadline(giveaway.deadline)}
+          </span>
         </div>
+      </div>
 
-        <div className={styles.bottom}>
-          <div className={styles.stats}>
-            <div className={styles.stat}>
-              <svg viewBox="0 0 24 24" fill="none" className={styles.statIcon}>
-                <circle
-                  cx="12"
-                  cy="8"
-                  r="3.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M4.5 19.5c1.4-3.1 4.3-5 7.5-5s6.1 1.9 7.5 5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span>{giveaway.participantsCount}</span>
-            </div>
+      {/* The tear-off stub: what you'd keep if this were a real ticket — how
+          long is left, and the way in. Separated from the body by a
+          perforation rather than a plain rule. */}
+      <div className={styles.stub}>
+        <span className={styles.countdown}>
+          {closing ? (
+            <span className={styles.countdownClosing}>Останній день</span>
+          ) : (
+            <>
+              <span className={styles.countdownNumber}>{days}</span>
+              <span className={styles.countdownUnit}>
+                {plural(days, 'день', 'дні', 'днів')}
+              </span>
+            </>
+          )}
+        </span>
 
-            <div className={styles.stat}>
-              <svg viewBox="0 0 24 24" fill="none" className={styles.statIcon}>
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="8.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M12 7.5V12l3 2"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>До {formatDeadline(giveaway.deadline)}</span>
-            </div>
-          </div>
-
-          <span className={styles.ctaButton}>Взяти участь →</span>
-        </div>
+        <span className={styles.cta}>
+          Взяти участь
+          <svg viewBox="0 0 24 24" fill="none" className={styles.ctaIcon}>
+            <path
+              d="M5 12h13m0 0-5-5m5 5-5 5"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
       </div>
     </Link>
   );

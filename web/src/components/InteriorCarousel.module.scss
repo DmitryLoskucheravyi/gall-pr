@@ -12,22 +12,36 @@
   // the derived height inside the viewport budget, rather than capping the
   // height. The ratio and the photo's framing survive; capping height would
   // just hand `cover` more of the room to crop away. The 220px covers the
-  // sticky header, the section title and hint, and the bars above the frame.
+  // sticky header and the section title and hint.
   //
-  // The cap lives here rather than on .frame so the progress bars stay exactly
-  // as wide as the photo they are measuring.
+  // Desktop stands the bars up beside the photo instead of laying them across
+  // the top. Reversed rather than reordered: .bars comes first in the DOM so
+  // that tabbing still reaches the controls before the thing they control.
+  // The frame gives up the 3px of bar and the gap, so the height lands just
+  // under the budget rather than over it.
   @include respond-up($breakpoint-md) {
+    flex-direction: row-reverse;
+    align-items: stretch;
     max-width: calc((100dvh - 220px) * 16 / 10);
     margin-inline: auto;
   }
 }
 
-// The row of progress bars, above the photo. Thin and full-width — they read
-// as a measure of how long is left rather than as buttons, which is what they
-// mostly are; being clickable is a bonus, not the point.
+// The progress bars. Thin — they read as a measure of how long is left rather
+// than as buttons, which is what they mostly are; being clickable is a bonus,
+// not the point.
+//
+// A row across the top on phones. On desktop they stand up in a column to the
+// right of the photo and run bottom-to-top, so the sequence climbs the same
+// way each bar fills; laid out top-to-bottom the two would disagree.
 .bars {
   display: flex;
   gap: $spacing-sm;
+
+  @include respond-up($breakpoint-md) {
+    flex-direction: column-reverse;
+    width: 3px;
+  }
 }
 
 .bar {
@@ -38,8 +52,9 @@
   border-radius: $radius-pill;
   background-color: var(--color-border);
   cursor: pointer;
-  // A 2px target is unclickable, so the hit area is padded out above and
-  // below without the bar itself getting any taller.
+  // A 2px target is unclickable, so the hit area is padded out around it
+  // without the bar itself getting any bigger — across the short axis, which
+  // swaps with the orientation.
   &::before {
     content: '';
     position: absolute;
@@ -48,6 +63,15 @@
 
   &:hover {
     background-color: var(--color-border-strong);
+  }
+
+  @include respond-up($breakpoint-md) {
+    height: auto;
+    width: 100%;
+
+    &::before {
+      inset: 0 -10px;
+    }
   }
 }
 
@@ -58,12 +82,21 @@
   transform-origin: left;
   transform: scaleX(0);
   background-color: var(--color-primary);
+
+  @include respond-up($breakpoint-md) {
+    transform-origin: bottom;
+    transform: scaleY(0);
+  }
 }
 
 // Photos already seen stay filled, so the row reads as progress through a
 // sequence rather than a single travelling dot.
 .barFilled {
   transform: scaleX(1);
+
+  @include respond-up($breakpoint-md) {
+    transform: scaleY(1);
+  }
 }
 
 // The one currently on screen fills over the slide's duration, which is set
@@ -72,6 +105,10 @@
   animation-name: fill;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
+
+  @include respond-up($breakpoint-md) {
+    animation-name: fill-up;
+  }
 }
 
 @keyframes fill {
@@ -80,6 +117,15 @@
   }
   to {
     transform: scaleX(1);
+  }
+}
+
+@keyframes fill-up {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
   }
 }
 
@@ -95,6 +141,11 @@
 
   @include respond-up($breakpoint-md) {
     aspect-ratio: 16 / 10;
+    // Every .photo is absolutely positioned, so the frame has no content to
+    // size against — as a flex item in the desktop row it would collapse to
+    // nothing without being told to take the space the bars leave.
+    flex: 1;
+    min-width: 0;
   }
 }
 
@@ -124,5 +175,9 @@
   .barActive {
     animation: none;
     transform: scaleX(1);
+
+    @include respond-up($breakpoint-md) {
+      transform: scaleY(1);
+    }
   }
 }

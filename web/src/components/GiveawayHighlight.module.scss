@@ -1,15 +1,31 @@
-.banner {
+// A ticket. The page it sits on is porcelain and hairlines, so this earns its
+// attention by being the only solid field of colour on it — and by being cut
+// like a thing you'd tear in half rather than like another rounded panel.
+//
+// The panel is deep moss in *both* themes, the same call the footer and the
+// closing CTA band make, and for the same reason: it reads as a brand block
+// set into the page rather than as a surface that belongs to the theme. That
+// is why the colours here are local literals — deriving them from --color-
+// accent would make the light theme's panel Stone Moss, which at 4.7:1 has no
+// headroom left for the dimmed secondary text this layout needs.
+.card {
+  --panel: #3c4331;
+  --panel-ink: #f1efe8;
+  --panel-ink-dim: #bcc3af;
+  --panel-rule: rgba(241, 239, 232, 0.24);
+
   display: grid;
   grid-template-columns: 1fr;
   overflow: hidden;
-  border-radius: $radius-lg;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.3s $ease-out;
+  border-radius: $radius-xl;
+  background-color: var(--panel);
+  transition: box-shadow $duration-base $ease-out;
 
   @include respond-up($breakpoint-lg) {
-    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+    // Body, then stub. The image column is narrow because `contain` only ever
+    // needs enough width to seat the work — and because every pixel it does
+    // not take is a pixel of copy that does not wrap onto another line.
+    grid-template-columns: minmax(0, 0.36fr) minmax(0, 1fr) auto;
   }
 
   &:hover {
@@ -17,126 +33,393 @@
   }
 }
 
-.imageWrap {
+// ---------- The painting ----------
+
+// No background of its own: it sits on the card's moss, so whatever `contain`
+// leaves over around the work is the panel colour rather than a second box
+// with a visible edge.
+.media {
   position: relative;
-  height: 280px;
-  width: 100%;
   overflow: hidden;
+  // Squarer than the body wants, because `contain` means this box has to serve
+  // both orientations: a wide box turns a portrait painting into a sliver
+  // floating in a field of moss.
+  aspect-ratio: 4 / 3;
 
   @include respond-up($breakpoint-lg) {
+    // Beside the body it takes the body's height instead of dictating one.
+    aspect-ratio: auto;
     height: 100%;
   }
 }
 
+// Absolute, and that is the whole reason this card is the height it is. In
+// flow, a grid row sizes to its items' intrinsic heights: .media's `height:
+// 100%` is indefinite against an auto row, so the browser fell back to the
+// painting's own scaled height — ~700px for a portrait work — and the image,
+// not the copy, decided how tall the card was. Out of flow it contributes
+// nothing, so the row is exactly as tall as the body needs.
 .image {
+  position: absolute;
+  inset: 0;
   height: 100%;
   width: 100%;
-  object-fit: cover;
+  // The whole work, in its own proportions, scaled down to fit — a giveaway
+  // card that crops the prize is arguing with itself. Padding insets it off
+  // the card's rounded corners; `object-fit` fits to the content box, and
+  // border-box sizing is set globally, so this is all the inset it needs.
+  padding: $spacing-lg;
+  object-fit: contain;
   transition: transform 0.7s $ease-out;
 
-  .banner:hover & {
-    transform: scale(1.04);
+  .card:hover & {
+    transform: scale(1.03);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    .card:hover & {
+      transform: none;
+    }
   }
 }
 
-.daysBadge {
+// Feathers the painting into the card instead of ending it on a hard rectangle.
+//
+// Painted as panel-coloured gradients *over* the image rather than as a mask
+// on it: `contain` renders the work at whatever size its own proportions ask
+// for, so there is no way to line a mask up with the edges of the picture. An
+// overlay in the background colour doesn't need to — where it falls on the
+// painting it fades it out, and where it falls on the moss around it, it is
+// moss on moss and invisible. Both orientations get the same soft edge.
+.mediaFade {
   position: absolute;
-  top: $spacing-lg;
-  left: $spacing-lg;
-  border-radius: $radius-pill;
-  background-color: var(--color-surface);
-  padding: $spacing-xs $spacing-md;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to right,
+      var(--panel),
+      transparent 16%,
+      transparent 84%,
+      var(--panel)
+    ),
+    linear-gradient(
+      to bottom,
+      var(--panel),
+      transparent 16%,
+      transparent 84%,
+      var(--panel)
+    );
 }
+
+// ---------- Body ----------
 
 .body {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  justify-content: space-between;
-  gap: $spacing-xl;
-  padding: $spacing-xl $spacing-xxl;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-xl;
+  color: var(--panel-ink);
 
   @include respond-up($breakpoint-lg) {
-    padding: $spacing-xxxxl;
+    padding: $spacing-xl $spacing-xxl;
+    gap: $spacing-md;
   }
 }
 
-.top {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: flex-start;
+.kicker {
+  display: inline-flex;
+  align-items: center;
   gap: $spacing-sm;
-  min-height: 0;
+  border-radius: $radius-pill;
+  border: 1px solid var(--panel-rule);
+  padding: 6px $spacing-md;
+  font-family: $font-accent;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--panel-ink);
 }
 
+// A slow pulse, not a blink — this says "open now", it isn't a notification.
+.dot {
+  height: 6px;
+  width: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-color: #a8bb92;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: pulse 2.4s $ease-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(168, 187, 146, 0.5);
+  }
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 5px rgba(168, 187, 146, 0);
+  }
+}
+
+// Two lines, then an ellipsis. Titles are admin-entered, and a long one used to
+// stretch the card until it stopped matching the rest of the page.
 .title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   font-family: $font-display;
-  font-size: 32px;
-  line-height: 1.2;
-  color: var(--color-text);
+  font-size: clamp(21px, 2.1vw, 28px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--panel-ink);
+  overflow-wrap: anywhere;
 }
 
 .prize {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-accent-text);
-}
-
-.description {
-  width: 100%;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-}
-
-.bottom {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: baseline;
+  gap: $spacing-sm;
+  font-size: 14px;
+}
+
+.prizeLabel {
+  flex-shrink: 0;
+  font-family: $font-accent;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--panel-ink-dim);
+}
+
+// One line: this is a painting title sitting inline after a label, so wrapping
+// it turns the row into a paragraph.
+.prizeName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--panel-ink);
+}
+
+// The admin writes these at whatever length they like, and the card is a
+// teaser — the full text is on the giveaway page this whole block links to.
+//
+// No pre-wrap here, unlike the news banner: typed paragraph breaks would burn
+// through a two-line clamp on the first newline and show almost nothing.
+.description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  // No measure cap: the copy runs the full width of the body and then clips.
+  // A narrow column here only bought extra wrapped lines, and every wrapped
+  // line is height the card did not need to spend.
+  width: 100%;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--panel-ink-dim);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  width: 100%;
   flex-wrap: wrap;
+  align-items: baseline;
+  gap: $spacing-xs $spacing-lg;
+  padding-top: $spacing-md;
+  border-top: 1px solid rgba(241, 239, 232, 0.14);
+  font-size: 13px;
+  color: var(--panel-ink-dim);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+
+  strong {
+    font-weight: 400;
+    font-size: 15px;
+    color: var(--panel-ink);
+  }
+}
+
+// ---------- Tear-off stub ----------
+
+// The perforation is a dashed rule plus two notches bitten out of the card's
+// edges where it meets them. The notches are filled with the *page* colour,
+// not the panel's — they are holes, so they have to show what is behind the
+// card. .card's overflow:hidden is what turns each circle into a half-round
+// bite instead of a dot sitting on top.
+.stub {
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-lg;
-  padding-top: $spacing-lg;
-  border-top: 1px solid var(--color-border);
+  padding: $spacing-lg $spacing-xl;
+  border-top: 1px dashed var(--panel-rule);
+  color: var(--panel-ink);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    height: 18px;
+    width: 18px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background-color: var(--color-background);
+  }
+
+  &::before {
+    left: 0;
+  }
+
+  &::after {
+    left: 100%;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    // Stood on its end: the perforation runs down the card and the stub keeps
+    // the countdown and the way in, the way the torn-off half of a ticket does.
+    width: 200px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: $spacing-lg;
+    padding: $spacing-xl;
+    border-top: none;
+    border-left: 1px dashed var(--panel-rule);
+
+    &::before {
+      left: 0;
+      top: 0;
+    }
+
+    &::after {
+      left: 0;
+      top: 100%;
+    }
+  }
 }
 
-.stats {
+.countdown {
   display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-xl;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.statIcon {
-  height: 18px;
-  width: 18px;
   flex-shrink: 0;
-  color: var(--color-text-secondary);
+  align-items: baseline;
+  gap: 6px;
+  line-height: 1;
+
+  @include respond-up($breakpoint-lg) {
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-xs;
+  }
 }
 
-.ctaButton {
-  @include button-primary;
+.countdownNumber {
+  font-family: $font-display;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  // Lining figures are already the body default; tabular stops the number
+  // jumping sideways as the count ticks down through the widths.
+  font-variant-numeric: lining-nums tabular-nums;
+
+  @include respond-up($breakpoint-lg) {
+    font-size: 48px;
+  }
 }
 
+.countdownUnit {
+  font-family: $font-accent;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--panel-ink-dim);
+}
+
+.countdownClosing {
+  font-family: $font-accent;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #c9d8b4;
+}
+
+.cta {
+  @include button-base;
+  flex-shrink: 0;
+  padding: $spacing-sm $spacing-xl;
+  font-size: 14px;
+  background-color: var(--panel-ink);
+  color: #2f3527;
+  // Floods sage — the same green as the live dot, so the card's two active
+  // elements agree — and the label deepens to keep off the lighter fill.
+  @include button-fill(#a8bb92, #24291d);
+
+  // The whole card is one link, so the button answers a hover anywhere on it,
+  // not just a hover that happens to land on the button.
+  .card:hover & {
+    color: #24291d;
+
+    &::before {
+      transform: scaleY(1);
+    }
+  }
+
+  // Pressed: the fill drops a shade under the label so the press is visible on
+  // its own, not only as button-base's 0.97 nudge.
+  &:active:not(:disabled)::before {
+    background-color: #879d70;
+  }
+}
+
+.ctaIcon {
+  height: 17px;
+  width: 17px;
+  transition: transform $duration-base $ease-out;
+
+  .card:hover & {
+    transform: translateX(4px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    .card:hover & {
+      transform: none;
+    }
+  }
+}
+
+// Kept in step with what the real card measures — a skeleton that guesses high
+// just moves the layout shift it exists to prevent.
 .skeleton {
-  height: 280px;
-  border-radius: $radius-lg;
+  height: 540px;
+  border-radius: $radius-xl;
   background-color: var(--color-background-alt);
 
   @include respond-up($breakpoint-lg) {
-    height: 340px;
+    height: 290px;
   }
 }

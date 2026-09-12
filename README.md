@@ -1,73 +1,71 @@
-# Gallery — Платформа для продажу живопису
+# Gallery — платформа для продажу живопису
 
-Повнофункціональний застосунок (мобільний та веб) для онлайн-галереї картин із системою управління користувачами, каталогом творів та автентифікацією на основі JWT.
+Онлайн-галерея картин: каталог і сторінка твору, кошик і оформлення замовлення
+(зокрема без реєстрації), онлайн-оплата, доставка Новою поштою, живий чат
+підтримки, розіграші, новини, розсилки та адмін-панель.
 
 ---
 
 ## Зміст
 
-- [Архітектура проекту](#архітектура-проекту)
-- [Структура проекту](#структура-проекту)
-- [Основні сутності](#основні-сутності)
-- [Патерни та підходи](#патерни-та-підходи)
-- [Флоу операцій](#флоу-операцій)
+- [Архітектура](#архітектура)
+- [Структура репозиторію](#структура-репозиторію)
+- [Backend (`/backend`)](#backend-backend)
+- [Веб-застосунок (`/web`)](#веб-застосунок-web)
+- [База даних](#база-даних)
+- [Автентифікація та безпека](#автентифікація-та-безпека)
+- [Ключові флоу](#ключові-флоу)
+- [API Endpoints](#api-endpoints)
 - [Стилізація](#стилізація)
 - [Технологічний стек](#технологічний-стек)
-- [API Endpoints](#api-endpoints)
-- [Запуск проекту](#запуск-проекту)
+- [Запуск проєкту](#запуск-проєкту)
 - [Змінні середовища](#змінні-середовища)
+- [Деплой](#деплой)
 
 ---
 
-## Архітектура проекту
-
-Проект побудований за класичною архітектурою **клієнт–сервер**:
+## Архітектура
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    FRONTEND (React Native)                  │
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  Screens: Home, Catalog, Painting, Profile, Auth      │  │
-│  │  Components: UI-елементи, меню, форми                 │  │
-│  │  Store: Zustand (Auth, Theme, UI State)               │  │
-│  │  Hooks: власні React-хуки                             │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                         ↓ HTTP API (Axios)
-┌─────────────────────────────────────────────────────────────┐
-│                     BACKEND (NestJS)                        │
-│                                                             │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐    │
-│  │  Auth       │  │  Users       │  │  Paintings       │    │
-│  │  Module     │  │  Module      │  │  Module          │    │
-│  └─────────────┘  └──────────────┘  └──────────────────┘    │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │         Uploads Module (Cloudinary Integration)      │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                         ↓ TypeORM
-┌─────────────────────────────────────────────────────────────┐
-│                     MySQL Database (galleryDB)              │
-│                                                             │
-│           ┌──────────────┐        ┌───────────────┐         │
-│           │    users     │        │   paintings   │         │
-│           └──────────────┘        └───────────────┘         │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                 WEB (React 19 + Vite, SPA)                       │
+│  сторінки · React Query (сервісний стан) · Redux Toolkit (auth,  │
+│  тема, тости) · SCSS-модулі · socket.io-client (чат)             │
+└──────────────────────────────────────────────────────────────────┘
+              │ HTTPS (Axios, Bearer + httpOnly refresh-cookie)
+              │ WebSocket (підтримка)
+              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                        BACKEND (NestJS 11)                       │
+│                                                                  │
+│  auth · users · paintings · materials · techniques · cart        │
+│  orders · payments · settings · likes · support (WS) · giveaways │
+│  news · uploads · nova-poshta · telegram · mail                  │
+│                                                                  │
+│  helmet · CORS-allowlist · ValidationPipe · Throttler            │
+└──────────────────────────────────────────────────────────────────┘
+        │ TypeORM (MySQL-протокол, SSL)      │ зовнішні сервіси
+        ▼                                    ▼
+┌────────────────────────┐   ┌─────────────────────────────────────┐
+│  TiDB / MySQL, 16      │   │ Cloudinary · LiqPay · WayForPay     │
+│  таблиць (db.sql)      │   │ Нова пошта · SMTP · Telegram Bot    │
+└────────────────────────┘   └─────────────────────────────────────┘
 ```
+
+Продакшн: статика веба на Cloudflare Pages, backend у Docker на дроплеті
+з Caddy попереду, обидва за Cloudflare — подробиці у [`deploy/README.md`](deploy/README.md).
 
 ---
 
-## Структура проекту
-
-### Кореневий рівень
+## Структура репозиторію
 
 ```
 gall_pr/
-├── backend/        # NestJS-застосунок
-├── frontend/       # React Native-застосунок
-├── db.sql          # SQL-скрипти для ініціалізації БД
-└── .git/           # Git-репозиторій
+├── backend/            # NestJS API
+├── web/                # Vite + React SPA
+├── deploy/             # Caddyfile, prod-compose, інструкція деплою
+├── docker-compose.yml  # локальний запуск backend у Docker
+└── db.sql              # повна схема БД, згенерована з живої бази
 ```
 
 ---
@@ -79,442 +77,375 @@ gall_pr/
 ```
 backend/
 ├── src/
-│   ├── main.ts                     # Точка входу застосунку
-│   ├── app.module.ts               # Кореневий модуль
-│   ├── app.controller.ts           # Основний контролер
-│   ├── app.service.ts              # Основний сервіс
+│   ├── main.ts                 # bootstrap: helmet, cookie-parser, CORS, ValidationPipe
+│   ├── app.module.ts           # TypeORM, ThrottlerModule, реєстрація модулів
 │   │
-│   ├── auth/                       # Модуль автентифікації
-│   │   ├── auth.controller.ts
-│   │   ├── auth.service.ts
-│   │   ├── auth.module.ts
-│   │   ├── decorators/
-│   │   ├── dto/
-│   │   ├── guards/
-│   │   └── strategies/
+│   ├── auth/                   # JWT: реєстрація, вхід, refresh, logout
+│   │   ├── auth.cookie.ts      # єдине місце, що описує refresh-cookie
+│   │   ├── guards/             # JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard
+│   │   ├── strategies/         # passport-jwt
+│   │   └── decorators/         # @Roles()
 │   │
-│   ├── users/                      # Модуль користувачів
-│   │   ├── users.controller.ts
-│   │   ├── users.service.ts
-│   │   ├── users.module.ts
-│   │   ├── entities/
-│   │   └── dto/
-│   │
-│   ├── paintings/                  # Модуль картин
-│   │   ├── paintings.controller.ts
-│   │   ├── paintings.service.ts
-│   │   ├── paintings.module.ts
-│   │   ├── entities/
-│   │   └── dto/
-│   │
-│   └── uploads/                    # Модуль завантаження файлів
-│       ├── uploads.controller.ts
-│       ├── uploads.service.ts
-│       └── uploads.module.ts
+│   ├── users/                  # користувачі, привʼязка Telegram
+│   ├── paintings/              # каталог: CRUD, фільтри, діапазон цін
+│   ├── materials/              # довідник матеріалів
+│   ├── techniques/             # довідник технік
+│   ├── cart/                   # кошик користувача і гостя
+│   ├── orders/                 # оформлення, статуси, підтвердження оплати, замовлення на роботу
+│   ├── payments/               # LiqPay / WayForPay + перевірка підписів колбеків
+│   ├── nova-poshta/            # міста, відділення, вартість доставки
+│   ├── support/                # чат підтримки (HTTP + WebSocket-шлюз)
+│   ├── giveaways/              # розіграші та учасники
+│   ├── news/                   # новини
+│   ├── likes/                  # уподобані картини
+│   ├── settings/               # налаштування магазину + FAQ
+│   ├── mail/                   # outbox-черга листів і диспетчер SMTP
+│   ├── telegram/               # бот-сповіщення (grammy, long polling)
+│   ├── uploads/                # Cloudinary + перевірка сигнатури файлу
+│   ├── common/                 # identity, throttler-guard, опції завантаження
+│   └── config/                 # cors.ts, proxy.ts, secrets.ts
 │
-├── test/
-├── package.json
-├── tsconfig.json
-└── .env
+├── Dockerfile
+├── .env.example
+└── package.json
 ```
 
 ### Опис ключових модулів
 
-**`app.module.ts`** — кореневий модуль. Містить конфігурацію TypeORM і MySQL, реєстрацію всіх підмодулів (Auth, Users, Paintings, Uploads), а також налаштування глобальних сервісів.
+**`main.ts`** — HTTPS вмикається сам, якщо в `./cert` лежить сертифікат (у розробці
+це сертифікат Tailscale); інакше — звичайний HTTP, і TLS термінує Caddy. Тут же
+`helmet`, `cookie-parser`, глобальний `ValidationPipe({ whitelist, transform })`,
+CORS з `credentials: true` та `trust proxy` за `TRUST_PROXY`.
 
-**`main.ts`** — точка входу. Відповідає за запуск NestJS-застосунку, конфігурацію CORS та підключення middleware.
+**`app.module.ts`** — TypeORM із `synchronize: false` (схема живе в `db.sql`,
+не генерується з ентіті) та обовʼязковим SSL; глобальний Throttler зі стелею
+120 запитів/хв, поверх якої окремі маршрути мають суворіші `@Throttle`.
 
-**`auth/`** — модуль автентифікації. Реалізує видачу та перевірку JWT-токенів (access + refresh), Passport-стратегії, Guards для захисту приватних ендпоінтів, а також реєстрацію та вхід користувачів.
+**`auth/`** — access-токен у відповіді, refresh-токен — у httpOnly-cookie
+`gall_refresh` з `path=/auth`. Токени підписуються **різними** секретами, щоб
+access-токен структурно не міг зійти за refresh. `OptionalJwtAuthGuard` дає
+маршрутам працювати і для гостя (кошик, замовлення, чат).
 
-**`users/`** — модуль користувачів. Забезпечує операції з профілем, отримання даних користувача та управління ролями (`USER`, `ADMIN`).
+**`orders/`** — оформлення для користувача і для гостя, скасування, підтвердження
+оплати завантаженим скріншотом, адмінські статуси, архівація, лист-вибачення,
+а також окремий тип замовлення — картина на замовлення (`POST /orders/commission`).
 
-**`paintings/`** — модуль картин. Реалізує повний CRUD для каталогу, фільтрацію та пошук.
+**`payments/`** — спільний інтерфейс шлюзу. Шлюз без ключів просто не
+пропонується, а його колбек відхиляється, а не приймається на віру: непідписаний
+ключ не може перевірити підпис. Суми звіряються в копійках з допуском 1 копійка.
 
-**`uploads/`** — модуль завантажень. Відповідає за інтеграцію з Cloudinary: обробку файлів через Multer, завантаження на CDN та повернення публічних URL.
+**`support/`** — чат на socket.io. Гість ідентифікується `X-Guest-Token`,
+адресу клієнта беруть за тим самим правилом, що й HTTP-throttler (заголовки
+проксі — лише якщо проксі оголошено). Є presence і rate-limit сервіси.
+
+**`mail/`** — лист спершу рендериться і **записується** в `mail_outbox`, і лише
+потім диспетчер віддає його SMTP. Пʼять спроб із backoff 1 хв → 5 хв → 15 хв →
+1 год → 6 год; без `SMTP_*` листи позначаються як пропущені, а не губляться.
+
+**`telegram/`** — бот на grammy у режимі long polling, тож публічний URL не
+потрібен. Без `TELEGRAM_BOT_TOKEN` кожен виклик — залогований no-op.
+
+**`uploads/`** — Multer пише файл під випадковим імʼям із whitelisted-розширенням,
+далі перевіряються **магічні байти** (JPEG/PNG/WebP/HEIC), і лише потім файл їде
+в Cloudinary. Ліміт — 10 МБ.
 
 ---
 
-## Frontend (`/frontend`)
+## Веб-застосунок (`/web`)
 
 ### Структура
 
 ```
-frontend/
+web/
 ├── src/
-│   ├── App.tsx                     # Точка входу застосунку
-│   ├── index.ts                    # Конфігурація Expo
-│   │
-│   ├── screens/                    # Екрани застосунку
-│   │   ├── HomeScreen.tsx
-│   │   ├── LoginScreen.tsx
-│   │   ├── RegisterScreen.tsx
-│   │   ├── ProfileScreen.tsx
-│   │   ├── CatalogScreen.tsx
-│   │   ├── PaintingScreen.tsx
-│   │   └── stydel/                 # Стилізовані компоненти екранів
-│   │
-│   ├── components/                 # UI-компоненти
-│   │   ├── admin/
-│   │   ├── layout/
-│   │   ├── menu/
-│   │   └── ...
-│   │
-│   ├── navigation/
-│   │   ├── AppNavigator.tsx
-│   │   └── BottomMenu.tsx
-│   │
-│   ├── store/                      # Zustand-сховища
-│   │   ├── authStore.ts
-│   │   ├── themeStore.ts
-│   │   └── UIStore.ts
-│   │
+│   ├── main.tsx / App.tsx
+│   ├── routes/               # router.tsx, ProtectedRoute
+│   ├── pages/                # сторінки, зокрема pages/admin/*
+│   ├── components/           # UI, layout, support, admin
 │   ├── hooks/
-│   │   ├── useTheme.ts
-│   │   └── ...
-│   │
-│   ├── theme/
-│   │   ├── colors.ts
-│   │   └── styled.d.ts
-│   │
-│   ├── api/
-│   │   └── index.ts
-│   │
-│   ├── auth/
-│   │   └── bootstrap.ts
-│   │
-│   └── types/
-│       ├── auth.types.ts
-│       ├── painting.types.ts
-│       └── create-painting.types.ts
-│
-├── android/
-├── assets/
-├── package.json
-├── app.json
-└── tsconfig.json
+│   │   ├── queries/          # usePaintings, useCart, useOrders, useSupport…
+│   │   └── mutations/        # useCheckoutMutation, useLikeMutation…
+│   ├── api/                  # тонкі обгортки над axios-клієнтом
+│   ├── store/slices/         # authSlice, themeSlice, toastSlice
+│   ├── lib/                  # queryClient, queryKeys
+│   ├── styles/               # global.scss, _variables.scss, _mixins.scss
+│   ├── types/
+│   └── utils/                # guestToken, imageUrl, safeUrl, edition, plural…
+├── .env.example
+└── vite.config.ts
 ```
 
-### Опис ключових файлів
+### Маршрути
 
-**`App.tsx`** — ініціалізує Zustand-сховища, налаштовує ThemeProvider та підключає AppNavigator.
+| Шлях | Сторінка |
+|------|----------|
+| `/` | Головна |
+| `/catalog` | Каталог із фільтрами |
+| `/gallery` | Галерея |
+| `/painting/:id` | Сторінка картини |
+| `/giveaways/:id` | Розіграш |
+| `/cart`, `/orders` | Кошик, замовлення |
+| `/login`, `/register` | Автентифікація |
+| `/support`, `/support/chat` | FAQ і чат (чат відкритий і для гостей) |
+| `/profile`, `/favorites` | Потребують входу |
+| `/admin/{dictionaries,users,orders,settings,support,giveaways,mail}` | Лише для `ADMIN` |
 
-**`screens/`** — екрани застосунку: `HomeScreen` (головна з топ-картинами), `LoginScreen`, `RegisterScreen`, `ProfileScreen`, `CatalogScreen` (повний каталог з пагінацією), `PaintingScreen` (детальний перегляд картини).
+### Підходи
 
-**`navigation/AppNavigator.tsx`** — Stack Navigator з анімаціями переходів та глобальним меню.
+**Розділення стану.** Серверні дані — у TanStack Query (ключі зібрані в
+`lib/queryKeys.ts`); Redux Toolkit тримає лише те, що справді клієнтське: сесію,
+тему й тости. У localStorage зберігається **тільки тема** — сесія живе в
+httpOnly-cookie й відновлюється на старті (`auth/bootstrap.ts`).
 
-**`store/`** — управління станом через Zustand: `authStore` (користувач, токени, статус автентифікації), `themeStore` (тема оформлення), `UIStore` (глобальні UI-стани).
+**Axios-клієнт** (`api/client.ts`) додає `Authorization` або `X-Guest-Token`
+(ніколи обидва), а на 401 виконує single-flight refresh: паралельні 401
+чекають один спільний запит, бо backend ротує refresh-токен на кожному
+використанні й два одночасні оновлення побили б одне одного.
 
-**`api/index.ts`** — конфігурація Axios, interceptors для автоматичного додавання токенів та централізована обробка помилок.
+**Ліниві сторінки** — усі маршрути через `React.lazy`.
 
 ---
 
-## База даних (`db.sql`)
+## База даних
 
-### Таблиця `users`
+`db.sql` — **повна** схема, згенерована з живої бази (TiDB, сумісний із MySQL),
+без даних. Це не набір міграцій: після зміни схеми файл треба перегенерувати.
 
-```sql
-CREATE TABLE users (
-    id            BIGINT PRIMARY KEY AUTO_INCREMENT,
-    email         VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    first_name    VARCHAR(100),
-    last_name     VARCHAR(100),
-    phone         VARCHAR(20)  NOT NULL,
-    address       VARCHAR(255),
-    role          ENUM('USER', 'ADMIN') DEFAULT 'USER',
-    is_active     BOOLEAN DEFAULT TRUE,
-    is_verified   BOOLEAN DEFAULT FALSE,
-    refresh_token TEXT NULL,
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+16 таблиць:
 
-| Поле | Призначення |
-|------|-------------|
-| `id` | Унікальний ідентифікатор |
-| `email` | Електронна адреса (унікальна) |
-| `password_hash` | Хеш пароля (bcrypt) |
-| `role` | Роль: `USER` або `ADMIN` |
-| `refresh_token` | Токен для оновлення access token |
-| `is_verified` | Підтвердження email |
-| `created_at / updated_at` | Часові мітки |
+| Група | Таблиці |
+|-------|---------|
+| Люди | `users`, `telegram_pending_links` |
+| Каталог | `paintings`, `materials`, `techniques`, `likes` |
+| Продажі | `cart_items`, `orders`, `order_items` |
+| Комунікація | `support_chats`, `support_messages`, `mail_outbox`, `news` |
+| Активності | `giveaways`, `giveaway_participants` |
+| Конфігурація | `app_settings` |
 
-### Таблиця `paintings`
-
-```sql
-CREATE TABLE paintings (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    title        VARCHAR(255)   NOT NULL UNIQUE,
-    subtitle     VARCHAR(255),
-    card_image   VARCHAR(500)   NOT NULL,
-    images       JSON           NOT NULL,
-    price        DECIMAL(10,2)  NOT NULL,
-    discount     INT            DEFAULT 0,
-    amount       INT            NOT NULL DEFAULT 1,
-    is_available BOOLEAN        DEFAULT TRUE,
-    is_featured  BOOLEAN        DEFAULT FALSE,
-    author       VARCHAR(255),
-    technique    VARCHAR(255),
-    material     VARCHAR(255),
-    width        INT,
-    height       INT,
-    year         INT,
-    description  TEXT           NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
-
-| Поле | Призначення |
-|------|-------------|
-| `id` | Унікальний ідентифікатор |
-| `title` | Назва картини (унікальна) |
-| `card_image` | URL зображення для картки каталогу |
-| `images` | JSON-масив URL усіх зображень |
-| `price` | Базова ціна |
-| `discount` | Відсоток знижки |
-| `amount` | Кількість примірників у наявності |
-| `is_featured` | Відображення на головній сторінці |
-| `author, technique, material, width, height, year` | Метадані твору |
-
----
-
-## Основні сутності
-
-### User
+### Основні сутності
 
 ```typescript
 User {
-  id:           number
-  email:        string
-  firstName:    string
-  lastName:     string
-  phone:        string
-  address?:     string
-  role:         'USER' | 'ADMIN'
-  isVerified:   boolean
-  isActive:     boolean
+  id: number; email: string; firstName?: string; lastName?: string
+  phone: string; addres?: string            // назва колонки саме така
+  role: 'USER' | 'ADMIN'; isActive: boolean
   refreshToken?: string
-  createdAt:    Date
-  updatedAt:    Date
+  telegramChatId?: string; telegramLinkCode?: string
+  createdAt: Date; updatedAt: Date
 }
-```
 
-### Painting
-
-```typescript
 Painting {
-  id:          number
-  title:       string
-  subtitle?:   string
-  cardImage:   string        // URL
-  images:      string[]      // JSON-масив URL
-  price:       number
-  discount:    number
-  amount:      number
-  isAvailable: boolean
-  isFeatured:  boolean
-  author:      string
-  technique:   string
-  material:    string
-  width:       number
-  height:      number
-  year:        number
-  description: string
-  createdAt:   Date
-  updatedAt:   Date
+  id: number; title: string; subtitle?: string
+  cardImage: string; images: string[]; interiorImages?: string[]
+  animation3dImage?: string                 // кадр для 3D-перегляду
+  price: number; amount: number
+  isAvailable: boolean; isFeatured: boolean; isRepeatable: boolean
+  materialId?: number; techniqueId?: number
+  width?: number; height?: number; weight?: number; year?: number
+  likesCount: number; description: string
+  createdAt: Date; updatedAt: Date
 }
-```
 
-### AuthResponse
-
-```typescript
-AuthResponse {
-  accessToken:  string   // JWT
-  refreshToken: string
-  user:         User
+Order {
+  id: number
+  userId?: number | guestToken?: string     // замовлення гостя
+  guestName?, guestEmail?, guestPhone?, guestAddress?
+  status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'CANCELLED' | 'COMPLETED'
+  paymentProvider: 'LIQPAY' | 'WAYFORPAY' | 'CASH_ON_DELIVERY'
+                 | 'CARD_TRANSFER' | 'ON_AGREEMENT'
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED'; paymentTransactionId?: string
+  paymentProofUrl?: string
+  deliveryMethod: 'NOVA_POSHTA'
+  novaPoshtaCity?, novaPoshtaWarehouse?, trackingNumber?
+  total: number; deliveryCost: number; codFee: number
+  isCommission: boolean; isArchived: boolean; callMeRequested: boolean
+  comment?: string; contactHandle?: string
 }
 ```
 
 ---
 
-## Патерни та підходи
+## Автентифікація та безпека
 
-### Backend
+**Два секрети, не один.** `JWT_SECRET` і `JWT_REFRESH_SECRET` мають бути різні
+й не коротші за 32 символи — інакше процес не стартує (`config/secrets.ts`).
+Дефолтне значення тут було б секретом, відомим усім, хто читав репозиторій.
 
-**NestJS Modules Pattern** — кожен функціональний модуль (Auth, Users, Paintings) є незалежним і містить контролер, сервіс та сутності. Усі модулі реєструються в `AppModule`.
+**Refresh у httpOnly-cookie.** `gall_refresh`, `Secure`, `SameSite=Lax`,
+`path=/auth`, 30 днів. Скрипт на сторінці його не прочитає, тож XSS може діяти,
+поки виконується, але не може винести облікові дані. Решта API працює на
+Bearer-заголовку, тому CSRF-поверхні там немає.
 
-**TypeORM** — ORM для роботи з MySQL. Сутності описують структуру таблиць; репозиторії забезпечують CRUD-операції.
+**CORS — явний список** із `CORS_ORIGINS` (або `WEB_URL`). Поза продакшном
+додатково дозволені localhost і приватні діапазони, бо адреса машини в розробці
+змінюється; у продакшні — тільки список.
 
-**JWT-автентифікація** — access-токен короткоживучий (15–30 хвилин), refresh-токен довгоживучий і зберігається в БД. Захист ендпоінтів реалізовано через Passport-стратегії та Guards.
+**Throttling** з урахуванням проксі. `TRUST_PROXY` за замовчуванням вимкнено:
+переслані адреси — це лише заголовки, і довіра до них без проксі попереду
+роздає атакувальнику по власному ліміту на кожну підроблену адресу. Суворіші
+ліміти стоять на реєстрації (5/год), вході (10/хв), Telegram-кодах, злитті
+гостьового кошика та завантаженні підтверджень оплати.
 
-**Guards та декоратори:**
-- `@UseGuards(JwtAuthGuard)` — захист приватних ендпоінтів
-- `@GetUser()` — отримання поточного користувача з токена
-- `@IsAdmin()` — перевірка ролі адміністратора
+**Гість — це токен.** `X-Guest-Token` звʼязує кошик, замовлення й чат до входу;
+після реєстрації вони «переносяться» на акаунт (`/cart/merge`,
+`/orders/claim-guest`, `/support/claim-guest-chat`).
 
-**Завантаження файлів** — Multer обробляє `multipart/form-data`, після чого файл передається до Cloudinary. Клієнту повертається публічний URL.
-
-### Frontend
-
-**React Native Navigation** — Stack Navigator для управління стеком екранів; Bottom Menu для швидкої навігації між основними розділами.
-
-**Zustand (State Management):**
-
-```javascript
-const useAuthStore = create(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      setAuth: (data) => set({ ...data }),
-      logout: () => set({ user: null, accessToken: null }),
-    }),
-    { storage: AsyncStorage }
-  )
-);
-```
-
-Стан персистується через `AsyncStorage`. Сховища розділені за доменами: автентифікація, тема, UI.
-
-**Styled Components** — компонентна архітектура стилів із підтримкою світлої та темної теми через `ThemeProvider`.
-
-**Axios Interceptors** — автоматичне додавання токенів до запитів, перехоплення помилок 401 з ініціацією оновлення токена.
+**Завантаження** перевіряються за вмістом, а не за `Content-Type`, і зберігаються
+під згенерованим імʼям — маршрут підтвердження оплати доступний і анонімам.
 
 ---
 
-## Флоу операцій
+## Ключові флоу
 
-### Реєстрація
-
-```
-Користувач заповнює форму → клієнт валідує дані локально
-    → POST /auth/register
-    → Backend: хешує пароль (bcrypt), зберігає User у БД, генерує JWT-токени
-    → Відповідь: AuthResponse { user, accessToken, refreshToken }
-    → Клієнт: зберігає в authStore (AsyncStorage), переходить на HomeScreen
-```
-
-### Вхід
+### Реєстрація та вхід
 
 ```
-Користувач вводить email + password → POST /auth/login
-    → Backend: перевіряє email, порівнює пароль (bcrypt.compare),
-               генерує токени, зберігає refresh_token у БД
-    → Відповідь: AuthResponse
-    → Клієнт: зберігає в authStore, налаштовує Axios interceptor, переходить на HomeScreen
+POST /auth/register | /auth/login
+  → bcrypt, видача access-токена в тілі + refresh у httpOnly-cookie
+  → web: accessToken у Redux (памʼять), користувач із GET /auth/me
 ```
 
-### Завантаження картини (Admin)
+### Поновлення сесії
 
 ```
-Адміністратор обирає файл → multipart/form-data з файлом і метаданими
-    → POST /uploads/painting
-    → Backend: Multer обробляє файл → завантажує на Cloudinary → отримує URL
-               → зберігає Painting у БД
-    → Відповідь: Painting-сутність
-    → Клієнт оновлює список картин у CatalogScreen
+Старт застосунку або 401 → POST /auth/refresh (cookie летить сама)
+  → backend перевіряє й ротує refresh-токен
+  → новий accessToken; паралельні 401 чекають один спільний запит
 ```
 
-### Перегляд каталогу
+### Оформлення замовлення
 
 ```
-Відкривається CatalogScreen → GET /paintings?page=1&limit=20
-    → Backend повертає масив Painting із пагінацією
-    → Клієнт рендерить список (card_image)
-    → Натискання на картину → перехід на PaintingScreen з ID
-    → GET /paintings/:id → детальна інформація (всі зображення, опис, метадані)
+Кошик (користувач або гість) → POST /orders/checkout
+  → ref міста й відділення резолвляться на сервері (ціна доставки й адреса
+    мають походити з одного джерела)
+  → створення Order + OrderItem, списання наявності
+  → LIQPAY/WAYFORPAY: форма оплати; колбек із перевіркою підпису й суми
+    → payment_status = PAID
+  → лист у mail_outbox + сповіщення в Telegram
 ```
 
-### Оновлення профілю
+### Чат підтримки
 
 ```
-Користувач редагує дані → PATCH /users/:id
-    → Backend: валідує та зберігає зміни у БД
-    → Відповідь: оновлений User
-    → Клієнт оновлює authStore.user
+Клієнт (з акаунтом або з X-Guest-Token) відкриває сокет
+  → gateway ідентифікує, кладе в кімнати, віддає історію
+  → повідомлення адміну дублюється в Telegram; відповідь з Telegram
+    повертається в той самий чат
 ```
 
-### Оновлення токена
+---
 
-```
-Access token прострочено → Axios interceptor перехоплює помилку 401
-    → POST /auth/refresh з refreshToken
-    → Backend: перевіряє refresh_token у БД, видає новий accessToken
-    → Axios повторює оригінальний запит із новим токеном
-```
+## API Endpoints
+
+Базова адреса — `http://localhost:3001`. 🔒 — потрібен вхід, 👑 — роль `ADMIN`,
+◐ — працює і для гостя за `X-Guest-Token`.
+
+### Auth
+
+| Метод | Шлях | Опис |
+|-------|------|------|
+| POST | `/auth/register` | Реєстрація (5/год) |
+| POST | `/auth/login` | Вхід (10/хв) |
+| GET | `/auth/me` 🔒 | Поточний користувач |
+| POST | `/auth/refresh` | Оновлення access-токена з cookie |
+| POST | `/auth/logout` | Вихід, очищення cookie |
+
+### Каталог і довідники
+
+| Метод | Шлях | Опис |
+|-------|------|------|
+| GET | `/paintings` | Каталог: `page`, `limit`, `techniqueId`, `isAvailable`, `minPrice`, `maxPrice` |
+| GET | `/paintings/price-range` | Мін./макс. ціна для фільтра |
+| GET | `/paintings/:id` | Деталі картини |
+| POST · PATCH · DELETE | `/paintings[/:id]` 👑 | Керування каталогом |
+| GET · POST · PATCH · DELETE | `/materials[/:id]` | Читання відкрите, зміни 👑 |
+| GET · POST · PATCH · DELETE | `/techniques[/:id]` | Читання відкрите, зміни 👑 |
+
+### Кошик і замовлення
+
+| Метод | Шлях | Опис |
+|-------|------|------|
+| GET · POST · DELETE | `/cart` ◐ | Переглянути, додати, очистити |
+| PATCH · DELETE | `/cart/:paintingId` ◐ | Кількість, видалення позиції |
+| POST | `/cart/merge` 🔒 | Перенести гостьовий кошик на акаунт |
+| POST | `/orders/checkout` ◐ | Оформлення |
+| POST | `/orders/commission` ◐ | Замовлення картини на замовлення (5/год) |
+| GET | `/orders` ◐ · `/orders/:id` ◐ | Свої замовлення |
+| PATCH | `/orders/:id/cancel` ◐ | Скасування |
+| POST | `/orders/:id/payment-proof` ◐ | Скріншот оплати (10/год) |
+| POST | `/orders/claim-guest` 🔒 | Привласнити гостьові замовлення |
+| GET | `/orders/all` 👑 | Усі замовлення |
+| PATCH | `/orders/:id/status` · `/payment-status` · `/archive` 👑 | Адмінські зміни |
+| POST | `/orders/:id/status-mail` · `/apology-mail` 👑 | Листи клієнту |
+| DELETE | `/orders/:id` 👑 | Видалення |
+| POST | `/payments/liqpay/callback` · `/payments/wayforpay/callback` | Колбеки шлюзів |
+
+### Доставка
+
+| Метод | Шлях | Опис |
+|-------|------|------|
+| GET | `/nova-poshta/cities` · `/warehouses` | Пошук міст і відділень (30/хв) |
+| GET | `/nova-poshta/delivery-price` ◐ | Розрахунок вартості |
+
+### Взаємодія
+
+| Метод | Шлях | Опис |
+|-------|------|------|
+| POST | `/likes/:paintingId` 🔒 | Перемкнути вподобання |
+| GET | `/likes/mine` · `/likes/paintings` 🔒 | ID та самі картини |
+| GET | `/giveaways` · `/giveaways/:id` | Розіграші |
+| GET · POST | `/giveaways/:id/my-status` · `/join` 🔒 | Статус і участь |
+| POST · PATCH · DELETE | `/giveaways[/:id]` 👑 | Керування розіграшами |
+| GET | `/news` | Новини (зміни 👑) |
+| GET | `/support/my-chat` ◐ · `/my-chat/unread` ◐ | Свій чат |
+| POST | `/support/claim-guest-chat` 🔒 | Привласнити гостьовий чат |
+| GET | `/support/chats` · `/support/chats/:id/messages` 👑 | Адмін-панель чатів |
+| WS | `/support` (socket.io) | Живі повідомлення підтримки |
+
+### Налаштування, розсилки, файли
+
+| Метод | Шлях | Опис |
+|-------|------|------|
+| GET | `/settings` · `/settings/faq` | Публічні налаштування і FAQ |
+| GET · PATCH | `/settings/admin` · `/settings` 👑 | Повні налаштування |
+| POST · DELETE | `/settings/telegram-link-code` · `/settings/telegram-link` 👑 | Привʼязка Telegram магазину |
+| POST · PATCH · DELETE | `/settings/faq[/:id]`, `/settings/faq/reorder` 👑 | Керування FAQ |
+| POST · DELETE | `/users/me/telegram-link-code[/redeem]`, `/users/me/telegram-link` 🔒 | Привʼязка Telegram користувача |
+| GET · DELETE | `/users` · `/users/:id` 👑 | Користувачі |
+| GET · DELETE · POST | `/mail/outbox[...]` 👑 | Черга листів, повтор, очищення |
+| POST | `/uploads/image` 👑 | Завантаження зображення в Cloudinary |
 
 ---
 
 ## Стилізація
 
-### Система тем
+SCSS-модулі на компонент плюс токени в CSS-змінних; перемикання теми — клас
+`.dark` на корені, значення в `styles/global.scss`.
 
-Проект використовує **styled-components** із двома темами.
+**Світла тема — «Porcelain Veil / Stone Moss / Warm Pebble»:**
 
-#### Світла тема (за замовчуванням)
-
-```javascript
-{
-  background:    '#EFFDFF',  // Світло-блакитний
-  card:          '#FFFFFF',  // Білий
-  text:          '#660029',  // Темно-червоний (основний)
-  secondaryText: '#8A5A6E',  // Сірий
-  primary:       '#660029',  // Бордовий
-  primaryText:   '#FFFFFF',  // Білий текст на primary
-  border:        '#E6D7DE',  // Світлий бордер
-  error:         '#FF4D4F'   // Червоний для помилок
-}
+```scss
+--color-background: #eee9e4;   // Porcelain Veil
+--color-surface:    #f6f6f1;
+--color-primary:    #4f5340;   // заливка кнопок і активних елементів
+--color-accent:     #6d705a;   // Stone Moss
+--color-accent-text:#545845;   // глибший зріз для тексту й посилань
+--color-text:       #24231e;
+--color-border:     #d5d7c7;
 ```
 
-#### Темна тема
+**Темна — «Obsidian Veil / Moss Shadow / Graphite Ash»** (`#1b1a17`, `#24271f`,
+світліший зріз мохового як `--color-primary`).
 
-```javascript
-{
-  background:    '#111827',  // Темно-сірий
-  card:          '#1F2937',  // Темна картка
-  text:          '#FFFFFF',  // Білий текст
-  secondaryText: '#9CA3AF',  // Світло-сірий
-  primary:       '#afe1ff',  // Світло-блакитний
-  primaryText:   '#FFFFFF',
-  border:        '#374151',  // Темний бордер
-  error:         '#FF4D4F'
-}
-```
+Акцент навмисно розділено на три ролі: Stone Moss достатньо темний, щоб нести
+світлий текст на собі, але як текст на тлі сторінки дає лише 4.2:1 — нижче AA.
+Тому заливка й текстовий колір — різні токени, а обидві теми лишаються
+взаємозамінними, бо кожен споживач бере колір за роллю, а не за відтінком.
 
-### Архітектура стилів
-
-**`theme/colors.ts`** — централізована палітра; експортує `lightTheme` та `darkTheme` для ThemeProvider.
-
-**`theme/styled.d.ts`** — TypeScript-типи для ThemeProvider; розширює типи styled-components і забезпечує автодоповнення для `props.theme`.
-
-**Приклад стилізованого компонента:**
-
-```javascript
-const PaintingCard = styled.View`
-  background-color: ${({ theme }) => theme.card};
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-`;
-```
-
-**Перемикання теми:**
-
-```javascript
-// themeStore.ts
-const useThemeStore = create((set) => ({
-  isDark: false,
-  toggleTheme: () => set((state) => ({ isDark: !state.isDark })),
-}));
-
-// hooks/useTheme.ts
-export const useTheme = () => {
-  const isDark = useThemeStore((state) => state.isDark);
-  return isDark ? darkTheme : lightTheme;
-};
-```
+Шрифт — Tenor Sans; на мобільному герої додаються Rubik 900 і Cormorant
+Garamond. Решта масштабів (відступи, радіуси, motion, брейкпойнти) — у
+`styles/_variables.scss`.
 
 ---
 
@@ -524,125 +455,118 @@ export const useTheme = () => {
 
 | Технологія | Версія |
 |------------|--------|
-| Node.js | LTS |
+| Node.js | 24 (образ `node:24-slim`) |
 | NestJS | 11.x |
-| TypeORM | 1.x |
-| MySQL | 8.x |
-| Passport / JWT | — |
-| Multer + Cloudinary | — |
-| bcrypt | — |
-| Jest | — |
+| TypeORM | 1.x + mysql2 3.x |
+| TiDB / MySQL | сумісні з MySQL 8 |
+| Passport + JWT | 11.x |
+| socket.io | 4.8.x |
+| Cloudinary · Multer | 2.x · 2.x |
+| grammy (Telegram) | 1.45.x |
+| nodemailer | 9.x |
+| helmet · @nestjs/throttler | 8.x · 6.x |
+| bcrypt · class-validator | 6.x · 0.15.x |
+| Jest | 30.x |
 
-### Frontend
+### Web
 
 | Технологія | Версія |
 |------------|--------|
-| React Native | 0.81.x |
-| Expo | 54.x |
-| TypeScript | 5.9.x |
-| Zustand | 5.x |
-| React Navigation | 7.x |
-| Axios | 1.18.x |
-| styled-components | 6.x |
-| AsyncStorage | — |
+| React | 19.2.x |
+| Vite | 8.x |
+| TypeScript | 6.x |
+| TanStack Query | 5.x |
+| Redux Toolkit · react-redux | 2.x · 9.x |
+| React Router | 7.x |
+| Axios · socket.io-client | 1.18.x · 4.8.x |
+| Sass (SCSS-модулі) | 1.101.x |
+| Oxlint | 1.x |
 
 ### Інфраструктура
 
-- Файлове сховище: **Cloudinary CDN**
-- База даних: **MySQL 8.x**
-- Контроль версій: **Git**
+Cloudinary CDN · Cloudflare Pages (веб) · Docker + Caddy на DigitalOcean (API) ·
+TiDB Cloud (БД).
 
 ---
 
-## API Endpoints
-
-### Автентифікація
-
-| Метод | Шлях | Опис |
-|-------|------|------|
-| POST | `/auth/register` | Реєстрація користувача |
-| POST | `/auth/login` | Вхід у систему |
-| POST | `/auth/refresh` | Оновлення access token |
-
-### Користувачі
-
-| Метод | Шлях | Опис |
-|-------|------|------|
-| GET | `/users/:id` | Отримати профіль |
-| PATCH | `/users/:id` | Оновити профіль |
-| GET | `/users` | Список користувачів (Admin) |
-
-### Картини
-
-| Метод | Шлях | Опис |
-|-------|------|------|
-| GET | `/paintings` | Каталог із пагінацією |
-| GET | `/paintings/:id` | Деталі картини |
-| POST | `/paintings` | Створити картину (Admin) |
-| PATCH | `/paintings/:id` | Оновити картину (Admin) |
-| DELETE | `/paintings/:id` | Видалити картину (Admin) |
-
-### Завантаження
-
-| Метод | Шлях | Опис |
-|-------|------|------|
-| POST | `/uploads/painting` | Завантажити зображення картини |
-| POST | `/uploads/avatar` | Завантажити аватар користувача |
-
----
-
-## Запуск проекту
+## Запуск проєкту
 
 ### Backend
 
 ```bash
 cd backend
 npm install
+cp .env.example .env      # заповнити: без JWT-секретів процес не стартує
 npm run start:dev
 ```
 
-Сервер запускається на `http://localhost:3000`.
+API підніметься на `http://localhost:3001` (або HTTPS, якщо в `backend/cert`
+лежать `key.pem` і `cert.pem`).
 
-### Frontend
+У Docker:
 
 ```bash
-cd frontend
+docker compose up -d --build
+```
+
+### Web
+
+```bash
+cd web
 npm install
-npm start
-
-# Android:
-npm run android
-
-# iOS:
-npm run ios
+cp .env.example .env
+npm run dev               # Vite
+npm run build             # tsc -b && vite build
+npm run lint              # oxlint
 ```
 
 ### База даних
 
 ```bash
-mysql -u root -p < db.sql
+mysql -h <host> -P 4000 -u <user> -p <database> < db.sql
 ```
+
+`db.sql` створює порожню схему цілком (`DROP TABLE IF EXISTS` на кожній
+таблиці), тож на базі з даними виконувати його не можна.
 
 ---
 
 ## Змінні середовища
 
-### Backend (`.env`)
+### Backend (`backend/.env`) — повний перелік із коментарями у `.env.example`
 
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD=password
-DB_DATABASE=galleryDB
-JWT_SECRET=your-secret-key
-JWT_EXPIRATION=3600
-CLOUDINARY_URL=your-cloudinary-url
+| Змінна | Призначення |
+|--------|-------------|
+| `JWT_SECRET`, `JWT_REFRESH_SECRET` | Обовʼязкові, різні, ≥32 символи |
+| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` | Підключення до БД (SSL обовʼязковий) |
+| `NODE_ENV`, `PORT` | `production` у продакшні; порт за замовчуванням 3001 |
+| `CORS_ORIGINS` / `WEB_URL` | Дозволені origin-и, через кому |
+| `TRUST_PROXY` | Кількість проксі попереду (`2` у продакшні) |
+| `CLOUDINARY_*` | Завантаження зображень |
+| `LIQPAY_*`, `WAYFORPAY_*` | Платіжні шлюзи (необовʼязкові) |
+| `PAYMENTS_CALLBACK_URL` | Публічна адреса для колбеків |
+| `NOVA_POSHTA_API_KEY` | Міста, відділення, тарифи |
+| `SMTP_*` | Пошта; без них листи позначаються пропущеними |
+| `TELEGRAM_BOT_TOKEN` | Без нього сповіщення — залоговані no-op |
+
+### Web (`web/.env`)
+
+| Змінна | Призначення |
+|--------|-------------|
+| `VITE_API_URL` | Адреса API (типово `http://localhost:3001`) |
+| `VITE_TELEGRAM_BOT_USERNAME` | Імʼя бота для привʼязки акаунта |
+| `VITE_QUERY_DEVTOOLS` | Панель React Query у dev, типово `false` |
+
+---
+
+## Деплой
+
+Покрокова інструкція, включно з налаштуваннями Cloudflare, які не живуть у
+репозиторії, — [`deploy/README.md`](deploy/README.md).
+
+```sh
+API_DOMAIN=api.viktorumm.com docker compose -f deploy/docker-compose.prod.yml up -d
 ```
-
-### Frontend
-
-Базовий URL API задається в `src/api/index.ts` через змінну `REACT_APP_API_URL`.
 
 ---
 
@@ -650,8 +574,12 @@ CLOUDINARY_URL=your-cloudinary-url
 
 | Файл | Призначення |
 |------|-------------|
-| `db.sql` | SQL-скрипти ініціалізації бази даних |
-| `backend/.env` | Змінні середовища backend |
-| `frontend/app.json` | Конфігурація Expo |
-| `backend/package.json` | Залежності backend |
-| `frontend/package.json` | Залежності frontend |
+| [db.sql](db.sql) | Повна схема БД |
+| [backend/.env.example](backend/.env.example) | Опис усіх змінних середовища backend |
+| [backend/src/config/secrets.ts](backend/src/config/secrets.ts) | Чому процес падає без секретів |
+| [backend/src/config/cors.ts](backend/src/config/cors.ts) | Політика origin-ів |
+| [backend/src/config/proxy.ts](backend/src/config/proxy.ts) | `TRUST_PROXY` і клієнтські адреси |
+| [backend/src/auth/auth.cookie.ts](backend/src/auth/auth.cookie.ts) | Форма refresh-cookie |
+| [web/src/api/client.ts](web/src/api/client.ts) | Токени, гостьовий заголовок, single-flight refresh |
+| [web/src/styles/global.scss](web/src/styles/global.scss) | Палітра й теми |
+| [deploy/README.md](deploy/README.md) | Деплой |
