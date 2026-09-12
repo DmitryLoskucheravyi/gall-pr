@@ -19,6 +19,7 @@ import Skeleton from '../components/ui/Skeleton';
 import Select from '../components/ui/Select';
 import NovaPoshtaCityPicker from '../components/ui/NovaPoshtaCityPicker';
 import InfoTooltip from '../components/ui/InfoTooltip';
+import Checkbox from '../components/ui/Checkbox';
 import styles from './CartPage.module.scss';
 
 const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
@@ -345,14 +346,13 @@ export default function CartPage() {
               )}
             </div>
 
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={callMeRequested}
-                onChange={(e) => setCallMeRequested(e.target.checked)}
-              />
+            <Checkbox
+              checked={callMeRequested}
+              onChange={setCallMeRequested}
+              className={styles.checkboxLabel}
+            >
               Зателефонувати мені
-            </label>
+            </Checkbox>
 
             {shippingCost > 0 && (
               <div className={styles.summaryRow}>

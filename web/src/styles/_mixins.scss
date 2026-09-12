@@ -141,6 +141,54 @@
   }
 }
 
+// Shared shell for Checkbox/Radio: a hidden native input plus a visible box,
+// so the two only differ in the box's shape and its checked-state indicator.
+@mixin control-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: 14px;
+  color: var(--color-text);
+  cursor: pointer;
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+// Overlays the box exactly, kept as a real focusable input rather than
+// display:none — keyboard and screen-reader behaviour stays native, only the
+// browser's own checkbox/radio paint is invisible.
+@mixin control-input {
+  position: absolute;
+  inset: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@mixin control-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  transition:
+    border-color $duration-fast ease,
+    background-color $duration-fast ease;
+}
+
 @mixin card {
   border-radius: $radius-lg;
   border: 1px solid var(--color-border);

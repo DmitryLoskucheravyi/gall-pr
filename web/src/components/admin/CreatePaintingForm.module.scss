@@ -140,14 +140,6 @@
   }
 }
 
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  font-size: 14px;
-  color: var(--color-text);
-}
-
 .error {
   font-size: 14px;
   color: var(--color-error);

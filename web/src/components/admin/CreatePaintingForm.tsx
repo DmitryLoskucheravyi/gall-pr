@@ -10,6 +10,8 @@ import {
 } from '../../hooks/mutations/usePaintingMutations';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import Select from '../ui/Select';
+import Checkbox from '../ui/Checkbox';
+import Radio from '../ui/Radio';
 import styles from './CreatePaintingForm.module.scss';
 
 type Props = {
@@ -630,14 +632,9 @@ export default function CreatePaintingForm({
             className={styles.textarea}
           />
 
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={isFeatured}
-              onChange={(e) => setIsFeatured(e.target.checked)}
-            />
+          <Checkbox checked={isFeatured} onChange={setIsFeatured}>
             Featured
-          </label>
+          </Checkbox>
 
           {/* Radio rather than a checkbox: these are two answers to one
               question, and "not unique" is not the same statement as
@@ -652,25 +649,21 @@ export default function CreatePaintingForm({
           </span>
 
           <div className={styles.editionChoice}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="radio"
-                name="edition"
-                checked={!isRepeatable}
-                onChange={() => setIsRepeatable(false)}
-              />
+            <Radio
+              name="edition"
+              checked={!isRepeatable}
+              onChange={() => setIsRepeatable(false)}
+            >
               Єдиний екземпляр — продано означає продано
-            </label>
+            </Radio>
 
-            <label className={styles.checkboxLabel}>
-              <input
-                type="radio"
-                name="edition"
-                checked={isRepeatable}
-                onChange={() => setIsRepeatable(true)}
-              />
+            <Radio
+              name="edition"
+              checked={isRepeatable}
+              onChange={() => setIsRepeatable(true)}
+            >
               Доступна для повтору — після продажу можна замовити ще одну
-            </label>
+            </Radio>
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
