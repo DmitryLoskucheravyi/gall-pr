@@ -1,4 +1,4 @@
-// ---------- Hero: one full-screen painting, copy anchored bottom-left ----------
+// ---------- Hero: a pinned sequence the reader scrolls through ----------
 
 // Mobile hero title only — see .title below. Imported in global.scss.
 $hero-title-font: 'Rubik', sans-serif;
@@ -6,104 +6,205 @@ $hero-title-font: 'Rubik', sans-serif;
 // counterpoint to Rubik's chunky uppercase. Imported in global.scss.
 $hero-title-serif: 'Cormorant Garamond', serif;
 
+// The height of the pinned stage, and the unit the track is measured in.
+$hero-stage-height: calc(
+  100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+);
+
+// The scroll track. It holds no content of its own — its only job is to be
+// several screens tall, giving .heroSticky something to stay pinned across
+// while the sequence plays. Everything after it in the document sits below
+// the track's full height, so the next section can't reach the screen until
+// the sequence has run out.
+//
+// --hero-track is set inline from useHeroSequence, so the height here and
+// the progress the hook computes are driven by the same number.
 .hero {
-  // The hero itself stays in normal flow — its text scrolls away with the
-  // page like any other content — while the photo backdrop (.heroBg below)
-  // is position:fixed and stays frozen behind it until the opaque
-  // .pageContent slides up and covers it.
   position: relative;
   z-index: 0;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: $spacing-xxxl;
-  // Pin the text block to the bottom edge of the first screen.
-  align-items: end;
-  align-content: end;
-  // Full-bleed, full-screen: escape .main's container
-  // padding (same trick as .marquee below) and the page's own top padding,
-  // so the background sits flush against the header with no gap on any
-  // side. 100dvh (not vh/%) accounts for mobile browser chrome correctly.
-  margin-inline: calc(-1 * $container-padding);
+  // Full-bleed to the screen edges. Escaping .main's padding isn't enough:
+  // .main is also capped at $container-max-width and centred, so past that
+  // width the page's own background showed down either side of the stage.
+  // 50% is half of .main's content box and 50vw half the viewport, so the
+  // difference is exactly that gap plus the padding — correct both below and
+  // above the cap. (Same breakout .pageContent uses further down.)
+  margin-inline: calc(50% - 50vw);
   margin-top: calc(-1 * $spacing-xxxxl);
-  min-height: calc(
-    100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
-  );
-  // Slim bottom padding — the text block should sit at the very bottom
-  // edge of the first screen.
-  padding: $spacing-xxxl $spacing-xl $spacing-xl;
+  // The length of the sequence, and so how much scrolling it costs to get
+  // through it. 100dvh (not vh/%) accounts for mobile browser chrome
+  // correctly. Short on a phone, where scrolling is a thumb flick at a time
+  // and a long runway just reads as the page being stuck; longer where
+  // there's a wheel to turn.
+  height: calc(2 * #{$hero-stage-height});
 
   @include respond-up($breakpoint-lg) {
-    padding: $spacing-xxxl $spacing-huge $spacing-xxxl;
+    height: calc(3.2 * #{$hero-stage-height});
   }
 }
 
-// The paintings behind the hero copy, Ken Burns panning across them. A wide
-// screen stacks all three and crossfades between passes; a phone renders
-// only the one it drew (see HomePage.tsx), so it downloads only that one.
-.heroBg {
-  // Fixed, not absolute: the hero (and its text) scrolls with the page,
-  // but this backdrop stays pinned below the sticky header. It lives inside
-  // .hero's z-index:0 stacking context, so .pageContent (z-index:1) still
-  // paints over it once scrolled into view.
-  position: fixed;
+// The stage: one screen, pinned below the header for the length of the
+// track. This is the element that stays still while the reader scrolls —
+// what moves is the sequence painted on it.
+.heroSticky {
+  position: sticky;
   top: var(--header-height, 64px);
-  left: 0;
-  right: 0;
-  height: calc(
-    100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+  height: $hero-stage-height;
+  // The copy grows past the edge of the frame as it approaches; this is what
+  // keeps that from spilling onto the page and opening a scrollbar.
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: end;
+  // The stage is full-bleed, but its copy shouldn't be: max() holds the
+  // text to the same left edge as every section below once the viewport is
+  // wider than the container, and falls back to a plain gutter under it.
+  padding-block: $spacing-xxxl $spacing-xl;
+  padding-inline: max(
+    #{$spacing-xl},
+    calc(50vw - #{$container-max-width} / 2 + #{$spacing-xl})
   );
-  z-index: 0;
+
+  @include respond-up($breakpoint-lg) {
+    padding-block: $spacing-xxxl;
+    padding-inline: max(
+      #{$spacing-huge},
+      calc(50vw - #{$container-max-width} / 2 + #{$spacing-huge})
+    );
+  }
 }
 
-// Every painting is a full-size layer; only the one on show is opaque, and
-// the handover between passes is this transition. Well short of a pass, so
-// the fade is always finished long before the next swap.
-.heroBgImage {
+// The footage layer, filling the pinned stage behind the copy.
+.heroBg {
+  // Absolute within the stage, not fixed to the window: the stage is already
+  // held in place by its own `sticky`, and a fixed layer would go on sitting
+  // there after the pin released.
   position: absolute;
   inset: 0;
-  opacity: 0;
-  transition: opacity 1.4s ease;
+  z-index: 0;
+  // The vanishing point for everything inside. Deliberately long: a short
+  // perspective throws the tilt into caricature, and what's wanted here is
+  // the depth you notice only once you move the mouse.
+  perspective: 1600px;
+  perspective-origin: 50% 45%;
+}
+
+// ---------- Hero depth ----------
+//
+// The one element that actually moves. Its children each sit at a different
+// translateZ, so tilting this single box is what separates them — the
+// parallax falls out of the perspective rather than being hand-dialled
+// layer by layer, and the depths below stay readable as distances.
+//
+// --stage-x / --stage-y are written by useHeroSequence (-1..1 from the
+// centre of the viewport); --hero-progress is 0..1 across the pin. All three
+// fall back to 0, which is exactly the flat, un-tilted opening frame — so a
+// reduced-motion visitor, or any browser before the script runs, gets the
+// composition as designed and nothing jumps when it does.
+.heroStage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  // 2.2deg is the whole range, corner to corner. Past about three the
+  // footage starts to visibly keystone and the hero reads as a gimmick.
+  transform: rotateY(calc(var(--stage-x, 0) * 2.2deg))
+    rotateX(calc(var(--stage-y, 0) * -2.2deg));
+}
+
+// The footage, filling the frame. Starts 120px back — scaled by
+// (1600+120)/1600 to hold its apparent size there, plus slack for the corner
+// the tilt swings into view — and comes 260px toward the reader across the
+// pin. That approach is the "walking into it" half of the sequence: the
+// scrub advances the picture, this advances the reader through it.
+//
+// The scale rises with the same progress so the frame stays covered as the
+// plane nears: at +140px the (1600-140)/1600 shrink in apparent size would
+// otherwise pull its edges into view.
+//
+// Dimmed rather than darkened by a scrim across the whole frame: the copy
+// only occupies one corner, and the gradient in .heroOverlay handles that
+// corner. brightness alone here keeps the rest of the picture open.
+.heroWall {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(4px);
-  // Always slightly overscanned: blur() fades the outermost pixels to
-  // transparent, so at scale 1 a pale fringe shows along the hero's edges.
-  // HERO_PAN_REST in HomePage.tsx mirrors this value, so the camera's first
-  // move picks up from exactly here without a jump.
-  transform: scale(1.08);
+  transform: translateZ(calc(-120px + var(--hero-progress, 0) * 260px))
+    scale(calc(1.13 + var(--hero-progress, 0) * 0.26));
+  filter: brightness(0.66) saturate(0.92);
 }
 
-.heroBgImageActive {
-  opacity: 1;
-}
-
-// Scrim that keeps the copy legible over a busy photo. Darkens in both
+// Scrim that keeps the copy legible against the wall. Darkens in both
 // themes, not just dark mode — the hero text is white either way (see
-// --hero-photo-text), so lightening the photo in light mode would leave it
-// unreadable. Weighted toward the bottom, where the copy is anchored: the
-// top of the photo stays almost untouched and only the caption zone is
-// pulled down, so the painting still reads clearly.
+// --hero-photo-text), so lightening the wall in light mode would leave it
+// unreadable.
+//
+// Pulled toward the bottom-left corner the copy occupies, rather than
+// straight down as it was over the old full-bleed photo: the wall is
+// already dimmed at source (see .heroWall's filter), so this only has to
+// deepen the one corner instead of weighing on the whole frame.
+//
+// It sits at the stage's own depth, so the painting — which stands 60px
+// proud of it — paints over the top and keeps its full contrast. Bled 3%
+// past every edge because the stage tilts: at z=0 the box rotates with it,
+// and a scrim flush to the viewport would swing its own hard edge into the
+// corner of the screen.
 .heroOverlay {
   position: absolute;
-  inset: 0;
+  inset: -3%;
   z-index: 1;
-  background-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.1) 0%,
-    rgba(0, 0, 0, 0.16) 45%,
-    rgba(0, 0, 0, 0.52) 100%
+  background-image: radial-gradient(
+    120% 100% at 0% 100%,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.34) 42%,
+    rgba(0, 0, 0, 0.08) 100%
   );
 }
 
-// Kicker, headline, lede and the CTA bar, stacked over the photograph.
-.heroText {
+// The whole copy block — travelling words and fixed links together. It
+// carries no transform of its own, so the two can move independently.
+.heroCopy {
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+// Kicker, headline and lede: the part that travels. It comes toward the
+// reader as the track is scrolled and passes them — the other half of
+// walking into the picture. It grows from its own bottom-left corner, where
+// it already sits, so the words stay anchored to their spot instead of
+// sliding across the frame while they enlarge, and it grows upward, away
+// from the links parked underneath.
+//
+// The fade runs ahead of the scale rather than with it: held to 25%, then
+// gone by 55%, so the words leave while they are still whole. Letting them
+// run on simply pushed the headline off three sides of the screen, which is
+// the one thing this move must not do. The ceiling of +0.55 is part of the
+// same restraint — enough travel to read as approach, not enough to turn
+// the lede into wall-sized fragments.
+//
+// clamp() does the piecewise part: below 0.25 the middle term exceeds 1 and
+// the max wins, past 0.55 it goes negative and the min does. The 0.55 here
+// and HERO_COPY_GONE in useHeroSequence are the same number and have to
+// stay that way.
+.heroText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transform-origin: 0% 100%;
+  transform: scale(calc(1 + var(--hero-progress, 0) * 0.55));
+  opacity: clamp(0, calc((0.55 - var(--hero-progress, 0)) / 0.3), 1);
+}
+
+// Once the copy has faded it must stop swallowing clicks: by then it has
+// grown past the edges of the frame, and it would otherwise sit invisibly
+// across the stage catching the pointer on its way to the links below.
+// The flag is set by useHeroSequence — a plain attribute rather than a style
+// query, which is still too new to rely on.
+.hero[data-hero-past='true'] .heroText {
+  pointer-events: none;
 }
 
 // While the first painting is still decoding (see heroReady in
@@ -358,16 +459,7 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   padding-inline: calc(50vw - 50%);
 }
 
-// A deliberate transparent gap between the opaque sheets — the fixed hero
-// backdrop, still panning behind the page, shows through it like a window as
-// you scroll past. The .ctaBand's retained margin-top adds its usual spacing
-// on top of this height.
-.heroPeek {
-  height: clamp(200px, 38vh, 380px);
-}
-
-// Opaque breathing room between the last section and the top of the window,
-// so the content doesn't run straight into the cutout.
+// Breathing room between the last section and the closing band.
 .pageContentOpen {
   padding-bottom: $spacing-huge * 2;
 }
@@ -546,6 +638,10 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   display: grid;
   grid-template-columns: 1fr;
   gap: $spacing-lg;
+  // Shared vanishing point, so the three cards tip toward one common
+  // horizon instead of each pivoting about its own centre — a row of
+  // independently-rotating cards reads as three accidents, not one surface.
+  perspective: 1000px;
 
   @include respond-up($breakpoint-md) {
     grid-template-columns: repeat(3, 1fr);
@@ -557,10 +653,34 @@ $hero-title-serif: 'Cormorant Garamond', serif;
   }
 }
 
+// Deliberately not @include card-hover: that lifts on Y alone, and next to
+// a hero built out of real depth a flat 4px nudge is what gives the trick
+// away. Same vocabulary as the hero instead — the card tips back from its
+// bottom edge and rises toward the reader.
 .valueCard {
   @include card;
-  @include card-hover;
   padding: $spacing-xxl;
+  transform-origin: 50% 100%;
+  transition:
+    transform $duration-base $ease-out,
+    box-shadow $duration-base $ease-out,
+    border-color $duration-base ease;
+
+  &:hover {
+    transform: translateY(-4px) rotateX(4deg);
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  // A tilt is motion, and the shadow alone still marks the hovered card for
+  // anyone who asked for less of it.
+  @media (prefers-reduced-motion: reduce) {
+    transition: box-shadow $duration-base ease, border-color $duration-base ease;
+
+    &:hover {
+      transform: none;
+    }
+  }
 }
 
 .valueIcon {

@@ -1,10 +1,11 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useCoarsePointer } from '../hooks/useCoarsePointer';
+import { useHeroSequence } from '../hooks/useHeroSequence';
 import { usePaintings } from '../hooks/queries/usePaintings';
 import { useGiveaways } from '../hooks/queries/useGiveaways';
 import { useNews } from '../hooks/queries/useNews';
-import { useSettings } from '../hooks/queries/useSettings';
 import FeaturedStack, {
   FeaturedStackSkeleton,
 } from '../components/FeaturedStack';
@@ -13,153 +14,15 @@ import GiveawayHighlight, {
 } from '../components/GiveawayHighlight';
 import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
 import Reveal from '../components/ui/Reveal';
-import { cdnImage } from '../utils/imageUrl';
 import styles from './HomePage.module.scss';
 
 const MARQUEE_QUOTE = 'Мистецтво - це лінія навколо твоїх думок';
 const MARQUEE_AUTHOR = 'Густав Клімт';
 
-// ---------- Hero camera ----------
-//
-// The Ken Burns move is generated per pass rather than written as fixed
-// keyframes: a stylesheet can't vary how far the camera travels, how long it
-// takes or whether it pushes in or pulls back, and a loop that repeats the
-// same envelope reads as a loop within a minute or two.
-
-// How far the photo may shift at a given zoom before its own edge swings
-// into frame. The scaled image overhangs the box by (scale-1)/2 per side and
-// a translate of t% moves it by scale*t, so t tops out at (scale-1)/(2*scale).
-// Held to 82% of that so the blur fringe stays out of frame as well. Note how
-// steeply this shrinks as the camera pulls wide: at 1.45 there's ~12.7% of
-// room, at 1.10 barely 3.7% — a wide shot is necessarily a centred one.
-function panReach(scale: number) {
-  return ((scale - 1) / (2 * scale)) * 100 * 0.82;
-}
-
-type PanPoint = { scale: number; x: number; y: number };
-
-// Matches .heroBgImage's resting transform in the stylesheet, so the first
-// move picks up exactly where the still frame sat.
-const HERO_PAN_REST: PanPoint = { scale: 1.08, x: 0, y: 0 };
-
-// A pass covers the same ground either way, so this is what sets the
-// camera's speed — both the drift and the zoom ride the same timeline.
-const HERO_PAN_MIN_MS = 8000;
-const HERO_PAN_MAX_MS = 12500;
-// The arc is handed to the browser as sampled points; this many keeps the
-// straight interpolation between them from reading as a series of facets.
-const HERO_PAN_SAMPLES = 8;
-
 // The featured strip is a fanned stack, not a grid, so it needs a ceiling.
 // The flag itself is free for the admin to set on as many works as they
 // like; this is the display cap.
 const FEATURED_LIMIT = 10;
-
-// How many paintings the hero works with. A wide screen tours all of them in
-// turn; a phone shows one, chosen at random per visit.
-const HERO_SLIDE_COUNT = 3;
-
-// Mirrors $breakpoint-lg in _variables.scss. Only used to decide how many
-// paintings this viewport gets — the hero itself now looks the same either
-// way, so there's no layout riding on this.
-const HERO_WIDE_QUERY = '(min-width: 1024px)';
-
-function useWideViewport() {
-  const [wide, setWide] = useState(
-    () => window.matchMedia(HERO_WIDE_QUERY).matches,
-  );
-
-  useEffect(() => {
-    const query = window.matchMedia(HERO_WIDE_QUERY);
-    const onChange = () => setWide(query.matches);
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
-  }, []);
-
-  return wide;
-}
-
-// Pulls a point back onto the safe disc for its zoom. Radial rather than
-// per-axis: the disc sits inside the square of allowed offsets, so this
-// satisfies both axes at once.
-function clampToReach(x: number, y: number, scale: number) {
-  const reach = panReach(scale);
-  const distance = Math.hypot(x, y);
-  if (distance <= reach) return { x, y };
-  return { x: (x / distance) * reach, y: (y / distance) * reach };
-}
-
-// One continuous camera move, beginning exactly where the previous one
-// stopped so the tour never cuts. Picks a fresh heading, a zoom that may
-// push in, pull back or barely change, and bows the path sideways so the
-// camera arcs across the canvas instead of sliding down a straight line.
-function nextPanMove(from: PanPoint) {
-  const close = 1.32 + Math.random() * 0.18;
-  const wide = 1.08 + Math.random() * 0.12;
-
-  // Most passes commit to a real push in or pull back; only the occasional
-  // one holds its zoom and just drifts.
-  const roll = Math.random();
-  const toScale =
-    roll < 0.46
-      ? close
-      : roll < 0.92
-        ? wide
-        : Math.min(
-            1.5,
-            Math.max(1.08, from.scale + (Math.random() - 0.5) * 0.12),
-          );
-
-  // Aim across the frame, not at some bearing measured from the centre.
-  // A bearing alone says nothing about where the camera already is, so it
-  // can land the next stop right beside the current one — those passes
-  // crawl, and roughly one in eighteen of them barely moved at all.
-  // Heading back through the middle guarantees every pass covers ground.
-  const across =
-    Math.hypot(from.x, from.y) > 0.5
-      ? Math.atan2(-from.y, -from.x)
-      : Math.random() * Math.PI * 2;
-  const heading = across + (Math.random() - 0.5) * Math.PI * 0.6;
-
-  const spread = panReach(toScale) * (0.7 + Math.random() * 0.3);
-  const end = clampToReach(
-    Math.cos(heading) * spread,
-    Math.sin(heading) * spread,
-    toScale,
-  );
-
-  // Control point of a quadratic bow, pushed off the straight line between
-  // the two ends — this is what turns a slide into a drift.
-  const bow =
-    (Math.random() - 0.5) * panReach((from.scale + toScale) / 2) * 0.9;
-  const control = {
-    x: (from.x + end.x) / 2 + Math.cos(heading + Math.PI / 2) * bow,
-    y: (from.y + end.y) / 2 + Math.sin(heading + Math.PI / 2) * bow,
-  };
-
-  const frames: Keyframe[] = [];
-  for (let i = 0; i <= HERO_PAN_SAMPLES; i++) {
-    const t = i / HERO_PAN_SAMPLES;
-    const inv = 1 - t;
-    const scale = from.scale + (toScale - from.scale) * t;
-    const point = clampToReach(
-      inv * inv * from.x + 2 * inv * t * control.x + t * t * end.x,
-      inv * inv * from.y + 2 * inv * t * control.y + t * t * end.y,
-      scale,
-    );
-    frames.push({
-      offset: t,
-      transform: `scale(${scale.toFixed(4)}) translate(${point.x.toFixed(3)}%, ${point.y.toFixed(3)}%)`,
-    });
-  }
-
-  return {
-    frames,
-    durationMs:
-      HERO_PAN_MIN_MS + Math.random() * (HERO_PAN_MAX_MS - HERO_PAN_MIN_MS),
-    end: { scale: toScale, ...end },
-  };
-}
 
 // The hero headline, as lines of parts — stacked and staggered by
 // .titleLine.
@@ -338,7 +201,13 @@ export default function HomePage() {
   });
   const { data: giveaways, isLoading: giveawayLoading } = useGiveaways();
   const { data: news, isLoading: newsLoading } = useNews();
-  const { data: settings } = useSettings();
+
+  // A touch screen has no hovering pointer to follow, so the sequence there
+  // is driven by scroll alone rather than sitting dead.
+  const coarsePointer = useCoarsePointer();
+  const { trackRef, stickyRef, videoRef } = useHeroSequence({
+    noPointer: coarsePointer,
+  });
 
   // Memoized so heroSlide below keeps a stable identity between renders —
   // the pan effect depends on it, and react-query's structural sharing means
@@ -362,91 +231,22 @@ export default function HomePage() {
 
   const latestNews = news?.[0] ?? null;
 
-  // The three paintings behind the hero. The admin names them on the
-  // settings page; any slot left empty — or pointing at a work since removed
-  // or hidden — is filled from the featured pool, and duplicates are skipped,
-  // so these always end up three different paintings when the gallery has
-  // that many.
-  const heroSlides = useMemo(() => {
-    const configured = [
-      settings?.heroPaintingId1,
-      settings?.heroPaintingId2,
-      settings?.heroPaintingId3,
-    ];
-    const pool = featured.length > 0 ? featured : paintings;
-    const chosen: typeof paintings = [];
-
-    for (const id of configured) {
-      const match =
-        id == null
-          ? undefined
-          : paintings.find((painting) => painting.id === id);
-      if (match && !chosen.some((painting) => painting.id === match.id)) {
-        chosen.push(match);
-      }
-    }
-    for (const painting of pool) {
-      if (chosen.length >= HERO_SLIDE_COUNT) break;
-      if (!chosen.some((picked) => picked.id === painting.id)) {
-        chosen.push(painting);
-      }
-    }
-    return chosen;
-  }, [
-    paintings,
-    featured,
-    settings?.heroPaintingId1,
-    settings?.heroPaintingId2,
-    settings?.heroPaintingId3,
-  ]);
-
-  const wideViewport = useWideViewport();
-  // A phone shows one painting, drawn once per visit — two people opening
-  // the site can land on different ones. Held in state so a re-render doesn't
-  // reshuffle it mid-view.
-  const [phoneRoll] = useState(Math.random);
-
-  // Only what this viewport will actually display gets rendered, so a phone
-  // never downloads the two paintings it isn't going to show.
-  const slides = useMemo(() => {
-    if (heroSlides.length === 0) return [];
-    if (wideViewport) return heroSlides;
-    return [heroSlides[Math.floor(phoneRoll * heroSlides.length)]];
-  }, [heroSlides, wideViewport, phoneRoll]);
-
-  // Gates the hero copy's entrance: nothing animates until the painting is
-  // actually on screen (see .heroTextWaiting).
+  // Gates the hero copy's entrance: nothing animates until there is
+  // something behind it (see .heroTextWaiting).
   const [heroReady, setHeroReady] = useState(false);
-  const [activeSlide, setActiveSlide] = useState(0);
-  const slideRefs = useRef<Array<HTMLImageElement | null>>([]);
-
-  // Exactly the URLs the <img> tags render, so waiting on one warms the same
-  // cache entry the browser will use rather than fetching the photo twice.
-  const slideSrcs = useMemo(
-    () => slides.map((painting) => cdnImage(painting.cardImage, 1600)),
-    [slides],
-  );
-  const firstSlideSrc = slideSrcs[0] ?? null;
 
   useEffect(() => {
-    if (!firstSlideSrc) {
-      // Nothing to wait for — once the request has settled, release the copy
-      // rather than leaving the hero blank forever.
-      if (!loading) setHeroReady(true);
-      return;
-    }
-
     let cancelled = false;
 
-    // Wait for the photo to decode before revealing anything: an <img> that
-    // hasn't decoded yet paints nothing, so the copy would otherwise animate
-    // over an empty screen. Only the first one is waited on — the other two
-    // have a full pass each to arrive. Capped so a broken image still
-    // releases the copy instead of stalling the hero forever.
+    // The poster, not the paintings: it's what the hero paints first, and
+    // the video seeks to its own first frame over the top of it. Waiting on
+    // the gallery here instead would hold the copy behind a network round
+    // trip for a photograph this screen no longer shows. Capped so a broken
+    // file still releases the copy rather than stalling the hero forever.
     const decoded = (async () => {
       try {
         const img = new Image();
-        img.src = firstSlideSrc;
+        img.src = '/hero-paint.jpg';
         await img.decode();
       } catch {
         // Undecodable — show it anyway and let the browser deal.
@@ -462,74 +262,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [firstSlideSrc, loading]);
-
-  // The camera. One pass over a painting, then — when there's more than one —
-  // a handover to the next, which fades in over the outgoing frame and starts
-  // its own pass. With a single painting it simply keeps drifting, each pass
-  // picking up exactly where the last stopped.
-  //
-  // Driven through the Web Animations API rather than CSS keyframes because
-  // the shape of every pass differs, and a stylesheet can't vary its own
-  // distance, duration or zoom direction.
-  useEffect(() => {
-    if (!heroReady || slides.length === 0 || prefersReducedMotion()) return;
-
-    let cancelled = false;
-    // One entry per slide. An outgoing pass is left holding its final frame
-    // while it fades out — cancelling it there would snap the photo back to
-    // rest mid-crossfade — and is only dropped when that slide comes round
-    // again, by which point it's invisible.
-    const running: Array<Animation | null> = [];
-
-    const run = async () => {
-      let index = 0;
-      let from = HERO_PAN_REST;
-
-      while (!cancelled) {
-        const image = slideRefs.current[index];
-        if (!image) return;
-
-        const move = nextPanMove(from);
-        running[index]?.cancel();
-        const pass = image.animate(move.frames, {
-          duration: move.durationMs,
-          // Nearly linear through the middle, with only mild smoothing at
-          // the ends. A full ease-in-out would drop the camera to a dead
-          // stop at every junction between passes, and on passes this short
-          // that reads as move-pause-move rather than one continuous drift.
-          easing: 'cubic-bezier(0.4, 0.1, 0.6, 0.9)',
-          fill: 'forwards',
-        });
-        running[index] = pass;
-
-        try {
-          await pass.finished;
-        } catch {
-          return; // cancelled mid-pass
-        }
-        if (cancelled) return;
-
-        if (slides.length === 1) {
-          from = move.end;
-          continue;
-        }
-
-        index = (index + 1) % slides.length;
-        // A fresh painting starts from rest rather than inheriting the
-        // outgoing one's framing.
-        from = HERO_PAN_REST;
-        setActiveSlide(index);
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-      for (const animation of running) animation?.cancel();
-    };
-  }, [heroReady, slides]);
+  }, []);
 
   // Each half of the two-copy track (see .marqueeTrack's -50% scroll) has to
   // be wider than the viewport or a gap opens up mid-loop — one quote isn't,
@@ -548,78 +281,102 @@ export default function HomePage() {
 
   return (
     <div>
-      <section className={styles.hero}>
-        {!loading && slides.length > 0 && (
+      {/* The scroll track. It is several screens tall and holds nothing of
+          its own — its height is the runway the sequence plays along, and
+          .heroSticky is pinned across it. Everything below the track stays
+          where it is until the sequence has finished. */}
+      <section className={styles.hero} ref={trackRef}>
+        <div className={styles.heroSticky} ref={stickyRef}>
+          {/* Independent of the paintings query: the footage is the whole of
+              the first screen now, and holding it back until that request
+              lands would leave the hero blank for the round trip. */}
           <div className={styles.heroBg} aria-hidden="true">
-            {slides.map((painting, index) => (
-              <img
-                key={painting.id}
-                ref={(element) => {
-                  slideRefs.current[index] = element;
-                }}
-                src={slideSrcs[index]}
-                alt=""
-                // The largest thing on the first screen — the one on show
-                // jumps the queue ahead of everything below the fold, while
-                // the paintings waiting their turn stay out of its way.
-                fetchPriority={index === activeSlide ? 'high' : 'low'}
-                decoding="async"
-                className={`${styles.heroBgImage} ${
-                  index === activeSlide ? styles.heroBgImageActive : ''
-                }`}
+            {/* The stage the depth is built on: the footage sits at its own
+                translateZ, so the perspective declared here — not a set of
+                hand-tuned offsets — is what moves it against the copy in
+                front. See .heroStage. */}
+            <div className={styles.heroStage}>
+              {/* Macro oil paint on canvas, filling the frame. It never
+                  plays by itself — useHeroSequence walks the playhead in
+                  step with the scroll, so the drift across the impasto is
+                  something the reader drives rather than watches.
+                  Decorative and silent, so there is nothing to caption and
+                  no controls to expose. */}
+              <video
+                className={styles.heroWall}
+                ref={videoRef}
+                src="/hero-paint.mp4"
+                poster="/hero-paint.jpg"
+                muted
+                playsInline
+                // Seeking needs the frames already in hand: on `metadata`
+                // the first scroll would stall against the network instead
+                // of moving the picture.
+                preload="auto"
               />
-            ))}
-            <div className={styles.heroOverlay} />
+              <div className={styles.heroOverlay} />
+            </div>
           </div>
-        )}
 
-        <div
-          className={`${styles.heroText} ${
-            heroReady ? '' : styles.heroTextWaiting
-          }`}
-        >
-          {/* Letters are decorative once split — the label carries the text. */}
-          <span className={styles.eyebrow} aria-label={HERO_EYEBROW_TEXT}>
-            <span className={styles.eyebrowText} aria-hidden="true">
-              {[...HERO_EYEBROW_TEXT].map((char, index) => (
-                <span
-                  key={index}
-                  className={styles.eyebrowLetter}
-                  style={{
-                    animationDelay: `${index * HERO_EYEBROW_STAGGER_MS}ms`,
-                  }}
-                >
-                  {char === ' ' ? ' ' : char}
+          {/* Carries the entrance gate for the whole block, but no transform
+              of its own — the approach applies to .heroText alone, so the
+              links below it can sit still while the words travel. */}
+          <div
+            className={`${styles.heroCopy} ${
+              heroReady ? '' : styles.heroTextWaiting
+            }`}
+          >
+            <div className={styles.heroText}>
+              {/* Letters are decorative once split — the label carries the
+                  text. */}
+              <span className={styles.eyebrow} aria-label={HERO_EYEBROW_TEXT}>
+                <span className={styles.eyebrowText} aria-hidden="true">
+                  {[...HERO_EYEBROW_TEXT].map((char, index) => (
+                    <span
+                      key={index}
+                      className={styles.eyebrowLetter}
+                      style={{
+                        animationDelay: `${index * HERO_EYEBROW_STAGGER_MS}ms`,
+                      }}
+                    >
+                      {char === ' ' ? ' ' : char}
+                    </span>
+                  ))}
                 </span>
-              ))}
-            </span>
-          </span>
-          <HeroTitle start={heroReady} />
-          <p className={styles.subtitle}>
-            Оригінальні картини — кожна в єдиному екземплярі.
-          </p>
-          <div className={styles.actions}>
-            <Link to="/catalog" className={styles.ctaButton}>
-              Каталог
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M8 16 16 8M9.5 8H16v6.5"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Link>
-            <Link to="/gallery" className={styles.ctaGhost}>
-              Галерея
-            </Link>
+              </span>
+              <HeroTitle start={heroReady} />
+              <p className={styles.subtitle}>
+                Оригінальні картини — кожна в єдиному екземплярі.
+              </p>
+            </div>
+
+            {/* Outside .heroText deliberately: these are the way off this
+                screen, so they hold their size and place for the whole
+                sequence rather than rushing the reader along with it. */}
+            <div className={styles.actions}>
+              <Link to="/catalog" className={styles.ctaButton}>
+                Каталог
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M8 16 16 8M9.5 8H16v6.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+              <Link to="/gallery" className={styles.ctaGhost}>
+                Галерея
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Opaque wrapper that slides up over the fixed hero backdrop as the
-          page scrolls — see .heroBg's position:fixed. */}
+      {/* Everything past the track. It starts where the track ends, so the
+          first of it only reaches the screen once the sequence has played
+          all the way through. */}
       <div className={`${styles.pageContent} ${styles.pageContentOpen}`}>
         <div className={styles.marquee} aria-hidden="true">
           <div className={styles.marqueeTrack}>
@@ -768,11 +525,6 @@ export default function HomePage() {
           </div>
         </Reveal>
       </div>
-
-      {/* Deliberate transparent window onto the fixed hero backdrop — the
-          slot-machine animation peeks through between the opaque sheets.
-          Mobile/tablet only (the backdrop doesn't exist on desktop). */}
-      <div className={styles.heroPeek} aria-hidden="true" />
 
       <div className={`${styles.pageContent} ${styles.pageContentClose}`}>
         <Reveal as="section" className={styles.ctaBand}>
