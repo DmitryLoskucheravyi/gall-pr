@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import type { Painting } from '../types/painting.types';
 import { useCoarsePointer } from '../hooks/useCoarsePointer';
+import { useNarrowViewport } from '../hooks/useNarrowViewport';
 import { useHeroSequence } from '../hooks/useHeroSequence';
 import { cdnImage } from '../utils/imageUrl';
 import styles from './CorridorSection.module.scss';
@@ -42,9 +43,21 @@ const BAND_SPAN = 0.64;
 // How far apart the works hang in the scene, in px of depth, and how close
 // one comes before it stops — the latter as a fraction of that gap, so the
 // distance it settles at is the same however many works there are.
-const WORK_GAP = 2400;
-const HOLD_SPANS = 0.1;
-const HOLD_SPANS_TOUCH = 0.05;
+//
+// The gap was 2400 and that was the whole reason the foreshortening could
+// not be seen. A work finishes resolving 0.9 of a gap out, so at 2400 it
+// became sharp at 2160px of depth: rendered at a quarter size, with its near
+// and far edges differing by 11%. By the time it was close enough to read it
+// had already turned square to the reader. The angled phase was happening
+// where nobody could see it.
+//
+// At 900 the same moment lands at 810px — nearly half size, and a 23%
+// difference between the edges. The hold moves with it: it is a fraction of
+// the gap, so keeping the work at the same closeness means a larger
+// fraction of a smaller gap.
+const WORK_GAP = 900;
+const HOLD_SPANS = 0.26;
+const HOLD_SPANS_TOUCH = 0.13;
 
 // A glance, not a paragraph. At fifteen works each is held in focus for
 // roughly a second of scrolling, and nobody reads 130 characters in a
@@ -62,6 +75,15 @@ const EXCERPT_MAX = 65;
 // differ by a few percent and the eye reads a rectangle.
 const BOX_HEIGHT = 400;
 
+// And never wider than this, whatever its proportions.
+//
+// Height alone is the rule that makes a row of works read as one hanging,
+// but a panorama taken at that height comes out 800px across — half again
+// the width of a phone even after the whole box is scaled down for one. Past
+// this the work gives up some height to keep its shape and stay on screen,
+// which is the lesser loss of the two.
+const MAX_BOX_WIDTH = 520;
+
 // The box a work is built as, in px.
 //
 // Given in real numbers rather than left to aspect-ratio because the four
@@ -78,7 +100,17 @@ function boxSize(painting: Painting): { w: number; h: number } {
     width != null && height != null && width > 0 && height > 0
       ? width / height
       : 0.8;
-  return { w: Math.round(BOX_HEIGHT * ratio), h: BOX_HEIGHT };
+
+  let w = BOX_HEIGHT * ratio;
+  let h = BOX_HEIGHT;
+  if (w > MAX_BOX_WIDTH) {
+    // Both, so the canvas keeps its proportions — scaling one alone would
+    // squash the painting.
+    h *= MAX_BOX_WIDTH / w;
+    w = MAX_BOX_WIDTH;
+  }
+
+  return { w: Math.round(w), h: Math.round(h) };
 }
 
 function excerpt(description: string): string {
@@ -146,10 +178,18 @@ function Letters({ text }: { text: string }) {
 export default function CorridorSection({ paintings }: Props) {
   const coarsePointer = useCoarsePointer();
 
-  // A shorter walk per work on a phone, where scrolling is a thumb flick at a
-  // time. The pointer test stands in for screen size here, as it does
-  // everywhere else in this section.
-  const perWork = coarsePointer ? SCREENS_PER_WORK_TOUCH : SCREENS_PER_WORK;
+  // Two different questions, and they were being answered by one test.
+  //
+  // Whether the footage can be scrubbed at all is about the device: a touch
+  // browser will not render a seek, so it gets drawn frames instead. How long
+  // the walk is and how close a work comes are about the room available, and
+  // the stylesheet decides those on width. Asking the pointer for both meant
+  // a tablet held sideways got a phone pace under desktop layout.
+  const narrow = useNarrowViewport();
+
+  // A shorter walk per work where the screen is small, since scrolling there
+  // is a thumb flick at a time.
+  const perWork = narrow ? SCREENS_PER_WORK_TOUCH : SCREENS_PER_WORK;
   const screens = paintings.length * perWork + SCREENS_LEAD;
   // Derived, not chosen — see the constants above.
   const loops = Math.max(2, Math.round(screens / SCREENS_PER_LOOP));
@@ -195,7 +235,7 @@ export default function CorridorSection({ paintings }: Props) {
           '--span': span,
           '--inv-span': 1 / span,
           '--gap': `${WORK_GAP}px`,
-          '--hold-spans': coarsePointer ? HOLD_SPANS_TOUCH : HOLD_SPANS,
+          '--hold-spans': narrow ? HOLD_SPANS_TOUCH : HOLD_SPANS,
         } as CSSProperties
       }
     >
@@ -223,10 +263,9 @@ export default function CorridorSection({ paintings }: Props) {
             this is what brings it home. */}
         <div className={styles.tint} aria-hidden="true" />
 
-        {/* Depth of field, done to the footage rather than in it: the far
-            end of the corridor is blurred away behind a radial mask centred
-            on the vanishing point. It softens the distance the way a lens
-            would — and it swallows the doorway the corridor was generated
+        {/* Shade gathering at the vanishing point, so the corridor falls
+            away into the distance rather than staying evenly lit to the
+            horizon. It also darkens the doorway the footage was generated
             with, which no amount of prompting would remove. */}
         <div className={styles.haze} aria-hidden="true" />
 
@@ -322,13 +361,23 @@ export default function CorridorSection({ paintings }: Props) {
           <h2 className={styles.ctaTitle}>
             Знайдіть картину, яка <em>заговорить</em> до вас
           </h2>
+          {/* Bare type and a hairline, the vocabulary the hero's own links
+              use — no button chrome. The rule draws itself out of the label
+              as the invitation arrives, and the arrowhead rides its end.
+              Only the head: the line is the shaft. */}
           <Link to="/catalog" className={styles.ctaButton}>
             До каталогу
-            <svg viewBox="0 0 24 24" fill="none">
+            <span className={styles.ctaRule} aria-hidden="true" />
+            <svg
+              className={styles.ctaArrow}
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
               <path
-                d="M5 12h13M13 6l6 6-6 6"
+                d="M9 6l6 6-6 6"
                 stroke="currentColor"
-                strokeWidth="1.8"
+                strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />

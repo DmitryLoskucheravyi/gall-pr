@@ -13,6 +13,120 @@ $corridor-stage-height: calc(
 // weight is the point, set against the corridor's soft light.
 $corridor-title-font: 'Rubik', sans-serif;
 
+// Everything below derives one number from another: a progress becomes a
+// distance, the distance becomes a turn and a fade, the turn becomes a blur.
+// Written as plain custom properties that chain is text, and every element
+// that reads the far end of it re-parses the whole thing — --soften on a
+// painting's canvas expanded to a three-hundred-character expression, once
+// for its blur and again for its overscan, on all sixty stretcher edges and
+// fifteen faces, every frame.
+//
+// Declaring the types makes each link a computed number instead: resolved
+// once on the element that owns it, inherited as a number by everything
+// under it. The arithmetic is the same arithmetic — see global.scss for the
+// three the hook publishes, which this chain hangs off.
+//
+// Only the links that move are registered. The static inputs (--i, --w, --h
+// and the rest handed down from the component) are substituted once into an
+// expression that is now short, and two of those names are shared with
+// Painting3DViewer, which registration would reach into from here.
+@property --p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --outro {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+// The beats of one work, or of one caption — both hang them off --near, and
+// both are read by their own children, so these inherit.
+@property --at {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --near {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --enter {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --turn {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --leave {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --show {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --soften {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+// These are spent on the element that declares them and nowhere below it.
+@property --z {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --sway {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --t {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --e {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --after {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+// Read below the element that declares it: the invitation sets it, and the
+// rule and the arrowhead inside its link are drawn from it. It was declared
+// non-inheriting when only .cta itself spent it — left that way, the two
+// children would see the initial 0 and the line would never draw.
+@property --arrive {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 // The runway, in screens of scrolling.
 //
 // The number comes from the component, which derives the corridor's loop
@@ -87,49 +201,34 @@ $corridor-title-font: 'Rubik', sans-serif;
   opacity: 0.62;
 }
 
-// Depth of field for footage that was shot with none. A radial mask centred
-// on the vanishing point blurs only the far end, so the corridor softens
-// into the distance the way a lens would.
+// The far end of the corridor falling away into shade.
 //
-// It sits above the footage and below the works, which is what makes it
-// behave: a painting still far down the hall is blurred by its own ramp,
-// while one arriving in the foreground is in front of this and stays sharp.
+// This used to blur it as well — a backdrop-filter under a radial mask, so
+// the distance softened the way a lens would. It was the second most
+// expensive thing on the page: a full-screen blur recomputed every frame of
+// every scroll, and phones could not carry it.
 //
-// It also, usefully, dissolves the doorway at the end of the corridor — the
-// one thing three rounds of prompting could not talk the generator out of.
+// The shade on its own turns out to do most of the work. Depth reads from
+// the fall of light down the corridor far more than from focus, and this is
+// a gradient — effectively free.
+//
+// It sits above the footage and below the works, so a painting arriving in
+// the foreground is in front of it and keeps its full contrast.
 .haze {
   position: absolute;
   inset: 0;
   z-index: 2;
-  // Disperses as the corridor closes: the blurred distance is a thing you
-  // are walking toward, and at the end there is no longer a distance.
-  opacity: calc(1 - var(--outro));
   pointer-events: none;
-  backdrop-filter: blur(11px);
-  -webkit-backdrop-filter: blur(11px);
-  // The blur is applied only where the mask is opaque, and the mask is a
-  // soft disc over the vanishing point.
-  mask-image: radial-gradient(
-    42% 52% at 50% 46%,
-    #000 0%,
-    #000 34%,
-    transparent 78%
-  );
-  -webkit-mask-image: radial-gradient(
-    42% 52% at 50% 46%,
-    #000 0%,
-    #000 34%,
-    transparent 78%
-  );
-  // Shade over the same disc rather than the porcelain it used to carry:
-  // the far end now falls away into the dark, which is what gives a dimmed
-  // corridor its depth.
+  // Disperses as the corridor closes: the distance is a thing you are
+  // walking toward, and at the end there is no longer a distance.
+  opacity: calc(1 - var(--outro));
   background: radial-gradient(
     40% 48% at 50% 46%,
     rgba(12, 16, 10, 0.55),
     transparent 74%
   );
 }
+
 
 // The works' own space. Its vanishing point is the middle of the frame,
 // which is where the footage's own is — that agreement is what lets a flat
@@ -202,6 +301,21 @@ $corridor-title-font: 'Rubik', sans-serif;
   // smaller stretcher rather than a thick edge on a small picture.
   width: var(--w, 208px);
   height: var(--h, 260px);
+  // Centred on its point with margins, not with a translate inside the
+  // transform below.
+  //
+  // A translate(-50%, -50%) sitting in the same chain as scale() and
+  // rotateY() does not survive them: the whole chain is applied about the
+  // origin, so the centring shift is scaled and rotated along with
+  // everything else and comes out as -s*cos(angle)*w/2 instead of -w/2. For
+  // a wide canvas on a phone that is over a hundred pixels of drift, and it
+  // put the far edge of a landscape work past the side of the screen.
+  //
+  // Margins are laid out before any transform exists, so the box is already
+  // centred on the point and transform-origin lands exactly on its middle —
+  // which is also what makes the rotation below turn it in place.
+  margin-left: calc(var(--w, 208px) / -2);
+  margin-top: calc(var(--h, 260px) / -2);
   // The stretcher's depth. 22 against a 260-tall canvas is about what a
   // gallery-wrapped frame really measures.
   --d: 22px;
@@ -229,25 +343,40 @@ $corridor-title-font: 'Rubik', sans-serif;
   // Both it and --gap come from the component, and because the hold is a
   // fraction of the gap, a work settles the same distance from the reader
   // whether there are three of them or fifteen.
-  // Where the wall is — 40.8% of the *footage* out from centre, measured off
-  // a frame — which is not 40.8% of the stage once the two differ in shape.
+  // How far out the works ride, from the centre.
   //
-  // The clip is 16:9 and fitted with cover, so on anything narrower than
-  // that it is scaled to the height and cropped at the sides: the walls move
-  // outward, past the edges of the screen. Taking the offset from the stage
-  // width alone left the works hanging in the middle of the corridor on a
-  // phone, drifting further off the wall the narrower it got.
+  // The two terms are not the same kind of number, which is worth knowing
+  // before touching either.
   //
-  // max() picks whichever dimension cover scaled by, which is the same rule
-  // cover itself follows: 100cqw against 177.8cqh, the width the footage is
-  // actually drawn at. So the works stay stuck to the wall at any shape of
-  // screen — including, correctly, off the edge of a narrow one.
-  --wall: max(40.8cqw, 72.55cqh);
-  // The angle it turns between. Not down to zero: square-on hides the very
-  // thing the box was built for — the stretcher edge goes out of sight and a
-  // canvas with no visible side is a flat picture again.
-  --angle-wall: 72deg;
-  --angle-shown: 15deg;
+  // The cqh term follows the footage. The clip is 16:9 and fitted with
+  // cover, so on anything narrower it is scaled to the height and cropped at
+  // the sides: the walls move outward, past the edges of the screen. 72.55 is
+  // 40.8% of the width the footage is actually drawn at — measured off a
+  // frame — and taking the offset from the stage width alone left the works
+  // hanging in the middle of the corridor on a phone.
+  //
+  // The cqw term is a choice. At the measured 40.8 the works read as
+  // floating inside the corridor rather than hung on it, because a wall
+  // where the eye expects one is not the same as a wall where the geometry
+  // puts one. Wider makes the approach more oblique and the foreshortening
+  // stronger, which is what actually sells them as being on a wall. 58 also
+  // fixes an overflow that was already there: at 40.8 with the old centring
+  // the far edge of a focused work cleared the screen by three pixels.
+  --wall: max(58cqw, 72.55cqh);
+  // The angle it turns between.
+  //
+  // Where the two are spent is not symmetrical, which is worth knowing before
+  // touching them. On the wall the angle no longer buys any foreshortening —
+  // between 72 and 84 degrees the near and far edges stay at the same ratio
+  // and all that changes is the face growing narrower — because at this
+  // perspective the off-axis position is already doing that work.
+  //
+  // In focus it buys a great deal: 15 degrees to 26 takes the ratio from
+  // 1.21 to about 1.38 and costs almost no width. Square-on would hide the
+  // very thing the box was built for — the stretcher edge goes out of sight,
+  // and a canvas with no visible side is a flat picture again.
+  --angle-wall: 76deg;
+  --angle-shown: 26deg;
   --z: calc(min(var(--near), var(--hold-spans)) * var(--gap));
 
   // Turning out of the wall and into the reader's view. At --turn 0 it lies
@@ -255,7 +384,7 @@ $corridor-title-font: 'Rubik', sans-serif;
   // number lifts it a little off the wall, so it reads as having come away
   // rather than swivelled on a hinge.
   transform: translate3d(
-      calc(var(--side) * var(--wall) * (1 - var(--turn) * var(--centre, 0.55))),
+      calc(var(--side) * var(--wall) * (1 - var(--turn) * var(--centre, 0.7))),
       var(--rise, -4cqw),
       var(--z)
     )
@@ -265,7 +394,7 @@ $corridor-title-font: 'Rubik', sans-serif;
           (var(--angle-wall) - var(--turn) * (var(--angle-wall) - var(--angle-shown)))
       )
     )
-    scale(var(--box, 1)) translate(-50%, -50%);
+    scale(var(--box, 1));
   // Neither opacity nor filter may live on this element, however natural it
   // looks to put them here. Both silently force transform-style back to flat
   // — the spec lists them among the properties that do — and a flattened box
@@ -638,23 +767,66 @@ $corridor-title-font: 'Rubik', sans-serif;
   }
 }
 
+// Not a button. The hero closes on bare letterspaced type with a hairline
+// under it, and putting a filled slab here instead made the corridor end on
+// a piece of interface rather than on an invitation.
+//
+// So: the same type, and a rule that draws itself out of the label as the
+// invitation arrives. --arrive is the section's own ramp, already carrying
+// the fade, so the line is written by the scroll rather than by a timer —
+// it extends at exactly the pace the reader is arriving.
 .ctaButton {
-  @include button-base;
-  @include button-fill(#3a3f2f, #eee9e4);
-  padding: $spacing-lg $spacing-xxxl;
-  background-color: #4f5340;
-  color: #eee9e4;
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-md;
+  font-family: $font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(10, 14, 8, 0.5),
+    0 2px 20px rgba(10, 14, 8, 0.6);
+  transition: opacity $duration-fast ease;
 
-  svg {
-    height: 18px;
-    width: 18px;
-    transition: transform 0.25s ease;
+  @include respond-up($breakpoint-lg) {
+    font-size: 14px;
   }
 
-  &:hover svg {
-    transform: translateX(3px);
+  // The hero's hover is a change of opacity and nothing else; this follows
+  // it rather than inventing a second idiom two sections apart.
+  &:hover {
+    opacity: 0.75;
   }
+}
+
+// Drawn from the label outward. scaleX from the left edge rather than an
+// animated width, so it costs a transform and not a layout on every frame
+// of the arrival.
+.ctaRule {
+  width: clamp(44px, 9cqw, 104px);
+  height: 1px;
+  flex: none;
+  background-color: currentColor;
+  opacity: 0.65;
+  transform: scaleX(var(--arrive));
+  transform-origin: left center;
+}
+
+// Rides the end of the rule, and only appears once there is a rule to ride:
+// its own ramp runs off the back of the arrival so the head does not hang in
+// space ahead of the line that carries it.
+.ctaArrow {
+  height: 15px;
+  width: 15px;
+  flex: none;
+  opacity: clamp(0, calc((var(--arrive) - 0.55) / 0.45), 1);
+  transition: transform 0.25s ease;
+}
+
+.ctaButton:hover .ctaArrow {
+  transform: translateX(3px);
 }
 
 // Without the scroll driving it every ramp above sits at 0 and the corridor
@@ -733,8 +905,10 @@ $corridor-title-font: 'Rubik', sans-serif;
     // Lifted into the upper half, clear of the caption below.
     --rise: -16cqw;
     // Smaller box, and the stretcher scales with it rather than staying a
-    // thick edge on a small picture.
-    --box: 0.66;
+    // thick edge on a small picture. 0.62 is what keeps the widest shape a
+    // work can take — 520px, the cap in the component — inside a 390px
+    // screen with room at the edges.
+    --box: 0.62;
   }
 
   .caption {

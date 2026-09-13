@@ -7,6 +7,41 @@
 // Mobile hero title's italic serif accent word only (see HomePage.module.scss).
 @import '@fontsource/cormorant-garamond/600-italic.css';
 
+// The three numbers useHeroSequence publishes, declared to the engine as the
+// numbers they are.
+//
+// An unregistered custom property is a bag of tokens, not a value. Every
+// element that reads one substitutes the text and re-parses it, at each use
+// site, on every frame the value changes — and where properties are defined
+// in terms of each other the substitution nests, so a chain four deep is
+// re-parsed as one expression four levels long by every element under it.
+// The corridor is exactly that shape, and on a phone the re-parsing, rather
+// than any of the blurring, was most of the frame.
+//
+// Registering them changes nothing about what is drawn. The initial value of
+// each is the same 0 the fallbacks throughout already spell, so an element
+// outside any track resolves as it always did; what changes is that the
+// value now arrives as a computed number, once per element, instead of as
+// text to be read again at every mention. Anything too old to know the rule
+// ignores it and behaves as before.
+@property --hero-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --stage-x {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --stage-y {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 // Light theme — built on the "Porcelain Veil / Stone Moss / Warm Pebble"
 // palette. The three named colours carry the identity; every other token is
 // derived from them so the whole surface reads as one material family.
