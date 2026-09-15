@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
-import { useBoomerangVideo } from '../hooks/useBoomerangVideo';
+import { useAlternatingVideo } from '../hooks/useAlternatingVideo';
 import styles from './AuthPage.module.scss';
 
 // One page for both routes, but only ever one form: /login shows the login
@@ -24,25 +24,36 @@ export default function AuthPage() {
     [],
   );
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  // The clip's first and last frames don't quite match, so a hard loop cut
-  // showed a seam every cycle — this plays it forward then back rather than
-  // jumping to the start. See the hook for why that isn't just `loop`.
-  useBoomerangVideo(videoRef);
+  // Two elements, one clip each, permanently mounted and crossfaded — see
+  // the hook for why (in short: swapping one element's `src` flashed black
+  // while the new clip loaded).
+  const startRef = useRef<HTMLVideoElement>(null);
+  const endRef = useRef<HTMLVideoElement>(null);
+  useAlternatingVideo(startRef, endRef);
 
   return (
     <div className={styles.page}>
       {!reduced && (
-        <video
-          ref={videoRef}
-          className={styles.bg}
-          autoPlay
-          muted
-          playsInline
-          aria-hidden="true"
-        >
-          <source src="/logreg.mp4" type="video/mp4" />
-        </video>
+        <>
+          <video
+            ref={startRef}
+            className={styles.bg}
+            src="/logregstart.mp4"
+            autoPlay
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <video
+            ref={endRef}
+            className={styles.bg}
+            src="/logregend.mp4"
+            muted
+            playsInline
+            aria-hidden="true"
+            style={{ opacity: 0 }}
+          />
+        </>
       )}
       <div className={styles.tint} aria-hidden="true" />
 
