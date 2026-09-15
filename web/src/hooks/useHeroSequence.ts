@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Drives a pinned sequence: one tall scroll track with a sticky, viewport-
 // sized stage inside it. Scrolling the track doesn't move the stage — it
@@ -26,6 +26,11 @@ const PROGRESS_SETTLED = 0.0001;
 // Progress at which the hero's copy has finished fading out. Mirrors the end
 // of the clamp() in .heroText.
 const HERO_COPY_GONE = 0.55;
+
+// How long to give a scrub video to produce metadata before giving up on it
+// and taking the frame strip instead. Generous: it only has to beat a slow
+// connection, and the poster is up the whole time.
+const METADATA_GRACE_MS = 8000;
 
 // The same footage twice, because a phone cannot scrub the first one.
 //
@@ -57,9 +62,19 @@ type Sources = {
   frames: FrameStrip;
 };
 
+// Which of the two the sequence is currently running on. The component reads
+// it to decide whether to mount a <video> or a <canvas>; it can change after
+// mount, because the guess below is only a guess (see canScrubVideo).
+export type SequenceMode = 'video' | 'frames';
+
 type Options = {
-  // Skip the pointer tilt, and take the frame strip rather than the video.
-  // Set for coarse pointers: no hover to follow, and no reliable scrubbing.
+  // Skip the pointer tilt. Set for coarse pointers: there is no hovering
+  // cursor to follow.
+  //
+  // This used to decide the footage as well, and the two are not the same
+  // question — see canScrubVideo. A touchscreen laptop has no hover worth
+  // following and scrubs video perfectly well; an iPad with a keyboard case
+  // reports a hovering pointer and cannot scrub at all.
   noPointer?: boolean;
   // Progress past which the track carries data-past="true". What that means
   // is the stylesheet's business — a section uses it to take something out of
@@ -91,6 +106,37 @@ function framePath(strip: FrameStrip, index: number): string {
   return `${strip.base}/${String(index + 1).padStart(3, '0')}.jpg`;
 }
 
+// Whether this browser will actually paint a frame that arrives from a seek
+// on a paused video it has never played.
+//
+// It comes down to iOS and iPadOS, which will not, and which is the whole
+// reason a frame strip exists. Asking `(hover: none)` for it was close but
+// not the same question, and it was wrong at both ends: an iPad with a
+// keyboard case reports a hovering pointer and was handed the video path it
+// cannot draw — a hero that stayed on its poster for the entire scroll —
+// while a Windows laptop with a touchscreen reported none and was handed
+// frames it had no need of.
+//
+// A guess either way, which is why it is only the starting position: a video
+// that errors or never produces metadata downgrades itself to the strip at
+// runtime, and that is what covers the devices this list doesn't name.
+function canScrubVideo(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return true;
+  }
+
+  const ua = navigator.userAgent;
+  if (/iPhone|iPod|iPad/.test(ua)) return false;
+  // iPadOS 13 and up report themselves as a Mac. The touch points are what
+  // give them away — a Mac reports none, with or without a touchscreen
+  // display plugged into it.
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false;
+
+  // Anything else without hover is a phone or a tablet, and the strip is
+  // both safer and lighter there regardless of what it could have managed.
+  return !window.matchMedia('(hover: none)').matches;
+}
+
 export function useHeroSequence({
   noPointer = false,
   pastAt = HERO_COPY_GONE,
@@ -102,6 +148,10 @@ export function useHeroSequence({
   const stickyRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [mode, setMode] = useState<SequenceMode>(() =>
+    sources && canScrubVideo() ? 'video' : 'frames',
+  );
 
   const tilt = useRef({ x: 0, y: 0 });
   const tiltTarget = useRef({ x: 0, y: 0 });
@@ -133,9 +183,23 @@ export function useHeroSequence({
   const reduced =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // Whether the playhead is ours to move. A coarse pointer gets the frame
-  // strip instead — same sequence, drawn rather than decoded.
-  const scrubbing = !noPointer;
+  const scrubbing = mode === 'video';
+
+  // Gives up on the video and takes the strip instead. Called when the
+  // element reports an error — a codec this browser won't decode, a file
+  // that 404s — or when metadata simply never arrives.
+  //
+  // Idempotent, and one-way: nothing ever upgrades back to video, because
+  // whatever went wrong the first time is unlikely to have improved and a
+  // sequence that flips back and forth is worse than one that settles.
+  const downgrade = useCallback(() => {
+    setMode((was) => {
+      if (was === 'frames') return was;
+      // Whatever is on the canvas now belongs to a different element.
+      painted.current = -1;
+      return 'frames';
+    });
+  }, []);
 
   // Fetches the footage, in whichever form this device can actually use.
   // Separate from the sequence effect below so it runs even for a
@@ -145,16 +209,32 @@ export function useHeroSequence({
     if (!el || !sources) return;
 
     let cancelled = false;
+    let attached = false;
+    let grace = 0;
+
+    const video = videoRef.current;
+
+    const onVideoError = () => downgrade();
+    const onMetadata = () => window.clearTimeout(grace);
 
     const attach = () => {
-      if (cancelled) return;
+      if (cancelled || attached) return;
+      attached = true;
 
       if (scrubbing) {
-        const video = videoRef.current;
         if (!video) return;
+        video.addEventListener('error', onVideoError);
+        video.addEventListener('loadedmetadata', onMetadata);
         video.src = sources.scrub;
         // Nothing here ever plays on its own; the playhead is moved by hand.
         video.pause();
+        // A source the browser accepts but never gets anywhere with looks
+        // exactly like one that is merely slow, right up until the reader
+        // has scrolled the whole section past a frozen poster. Past this it
+        // is treated as the former and the strip takes over.
+        grace = window.setTimeout(() => {
+          if (video.readyState < HTMLMediaElement.HAVE_METADATA) downgrade();
+        }, METADATA_GRACE_MS);
         return;
       }
 
@@ -162,6 +242,7 @@ export function useHeroSequence({
       // the network gives them. The draw below always falls back to the
       // nearest one that has landed, so the sequence is usable from the first
       // arrival rather than after the last.
+      painted.current = -1;
       strip.current = Array.from({ length: sources.frames.count }, (_, i) => {
         const img = new Image();
         img.decoding = 'async';
@@ -173,28 +254,51 @@ export function useHeroSequence({
       });
     };
 
-    if (eager || typeof IntersectionObserver === 'undefined') {
-      attach();
+    // Lets a strip go once its section is well out of the way.
+    //
+    // Forty-eight frames at 900px wide decode to something like ninety
+    // megabytes of bitmap, and the hero's strip and the corridor's together
+    // are enough for a phone to drop the tab — which is one of the ways the
+    // page "stopped working" without anything in it having failed. Only one
+    // walk can be on screen at a time, so only one needs to be in memory;
+    // coming back costs a few hundred kilobytes that are already in the HTTP
+    // cache.
+    const release = () => {
+      if (!attached || scrubbing) return;
+      for (const img of strip.current) img.onload = null;
+      strip.current = [];
+      painted.current = -1;
+      attached = false;
+    };
+
+    if (eager) attach();
+
+    if (typeof IntersectionObserver === 'undefined') {
+      if (!eager) attach();
       return () => {
         cancelled = true;
+        window.clearTimeout(grace);
+        video?.removeEventListener('error', onVideoError);
+        video?.removeEventListener('loadedmetadata', onMetadata);
       };
     }
 
+    // Kept subscribed rather than disconnected on first sight, because it
+    // now has a second job: the strip is dropped again on the way out.
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        attach();
-        observer.disconnect();
-      },
+      ([entry]) => (entry.isIntersecting ? attach() : release()),
       { rootMargin: '150% 0px' },
     );
 
     observer.observe(el);
     return () => {
       cancelled = true;
+      window.clearTimeout(grace);
       observer.disconnect();
+      video?.removeEventListener('error', onVideoError);
+      video?.removeEventListener('loadedmetadata', onMetadata);
     };
-  }, [sources, scrubbing, eager]);
+  }, [sources, scrubbing, eager, downgrade]);
 
   useEffect(() => {
     const el = trackRef.current;
@@ -205,7 +309,22 @@ export function useHeroSequence({
     // the stylesheet's own fallbacks (0) apply throughout.
     if (reduced) return;
 
-    const video = videoRef.current;
+    const video = scrubbing ? videoRef.current : null;
+    // The canvas element changes identity when the mode does, so nothing
+    // already drawn can be assumed to still be on it.
+    painted.current = -1;
+
+    // How far down the viewport the stage pins, in px. Read from the
+    // stylesheet rather than agreed with it, but read once per layout rather
+    // than once per scroll event — getComputedStyle forces the style and
+    // layout the browser was about to skip, and doing that on every wheel
+    // notch is a frame's worth of work for a number that cannot have
+    // changed.
+    let pinTop = 0;
+    const measure = () => {
+      const sticky = stickyRef.current;
+      pinTop = sticky ? parseFloat(getComputedStyle(sticky).top) || 0 : 0;
+    };
 
     // How far through the pin we are, 0..1.
     //
@@ -220,7 +339,6 @@ export function useHeroSequence({
       const sticky = stickyRef.current;
       if (!sticky) return 0;
       const rect = el.getBoundingClientRect();
-      const pinTop = parseFloat(getComputedStyle(sticky).top) || 0;
       const travel = rect.height - sticky.offsetHeight;
       if (travel <= 0) return 0;
       return Math.min(1, Math.max(0, (pinTop - rect.top) / travel));
@@ -305,7 +423,7 @@ export function useHeroSequence({
       // loop into a long walk.
       const phase = loops === 1 ? progress.current : (progress.current * loops) % 1;
 
-      if (scrubbing && video) {
+      if (video) {
         const duration = video.duration;
         // Metadata hasn't landed yet — duration is NaN until it does, and
         // seeking against that would throw the playhead back to the start.
@@ -314,9 +432,20 @@ export function useHeroSequence({
           // is already smoothed, and easing again on top of it would leave
           // the footage trailing the copy it is meant to move with. The
           // deadband is only there to skip seeks too small to show.
-          const want = phase * duration;
-          if (Math.abs(want - video.currentTime) > FRAME) {
-            video.currentTime = want;
+          //
+          // One seek at a time, though. Chrome absorbs a stream of them by
+          // dropping all but the last; Firefox and Safari queue them, and a
+          // scroll that issues one per frame leaves the picture running
+          // whole seconds behind the wheel — long enough, on a flick down a
+          // corridor, to read as stuck. Skipping while one is in flight and
+          // letting `seeked` wake the loop gives every browser Chrome's
+          // behaviour, and the target it then re-reads is the current one
+          // rather than a stale queued guess.
+          if (
+            !video.seeking &&
+            Math.abs(phase * duration - video.currentTime) > FRAME
+          ) {
+            video.currentTime = phase * duration;
           }
         }
         // No `busy` while duration is still NaN. It is NaN for as long as the
@@ -325,7 +454,7 @@ export function useHeroSequence({
         // loop against that pins a core for the whole visit doing nothing.
         // The loadedmetadata listener below wakes the loop when there is
         // actually something to seek.
-      } else if (!scrubbing && strip.current.length > 0) {
+      } else if (strip.current.length > 0) {
         // No easing of its own: the clock above is already smoothed, and
         // easing a second time on top of it only adds lag.
         paint(Math.round(phase * (strip.current.length - 1)));
@@ -344,6 +473,11 @@ export function useHeroSequence({
     const onScroll = () => {
       progressTarget.current = readProgress();
       wake();
+    };
+
+    const onResize = () => {
+      measure();
+      onScroll();
     };
 
     const onPointerMove = (event: PointerEvent) => {
@@ -371,19 +505,24 @@ export function useHeroSequence({
       window.addEventListener('pointerout', onPointerOut, { passive: true });
     }
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
     // Place the playhead once on mount too: a reload partway down the track
     // restores the scroll position, and without this the sequence would sit on
     // frame one while it is already halfway through.
     video?.addEventListener('loadedmetadata', onScroll);
+    // Picks up the seek that the deadband above skipped while one was
+    // already in flight.
+    video?.addEventListener('seeked', wake);
+    measure();
     onScroll();
 
     return () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerout', onPointerOut);
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
       video?.removeEventListener('loadedmetadata', onScroll);
+      video?.removeEventListener('seeked', wake);
       if (frame.current) cancelAnimationFrame(frame.current);
       frame.current = 0;
       wakeRef.current = () => {};
@@ -394,5 +533,5 @@ export function useHeroSequence({
   // left entirely to the stylesheet, which varies it by breakpoint. The sums
   // above read the rendered geometry rather than any agreed number, so there
   // is nothing here to keep in step with it.
-  return { trackRef, stickyRef, videoRef, canvasRef };
+  return { trackRef, stickyRef, videoRef, canvasRef, mode };
 }

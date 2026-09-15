@@ -35,21 +35,40 @@ export default function AuthPage() {
     <div className={styles.page}>
       {!reduced && (
         <>
+          {/* The poster is the background until — and if — the footage
+              arrives. It is the clip's own first frame, so there is nothing
+              to see happen when playback takes over, and it is what stays
+              on a browser that refuses to autoplay, a connection that never
+              delivers, or a decoder that won't take the file. The page used
+              to show flat black in all three cases. */}
           <video
             ref={startRef}
             className={styles.bg}
             src="/logregstart.mp4"
+            poster="/logreg.jpg"
             autoPlay
             muted
             playsInline
+            preload="auto"
+            // Competes with the JS bundle, the CSS, the fonts for the same
+            // connection otherwise — this is the one thing on the page
+            // meant to be moving the moment it can be, so it goes first.
+            // Not yet in React's DOM types for a <video>, hence the cast.
+            {...({ fetchpriority: 'high' } as Record<string, string>)}
             aria-hidden="true"
           />
+          {/* Held back until the first clip can play, then loaded across the
+              four seconds it has in hand — see warmPartner in the hook. Both
+              at once was five megabytes competing for the same connection on
+              the first screen a visitor sees. */}
           <video
             ref={endRef}
             className={styles.bg}
             src="/logregend.mp4"
+            poster="/logreg.jpg"
             muted
             playsInline
+            preload="none"
             aria-hidden="true"
             style={{ opacity: 0 }}
           />

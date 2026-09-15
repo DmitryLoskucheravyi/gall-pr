@@ -229,7 +229,9 @@ export default function CorridorSection({ paintings }: Props) {
   // the count.
   const span = BAND_SPAN / (Math.max(1, paintings.length) + 0.12);
 
-  const { trackRef, stickyRef, videoRef, canvasRef } = useHeroSequence({
+  // `mode` is the hook's own call on whether this browser can scrub a video
+  // at all, and it can change after mount — see canScrubVideo there.
+  const { trackRef, stickyRef, videoRef, canvasRef, mode } = useHeroSequence({
     noPointer: coarsePointer,
     pastAt: CTA_ARRIVED,
     sources: CORRIDOR_FOOTAGE,
@@ -257,7 +259,7 @@ export default function CorridorSection({ paintings }: Props) {
       }
     >
       <div className={styles.stage} ref={stickyRef}>
-        {coarsePointer ? (
+        {mode === 'frames' ? (
           <canvas
             className={styles.corridor}
             ref={canvasRef}

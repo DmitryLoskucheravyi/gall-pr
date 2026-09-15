@@ -212,7 +212,9 @@ export default function HomePage() {
   // A touch screen has no hovering pointer to follow, so the sequence there
   // is driven by scroll alone rather than sitting dead.
   const coarsePointer = useCoarsePointer();
-  const { trackRef, stickyRef, videoRef, canvasRef } = useHeroSequence({
+  // `mode` is the hook's own call on whether this browser can scrub a video
+  // at all, and it can change after mount — see canScrubVideo there.
+  const { trackRef, stickyRef, videoRef, canvasRef, mode } = useHeroSequence({
     noPointer: coarsePointer,
     sources: HERO_FOOTAGE,
     // The first screen — it does not wait for anything.
@@ -315,7 +317,7 @@ export default function HomePage() {
                   Two elements for the one shot: a video where it can be
                   scrubbed, and the same seconds as drawn stills where it
                   can't. See the note on Sources in useHeroSequence. */}
-              {coarsePointer ? (
+              {mode === 'frames' ? (
                 <canvas
                   className={styles.heroWall}
                   ref={canvasRef}

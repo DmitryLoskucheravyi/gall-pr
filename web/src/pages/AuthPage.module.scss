@@ -14,10 +14,30 @@
   overflow: hidden;
   margin-block: calc(-1 * $spacing-xxxxl);
   margin-inline: calc(50% - 50vw);
+  // height: 100% of .main was tried here and made things worse on iOS
+  // Safari — .main's flex-resolved height doesn't reliably count as
+  // "definite" for a percentage this many levels down, and the box
+  // collapsed to its content height instead, opening a much bigger gap
+  // than the one this was meant to close.
+  //
+  // Back to a direct calc, but against the same unit Layout's own root now
+  // sizes itself with (see Layout.module.scss's .page: 100dvh, not 100vh) —
+  // the mismatch causing the original small gap was that root using 100vh,
+  // which iOS Safari counts as the address bar hidden even while it's
+  // showing, while this page used the (correct) dynamic 100dvh. Same unit
+  // top to bottom now, so there's nothing left for the two to disagree on.
   min-height: calc(100dvh - var(--header-height, 64px));
   display: flex;
   flex-direction: column;
+
+  // The footage's own first frame, under everything. It is what a visitor
+  // who asked for less motion sees — the videos aren't mounted for them at
+  // all (see AuthPage.tsx) and this page was flat brown for them before —
+  // and it is the ground the videos fade in over for everyone else.
   background-color: #1b1a17;
+  background-image: url('/logreg.jpg');
+  background-size: cover;
+  background-position: center;
 
   --color-accent-text: #93a67f;
   --color-primary: #93a67f;

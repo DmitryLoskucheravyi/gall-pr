@@ -1,6 +1,12 @@
 .page {
   display: flex;
-  min-height: 100vh;
+  // dvh, not vh: iOS Safari counts 100vh as the address bar already hidden,
+  // even while it's showing, which left the page taller than the visible
+  // screen — invisible almost everywhere, since ordinary content just fills
+  // the extra height with its own background, but it showed up as a real
+  // gap on AuthPage, whose own full-height math has to agree with this
+  // root's actual rendered height rather than a bar this unit assumes away.
+  min-height: 100dvh;
   flex-direction: column;
   background-color: var(--color-background);
   color: var(--color-text);
