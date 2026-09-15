@@ -127,6 +127,12 @@ type Props = {
   paintings: Painting[];
 };
 
+// A run of a title, and whether it is the part carrying the accent. A work's
+// own title is one plain run; the closing's is three, so one phrase in the
+// middle of it can be set in the italic without breaking the count that
+// paces the letters.
+type Run = { text: string; accent?: boolean };
+
 // Splits a title into per-letter spans so each can arrive in its turn.
 //
 // Words stay whole and the spaces between them stay real spaces, so a long
@@ -134,30 +140,41 @@ type Props = {
 // inline-block — needed to move them — which is why the split happens at the
 // word boundary: a row of inline-blocks has no spaces left to break at.
 //
+// The counter runs across the runs rather than restarting inside each, so
+// the stagger reads as one hand writing one sentence.
+//
 // The glyphs are decorative; the heading carries the real title on its
 // aria-label, so nothing is read out letter by letter.
-function Letters({ text }: { text: string }) {
-  const words = text.split(' ');
+function Letters({ runs }: { runs: Run[] }) {
   let letter = 0;
 
   return (
     <span aria-hidden="true">
-      {words.map((word, wordIndex) => (
-        <Fragment key={wordIndex}>
-          {wordIndex > 0 && ' '}
-          <span className={styles.word}>
-            {[...word].map((char, charIndex) => (
-              <span
-                key={charIndex}
-                className={styles.letter}
-                style={{ ['--l' as string]: letter++ }}
-              >
-                {char}
-              </span>
-            ))}
-          </span>
-        </Fragment>
-      ))}
+      {runs.map((run, runIndex) => {
+        const words = run.text.split(' ').map((word, wordIndex) => (
+          <Fragment key={wordIndex}>
+            {wordIndex > 0 && ' '}
+            <span className={styles.word}>
+              {[...word].map((char, charIndex) => (
+                <span
+                  key={charIndex}
+                  className={styles.letter}
+                  style={{ ['--l' as string]: letter++ }}
+                >
+                  {char}
+                </span>
+              ))}
+            </span>
+          </Fragment>
+        ));
+
+        return (
+          <Fragment key={runIndex}>
+            {runIndex > 0 && ' '}
+            {run.accent ? <em>{words}</em> : words}
+          </Fragment>
+        );
+      })}
     </span>
   );
 }
@@ -344,7 +361,7 @@ export default function CorridorSection({ paintings }: Props) {
             }
           >
             <h3 className={styles.title} aria-label={painting.title}>
-              <Letters text={painting.title} />
+              <Letters runs={[{ text: painting.title }]} />
             </h3>
             {painting.description ? (
               <p className={styles.excerpt}>{excerpt(painting.description)}</p>
@@ -357,16 +374,14 @@ export default function CorridorSection({ paintings }: Props) {
             page below comes up out of it rather than cutting in. */}
         <div className={styles.veil} aria-hidden="true" />
 
+        {/* The end of the walk: one invitation, nothing else drawn around
+            it. Bare type and a hairline, the vocabulary the hero's own links
+            use — no button chrome. The rule draws itself out of the label,
+            and the arrowhead rides its end. Only the head: the line is the
+            shaft. */}
         <div className={styles.cta}>
-          <h2 className={styles.ctaTitle}>
-            Знайдіть картину, яка <em>заговорить</em> до вас
-          </h2>
-          {/* Bare type and a hairline, the vocabulary the hero's own links
-              use — no button chrome. The rule draws itself out of the label
-              as the invitation arrives, and the arrowhead rides its end.
-              Only the head: the line is the shaft. */}
           <Link to="/catalog" className={styles.ctaButton}>
-            До каталогу
+            <span className={styles.ctaLabel}>До каталогу</span>
             <span className={styles.ctaRule} aria-hidden="true" />
             <svg
               className={styles.ctaArrow}

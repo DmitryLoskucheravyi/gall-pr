@@ -21,7 +21,15 @@ const adminNavLinkClass = ({ isActive }: { isActive: boolean }) =>
 const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   `${styles.mobileNavLink} ${isActive ? styles.active : ''}`;
 
-export default function Header() {
+type Props = {
+  // Shorter vertical padding for AuthPage's full-bleed screen — see
+  // Layout.tsx. The height this publishes as --header-height (below)
+  // shrinks along with it, so AuthPage's own full-height math stays correct
+  // without anything there needing to know the pixel value.
+  compact?: boolean;
+};
+
+export default function Header({ compact = false }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
@@ -216,7 +224,10 @@ export default function Header() {
   );
 
   return (
-    <header ref={headerRef} className={styles.header}>
+    <header
+      ref={headerRef}
+      className={`${styles.header} ${compact ? styles.compact : ''}`}
+    >
       <div className={styles.inner}>
         <Link to="/" className={styles.logo}>
           <span className={styles.wordmark}>Viktorumm</span>

@@ -20,3 +20,21 @@
   flex: 1;
   padding: $spacing-xxxxl $container-padding;
 }
+
+// The handover between chained pages (see useScrollContinue): fixed over
+// everything, invisible until a scroll completes the footer's progress bar,
+// then opaque just long enough for the route underneath to change.
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background-color: #1b1a17;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.32s ease;
+
+  &[data-active='true'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

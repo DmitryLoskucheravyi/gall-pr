@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { authService } from '../api/auth.api';
-import { supportService } from '../api/support.api';
-import { ordersService } from '../api/orders.api';
-import { useMergeGuestCartMutation } from '../hooks/mutations/useCartMutations';
-import { useAppDispatch } from '../store/hooks';
-import { setAuth } from '../store/slices/authSlice';
-import { peekGuestToken } from '../utils/guestToken';
-import styles from './AuthForm.module.scss';
+import { authService } from '../../api/auth.api';
+import { supportService } from '../../api/support.api';
+import { ordersService } from '../../api/orders.api';
+import { useMergeGuestCartMutation } from '../../hooks/mutations/useCartMutations';
+import { useAppDispatch } from '../../store/hooks';
+import { setAuth } from '../../store/slices/authSlice';
+import { peekGuestToken } from '../../utils/guestToken';
+import styles from './AuthPanel.module.scss';
 
-export default function LoginPage() {
+export default function LoginForm() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const mergeGuestCart = useMergeGuestCartMutation();
@@ -48,38 +48,43 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={styles.wrap}>
+    <div className={styles.panel}>
+      <p className={styles.eyebrow}>Кабінет</p>
       <h1 className={styles.title}>Вхід</h1>
 
       <form onSubmit={handleSubmit} className={styles.form}>
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={styles.input}
-        />
+        <label className={styles.field}>
+          <span className={styles.label}>Email</span>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={styles.input}
+          />
+        </label>
 
-        <input
-          type="password"
-          required
-          placeholder="Пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={styles.input}
-        />
+        <label className={styles.field}>
+          <span className={styles.label}>Пароль</span>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={styles.input}
+          />
+        </label>
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button type="submit" disabled={loading} className={styles.submitButton}>
+        <button type="submit" disabled={loading} className={styles.submit}>
           {loading ? 'Зачекайте…' : 'Увійти'}
         </button>
       </form>
 
-      <p className={styles.footer}>
+      <p className={styles.switch}>
         Немає акаунту?{' '}
-        <Link to="/register" className={styles.footerLink}>
+        <Link to="/register" className={styles.switchLink}>
           Зареєструватись
         </Link>
       </p>

@@ -1,0 +1,88 @@
+// Escapes .main entirely — full width via the same trick CorridorSection's
+// .track uses, full height (minus the header it sits under) via a negative
+// margin that cancels .main's own padding, the way CorridorSection.module.scss's
+// .tail bleeds through Layout's padding-bottom. The video is meant to be the
+// whole screen, not a strip beside the form.
+//
+// A fixed dark ground and rebound tokens rather than the page's own light/
+// dark theme colours — same call Footer.module.scss makes and for the same
+// reason: this reads as one settled scene regardless of which theme the
+// visitor is on, not a login form that happens to sit on today's background.
+.page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-block: calc(-1 * $spacing-xxxxl);
+  margin-inline: calc(50% - 50vw);
+  min-height: calc(100dvh - var(--header-height, 64px));
+  display: flex;
+  flex-direction: column;
+  background-color: #1b1a17;
+
+  --color-accent-text: #93a67f;
+  --color-primary: #93a67f;
+  --color-on-primary: #1b1a17;
+  --color-accent: #6d7a5c;
+  --color-on-accent: #1b1a17;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// Darkens for legibility without flattening the footage to one grey.
+.tint {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 15, 13, 0.55) 0%,
+    rgba(15, 15, 13, 0.22) 45%,
+    rgba(15, 15, 13, 0.6) 100%
+  );
+}
+
+// The one visible block, and the one the last round of feedback asked to
+// stretch: full height of the page (flex: 1 inside .page's column), docked
+// to whichever edge matches the route — login right, register left — with
+// the video left fully uncovered on the other side. Only one form is ever
+// in the DOM at a time (see AuthPage.tsx); this was two side-by-side panels
+// before, which is exactly what "одна сторінка" didn't mean.
+.dock {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: $spacing-xxl $spacing-xl;
+  background-color: rgba(27, 26, 23, 0.42);
+  backdrop-filter: blur(2px);
+
+  @include respond-up($breakpoint-lg) {
+    width: min(44%, 620px);
+    padding-inline: 4vw;
+  }
+}
+
+.dock[data-side='left'] {
+  @include respond-up($breakpoint-lg) {
+    margin-right: auto;
+    border-right: 1px solid rgba(237, 234, 226, 0.2);
+  }
+}
+
+.dock[data-side='right'] {
+  @include respond-up($breakpoint-lg) {
+    margin-left: auto;
+    border-left: 1px solid rgba(237, 234, 226, 0.2);
+  }
+}

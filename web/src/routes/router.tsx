@@ -9,8 +9,7 @@ const CatalogPage = lazy(() => import('../pages/CatalogPage'));
 const GalleryPage = lazy(() => import('../pages/GalleryPage'));
 const GiveawayDetailPage = lazy(() => import('../pages/GiveawayDetailPage'));
 const PaintingPage = lazy(() => import('../pages/PaintingPage'));
-const LoginPage = lazy(() => import('../pages/LoginPage'));
-const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const AuthPage = lazy(() => import('../pages/AuthPage'));
 const CartPage = lazy(() => import('../pages/CartPage'));
 const OrdersPage = lazy(() => import('../pages/OrdersPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
@@ -35,8 +34,10 @@ export const router = createBrowserRouter([
       { path: 'gallery', element: <GalleryPage /> },
       { path: 'giveaways/:id', element: <GiveawayDetailPage /> },
       { path: 'painting/:id', element: <PaintingPage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
+      // Both render the same split-screen page — see AuthPage — the route
+      // just says which side leads.
+      { path: 'login', element: <AuthPage /> },
+      { path: 'register', element: <AuthPage /> },
       { path: 'cart', element: <CartPage /> },
       { path: 'orders', element: <OrdersPage /> },
       { path: 'support', element: <FaqPage /> },

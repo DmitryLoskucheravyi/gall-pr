@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 
 import { useAuthorName, useSupportTelegramUrl } from '../../hooks/queries/useSettings';
@@ -8,7 +9,15 @@ import styles from './Footer.module.scss';
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `${styles.link} ${isActive ? styles.active : ''}`;
 
-export default function Footer() {
+type Props = {
+  // Where scrolling past this footer leads, if anywhere — see
+  // useScrollContinue. Undefined on every page that isn't part of that walk,
+  // and the bar below simply doesn't render.
+  continueTo?: string;
+  continueProgress?: number;
+};
+
+export default function Footer({ continueTo, continueProgress = 0 }: Props) {
   const authorName = useAuthorName();
   const supportTelegramUrl = useSupportTelegramUrl();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -21,11 +30,43 @@ export default function Footer() {
   return (
     <footer className={styles.footer}>
       <div className={styles.inner}>
+        {/* Logo on one side, the way on to the next page (if there is one —
+            see useScrollContinue) on the other, opposite it. */}
+        <div className={styles.top}>
+          <Link to="/" className={styles.logo}>
+            <span className={styles.wordmark}>Viktorumm</span>
+          </Link>
+
+          {continueTo && (
+            <Link
+              to={continueTo}
+              className={styles.continue}
+              style={{ '--progress': continueProgress } as CSSProperties}
+            >
+              <span className={styles.continueLabel}>Далі</span>
+              <span className={styles.continueTrack} aria-hidden="true">
+                <span className={styles.continueFill} />
+              </span>
+              <svg
+                className={styles.continueArrow}
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 6l6 6-6 6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+          )}
+        </div>
+
         <div className={styles.main}>
           <div className={styles.brand}>
-            <Link to="/" className={styles.logo}>
-              <span className={styles.wordmark}>Viktorumm</span>
-            </Link>
             <p className={styles.tagline}>
               Кураторська добірка оригінальних картин{' '}
               {authorName ? `від ${authorName}` : 'від українських художників'}.

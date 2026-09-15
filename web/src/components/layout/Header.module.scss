@@ -27,6 +27,12 @@
   padding: $spacing-lg $container-padding;
 }
 
+// AuthPage's own full-bleed screen — see Header.tsx. Shorter, not smaller:
+// same logo and nav, just less air above and below them.
+.compact .inner {
+  padding-block: $spacing-sm;
+}
+
 .logo {
   line-height: 1;
 }

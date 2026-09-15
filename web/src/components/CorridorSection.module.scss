@@ -604,6 +604,16 @@ $corridor-title-font: 'Rubik', sans-serif;
   width: min(74cqw, 360px);
   pointer-events: none;
 
+  // Room for a title that no longer wraps, once the screen is wide enough
+  // to spend it without the box reaching toward the painting on the other
+  // side of centre. Sat closer to centre than the base offset too — at 25cqw
+  // out, the wider box's far edge cleared the viewport on ordinary desktop
+  // widths.
+  @include respond-up($breakpoint-lg) {
+    left: calc(50% + var(--side) * -14cqw);
+    width: min(56cqw, 560px);
+  }
+
   --at: calc(var(--band-start) + (var(--i) + 0.5) * var(--span));
   --near: calc((var(--p) - var(--at)) * var(--inv-span));
   // Deliberately behind the painting's own beats: the work turns to face the
@@ -648,11 +658,15 @@ $corridor-title-font: 'Rubik', sans-serif;
 .title {
   font-family: $corridor-title-font;
   font-weight: 900;
-  font-size: clamp(24px, 4cqw, 44px);
+  font-size: clamp(27px, 4.4cqw, 49px);
   line-height: 1.05;
   letter-spacing: -0.02em;
   text-transform: uppercase;
   color: #fff;
+  // A wall label reads as one line, not two — .word already keeps a single
+  // word whole, but the real spaces between them (see Letters) could still
+  // break there. This closes that gap.
+  white-space: nowrap;
   text-shadow:
     0 1px 2px rgba(10, 14, 8, 0.5),
     0 2px 26px rgba(10, 14, 8, 0.65);
@@ -660,6 +674,13 @@ $corridor-title-font: 'Rubik', sans-serif;
   // line rather than one per letter: a blur is expensive, and a dozen of
   // them per title would buy nothing visible.
   filter: blur(calc((1 - var(--enter)) * 7px));
+
+  // Meaningfully larger once there is a desktop's worth of wall to put it
+  // on — the caption's box grows to match just above (see .caption), so the
+  // bigger line still has the halo behind it that keeps it legible.
+  @include respond-up($breakpoint-lg) {
+    font-size: clamp(48px, 4.9cqw, 84px);
+  }
 }
 
 // Words stay whole so a long title still breaks where a line should, and
@@ -708,7 +729,7 @@ $corridor-title-font: 'Rubik', sans-serif;
 .excerpt {
   margin-top: $spacing-md;
   font-family: $font-display;
-  font-size: clamp(13px, 1.5cqw, 16px);
+  font-size: clamp(14px, 1.7cqw, 18px);
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.92);
   text-shadow:
@@ -728,57 +749,38 @@ $corridor-title-font: 'Rubik', sans-serif;
   inset: 0;
   z-index: 5;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: $spacing-xxl;
   padding-inline: $spacing-xl;
   text-align: center;
   pointer-events: none;
 
-  --arrive: clamp(0, calc((var(--p) - 0.78) / 0.1), 1);
-  opacity: calc(var(--arrive) * (1 - var(--outro)));
-  transform: translateY(calc((1 - var(--arrive)) * 26px));
-  filter: blur(calc((1 - var(--arrive)) * 5px));
+  // The closing runs from where the last work leaves the band (0.74) to
+  // where the pointer is let through (CTA_ARRIVED, 0.88) — a sixth of the
+  // whole track, which on a full corridor is several screens of scrolling.
+  // It needs that much: nothing here fades in as a block any more, it is
+  // drawn piece by piece, and a drawing needs a hand's worth of time.
+  --arrive: clamp(0, calc((var(--p) - 0.72) / 0.16), 1);
+
+  // Everything inside carries its own arrival, so the block itself only has
+  // to be absent before the drawing starts and gone again under the outro.
+  // The guard is there in case a hairline ever ends up visible at rest: one
+  // white line hanging in an empty corridor would be worse than all of them.
+  opacity: calc(clamp(0, calc(var(--arrive) * 16), 1) * (1 - var(--outro)));
 }
 
 .track[data-past='true'] .cta {
   pointer-events: auto;
 }
 
-.ctaTitle {
-  max-width: 15em;
-  font-family: $font-display;
-  font-size: clamp(28px, 5cqw, 54px);
-  line-height: 1.12;
-  letter-spacing: -0.015em;
-  color: #fff;
-  text-shadow:
-    0 1px 3px rgba(10, 14, 8, 0.5),
-    0 2px 28px rgba(10, 14, 8, 0.7);
-
-  em {
-    font-family: 'Cormorant Garamond', serif;
-    font-style: italic;
-    font-weight: 600;
-    // A pale moss rather than the dark one: it has to read as an accent
-    // against white now, not against porcelain.
-    color: #c2cfae;
-  }
-}
-
 // Not a button. The hero closes on bare letterspaced type with a hairline
-// under it, and putting a filled slab here instead made the corridor end on
-// a piece of interface rather than on an invitation.
-//
-// So: the same type, and a rule that draws itself out of the label as the
-// invitation arrives. --arrive is the section's own ramp, already carrying
-// the fade, so the line is written by the scroll rather than by a timer —
-// it extends at exactly the pace the reader is arriving.
+// running out of it, and putting a filled slab here instead made the
+// corridor end on a piece of interface rather than on an invitation.
 .ctaButton {
   display: inline-flex;
   align-items: center;
   gap: $spacing-md;
+  margin-top: $spacing-sm;
   font-family: $font-sans;
   font-size: 13px;
   font-weight: 600;
@@ -801,27 +803,35 @@ $corridor-title-font: 'Rubik', sans-serif;
   }
 }
 
-// Drawn from the label outward. scaleX from the left edge rather than an
-// animated width, so it costs a transform and not a layout on every frame
-// of the arrival.
+// Each of the three reads --arrive for itself rather than a ramp set on the
+// link: --t is registered non-inheriting, so a single stretch declared on
+// .ctaButton would not reach down here at all.
+.ctaLabel {
+  --t: clamp(0, calc((var(--arrive) - 0.64) / 0.14), 1);
+  opacity: var(--t);
+  transform: translateY(calc((1 - var(--t)) * 6px));
+}
+
+// Drawn out of the label, left to right.
 .ctaRule {
   width: clamp(44px, 9cqw, 104px);
   height: 1px;
   flex: none;
   background-color: currentColor;
   opacity: 0.65;
-  transform: scaleX(var(--arrive));
+  --t: clamp(0, calc((var(--arrive) - 0.72) / 0.16), 1);
+  --e: calc(var(--t) * var(--t) * (3 - 2 * var(--t)));
+  transform: scaleX(var(--e));
   transform-origin: left center;
 }
 
-// Rides the end of the rule, and only appears once there is a rule to ride:
-// its own ramp runs off the back of the arrival so the head does not hang in
-// space ahead of the line that carries it.
+// Rides the end of the rule, and only once there is a whole rule to ride, so
+// the head never hangs in space ahead of the line that carries it.
 .ctaArrow {
   height: 15px;
   width: 15px;
   flex: none;
-  opacity: clamp(0, calc((var(--arrive) - 0.55) / 0.45), 1);
+  opacity: clamp(0, calc((var(--arrive) - 0.86) / 0.1), 1);
   transition: transform 0.25s ease;
 }
 
@@ -885,6 +895,20 @@ $corridor-title-font: 'Rubik', sans-serif;
     filter: none;
     pointer-events: auto;
   }
+
+  // The invitation is drawn by the scroll, so with the scroll out of it
+  // every piece would sit at zero length. Hand them all their finished
+  // state.
+  .ctaLabel,
+  .ctaArrow {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .ctaRule {
+    transform: scale(1);
+  }
 }
 
 // ---------- Narrow screens ----------
@@ -947,18 +971,26 @@ $corridor-title-font: 'Rubik', sans-serif;
 // The handover to the page below.
 //
 // The stage ends black and this begins black, so the seam where the pin
-// releases is invisible; by its foot it has resolved into the page's own
-// colour, and the footer arrives out of that rather than being cut to.
+// releases is invisible; by its foot it has resolved into what actually
+// follows — the footer, not the page background. The footer is deep ink in
+// both themes on purpose (see Footer.module.scss), so fading to
+// --color-background instead left the light theme resolving to porcelain
+// and then cutting hard into the footer's dark ground a moment later.
 //
 // It is a plain block in the flow — no pinning, no progress — because by
 // this point there is nothing left to drive.
+//
+// The footer is .main's sibling, not this element's, and sits behind Layout's
+// own padding-bottom plus the footer's own margin-top — 88px that would
+// otherwise show the page's own background between the fade and the footer's
+// ink. The height/margin-bottom pair below bleeds through that reserved gap
+// the same way margin-inline bleeds through the side padding above: taller
+// by exactly that much, pulled back by a matching negative margin so the
+// page's flow is unchanged, and the fade now reaches all the way to where
+// the footer's own background actually begins.
 .tail {
   margin-inline: calc(50% - 50vw);
-  height: 60vh;
-  background-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 12%,
-    var(--color-background) 100%
-  );
+  height: calc(60vh + #{$spacing-xxxxl} + #{$spacing-huge});
+  margin-bottom: calc(-1 * (#{$spacing-xxxxl} + #{$spacing-huge}));
+  background-image: linear-gradient(to bottom, #000 0%, #000 12%, #1b1a17 100%);
 }
