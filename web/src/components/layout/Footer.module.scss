@@ -257,6 +257,15 @@
   &:hover {
     color: #f8f6f0;
   }
+
+  // Below this a phone can't reasonably be expected to scroll down to it —
+  // ContinuePrompt (see Layout.tsx) covers the same ground there instead,
+  // as a bar that rises from the bottom of the screen once the reader is
+  // actually at the bottom of the page and still going, not something
+  // sitting quietly at the top of a footer they may never scroll back to.
+  @media (max-width: $breakpoint-sm - 1px) {
+    display: none;
+  }
 }
 
 .continueLabel {

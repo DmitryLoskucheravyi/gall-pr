@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import BottomNav from './BottomNav';
+import ContinuePrompt from './ContinuePrompt';
 import ScrollToTop from './ScrollToTop';
 import SupportWidget from '../support/SupportWidget';
 import { useAppSelector } from '../../store/hooks';
@@ -35,6 +36,9 @@ export default function Layout() {
       </main>
       {showChrome && <Footer continueTo={nextPath} continueProgress={progress} />}
       {showChrome && <BottomNav />}
+      {/* Footer's own continue row hides itself on a phone — this is what
+          takes over there. See ContinuePrompt for why. */}
+      {showChrome && <ContinuePrompt nextPath={nextPath} progress={progress} />}
       {/* Phones reach support from the header instead — the launcher would
           only fight the bottom bar for the same corner. Hidden there by CSS
           rather than unmounted so the desktop instance keeps its state.

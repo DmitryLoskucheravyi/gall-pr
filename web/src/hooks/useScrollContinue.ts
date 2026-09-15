@@ -16,13 +16,18 @@ const NEXT_PATH: Record<string, string> = {
 // sub-pixel layout rounding can leave a fraction of a pixel of room that
 // never actually scrolls.
 const BOTTOM_SLACK = 4;
-// Continued wheel/touch input needed to fill the bar, in the same px units
-// the events themselves report. Deliberately more than a screen's worth of
-// ordinary scrolling — this only fires on scroll that keeps going once
-// there is nothing left to scroll, and it should read as a deliberate push,
-// not something a reader falls into on their way to the "Нагору" button.
+// Continued wheel input needed to fill the bar, in the same px units
+// wheel events report. Deliberately more than a screen's worth of ordinary
+// scrolling — this only fires on scroll that keeps going once there is
+// nothing left to scroll, and it should read as a deliberate push, not
+// something a reader falls into on their way to the "Нагору" button.
 const WHEEL_UNIT = 560;
-const TOUCH_UNIT = 340;
+// A touch gesture doesn't get the same luxury: there's no "keep spinning
+// the wheel," just however far a thumb can drag before it runs out of
+// screen, and a phone can't repeat that anywhere near as many times as a
+// mouse can turn a wheel. Much shorter, so the gesture stays physically
+// possible.
+const TOUCH_UNIT = 160;
 // No further input for this long and the bar eases back to empty, the way
 // a pull-to-refresh snaps back when it's let go before finishing.
 const IDLE_DECAY_MS = 600;
@@ -138,7 +143,13 @@ export function useScrollContinue() {
       const y = event.touches[0]?.clientY;
       if (touchY.current == null || y == null) return;
       // Positive: the finger moved up, the gesture for scrolling on down.
-      const delta = ((touchY.current - y) / WHEEL_UNIT) * TOUCH_UNIT;
+      // addTo divides whatever it's handed by WHEEL_UNIT, so a raw touch
+      // delta has to be rescaled up to wheel terms first — otherwise it
+      // gets divided by WHEEL_UNIT twice over, once here and once there,
+      // and TOUCH_UNIT stops meaning "this many px of drag fills the bar"
+      // at all. (It was inverted before: over 900px of drag to fill a bar
+      // meant to take 340 — this is that bug, not a tuning number.)
+      const delta = (touchY.current - y) * (WHEEL_UNIT / TOUCH_UNIT);
       touchY.current = y;
       addTo(delta);
     };
