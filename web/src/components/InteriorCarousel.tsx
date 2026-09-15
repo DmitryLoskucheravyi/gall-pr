@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cdnImage } from '../utils/imageUrl';
 import styles from './InteriorCarousel.module.scss';
@@ -29,6 +30,7 @@ type Props = {
 // you can see the current photo running out, how many are left, and you can
 // jump to any of them.
 export default function InteriorCarousel({ images }: Props) {
+  const { t } = useTranslation('painting');
   const [active, setActive] = useState(0);
   // True while showing a photo the visitor chose, which is what buys it the
   // longer hold. Cleared as soon as the sequence moves on by itself.
@@ -79,7 +81,7 @@ export default function InteriorCarousel({ images }: Props) {
             type="button"
             onClick={() => goTo(index)}
             className={styles.bar}
-            aria-label={`Фото ${index + 1} з ${images.length}`}
+            aria-label={t('interior.photoAria', { n: index + 1, total: images.length })}
             aria-current={index === active ? 'true' : undefined}
           >
             <span
@@ -108,7 +110,7 @@ export default function InteriorCarousel({ images }: Props) {
           <img
             key={url}
             src={cdnImage(url, 1400)}
-            alt={index === active ? 'Картина в інтер’єрі' : ''}
+            alt={index === active ? t('interior.alt') : ''}
             aria-hidden={index === active ? undefined : 'true'}
             // All of them are stacked and cross-faded rather than swapped, so
             // the next photo is already decoded when its turn comes and the

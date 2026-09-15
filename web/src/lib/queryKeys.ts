@@ -99,4 +99,7 @@ export const queryKeys = {
   auth: {
     me: (userId: number) => ['auth', 'me', userId] as const,
   },
+  exchangeRate: {
+    all: ['exchange-rate'] as const,
+  },
 } as const;

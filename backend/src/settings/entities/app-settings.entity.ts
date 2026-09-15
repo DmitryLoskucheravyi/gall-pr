@@ -8,6 +8,11 @@ import {
 export type FaqItem = {
   title: string;
   text: string;
+  // Optional English counterpart, set by the admin — the frontend falls
+  // back to the Ukrainian value when empty. Lives inside the JSON blob
+  // rather than as separate columns since the whole FAQ map already is one.
+  titleEn?: string;
+  textEn?: string;
   order: number;
 };
 
@@ -20,6 +25,9 @@ export class AppSettings {
 
   @Column({ name: 'author_name', default: '' })
   authorName: string;
+
+  @Column({ name: 'author_name_en', type: 'varchar', nullable: true })
+  authorNameEn: string | null;
 
   @Column({ name: 'card_transfer_iban', default: '' })
   cardTransferIban: string;

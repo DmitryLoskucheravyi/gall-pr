@@ -1,7 +1,9 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import Layout from '../components/layout/Layout';
+import LocaleLayout from './LocaleLayout';
+import NotFoundRedirect from './NotFoundRedirect';
 import ProtectedRoute from './ProtectedRoute';
 
 const HomePage = lazy(() => import('../pages/HomePage'));
@@ -25,42 +27,52 @@ const AdminGiveawaysPage = lazy(() => import('../pages/admin/AdminGiveawaysPage'
 const AdminMailPage = lazy(() => import('../pages/admin/AdminMailPage'));
 
 export const router = createBrowserRouter([
+  // The bare root has no language of its own — send it to the default.
+  { path: '/', element: <Navigate to="/ua" replace /> },
   {
-    path: '/',
-    element: <Layout />,
+    path: '/:locale',
+    element: <LocaleLayout />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: 'catalog', element: <CatalogPage /> },
-      { path: 'gallery', element: <GalleryPage /> },
-      { path: 'giveaways/:id', element: <GiveawayDetailPage /> },
-      { path: 'painting/:id', element: <PaintingPage /> },
-      // Both render the same split-screen page — see AuthPage — the route
-      // just says which side leads.
-      { path: 'login', element: <AuthPage /> },
-      { path: 'register', element: <AuthPage /> },
-      { path: 'cart', element: <CartPage /> },
-      { path: 'orders', element: <OrdersPage /> },
-      { path: 'support', element: <FaqPage /> },
-      // Open to guests: someone with a question usually doesn't have an
-      // account yet, and making them register first is making them leave.
-      { path: 'support/chat', element: <SupportChatPage /> },
       {
-        element: <ProtectedRoute />,
+        // Pathless — Layout wraps every page in the site's chrome without
+        // consuming a URL segment of its own; the locale already did.
+        element: <Layout />,
         children: [
-          { path: 'profile', element: <ProfilePage /> },
-          { path: 'favorites', element: <FavoritesPage /> },
-        ],
-      },
-      {
-        element: <ProtectedRoute adminOnly />,
-        children: [
-          { path: 'admin/dictionaries', element: <DictionariesPage /> },
-          { path: 'admin/users', element: <AdminUsersPage /> },
-          { path: 'admin/orders', element: <AdminOrdersPage /> },
-          { path: 'admin/settings', element: <AdminSettingsPage /> },
-          { path: 'admin/support', element: <AdminSupportPage /> },
-          { path: 'admin/giveaways', element: <AdminGiveawaysPage /> },
-          { path: 'admin/mail', element: <AdminMailPage /> },
+          { index: true, element: <HomePage /> },
+          { path: 'catalog', element: <CatalogPage /> },
+          { path: 'gallery', element: <GalleryPage /> },
+          { path: 'giveaways/:id', element: <GiveawayDetailPage /> },
+          { path: 'painting/:id', element: <PaintingPage /> },
+          // Both render the same split-screen page — see AuthPage — the
+          // route just says which side leads.
+          { path: 'login', element: <AuthPage /> },
+          { path: 'register', element: <AuthPage /> },
+          { path: 'cart', element: <CartPage /> },
+          { path: 'orders', element: <OrdersPage /> },
+          { path: 'support', element: <FaqPage /> },
+          // Open to guests: someone with a question usually doesn't have an
+          // account yet, and making them register first is making them leave.
+          { path: 'support/chat', element: <SupportChatPage /> },
+          {
+            element: <ProtectedRoute />,
+            children: [
+              { path: 'profile', element: <ProfilePage /> },
+              { path: 'favorites', element: <FavoritesPage /> },
+            ],
+          },
+          {
+            element: <ProtectedRoute adminOnly />,
+            children: [
+              { path: 'admin/dictionaries', element: <DictionariesPage /> },
+              { path: 'admin/users', element: <AdminUsersPage /> },
+              { path: 'admin/orders', element: <AdminOrdersPage /> },
+              { path: 'admin/settings', element: <AdminSettingsPage /> },
+              { path: 'admin/support', element: <AdminSupportPage /> },
+              { path: 'admin/giveaways', element: <AdminGiveawaysPage /> },
+              { path: 'admin/mail', element: <AdminMailPage /> },
+            ],
+          },
+          { path: '*', element: <NotFoundRedirect /> },
         ],
       },
     ],

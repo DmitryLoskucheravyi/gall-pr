@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 
 import { useAppSelector } from '../store/hooks';
+import { useLocale } from '../hooks/useLocale';
 
 type Props = {
   adminOnly?: boolean;
@@ -10,6 +11,7 @@ export default function ProtectedRoute({ adminOnly }: Props) {
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const isBootstrapped = useAppSelector((state) => state.auth.isBootstrapped);
+  const locale = useLocale();
 
   // The session is no longer known synchronously: it's re-established from the
   // refresh cookie on startup. Redirecting before that answer arrives would
@@ -20,11 +22,11 @@ export default function ProtectedRoute({ adminOnly }: Props) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/${locale}/login`} replace />;
   }
 
   if (adminOnly && user?.role !== 'ADMIN') {
-    return <Navigate to="/" replace />;
+    return <Navigate to={`/${locale}`} replace />;
   }
 
   return <Outlet />;

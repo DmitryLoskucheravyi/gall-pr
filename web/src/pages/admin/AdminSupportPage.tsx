@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { supportService } from '../../api/support.api';
 import type {
@@ -11,14 +13,14 @@ import styles from './AdminSupportPage.module.scss';
 
 // A guest has no name, so both of these fall back to the chat number — stable
 // across sessions and enough to tell two guests apart in the list.
-function initialsOf(chat: SupportChatSummary) {
-  if (!chat.user) return 'Г';
+function initialsOf(chat: SupportChatSummary, t: TFunction<'admin'>) {
+  if (!chat.user) return t('supportPage.guestInitial');
   const { firstName, lastName } = chat.user;
   return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase() || '?';
 }
 
-function nameOf(chat: SupportChatSummary) {
-  if (!chat.user) return `Гість #${chat.id}`;
+function nameOf(chat: SupportChatSummary, t: TFunction<'admin'>) {
+  if (!chat.user) return t('supportPage.guestName', { id: chat.id });
   return `${chat.user.firstName} ${chat.user.lastName}`.trim() || chat.user.email;
 }
 
@@ -31,6 +33,7 @@ function sortChats(chats: SupportChatSummary[]) {
 }
 
 export default function AdminSupportPage() {
+  const { t } = useTranslation('admin');
   const [chats, setChats] = useState<SupportChatSummary[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
@@ -118,7 +121,7 @@ export default function AdminSupportPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Підтримка</h1>
+      <h1 className={styles.title}>{t('supportPage.title')}</h1>
 
       {/* Messenger navigation: on a phone the list and the conversation are
           two screens and this class decides which one is showing. Both panes
@@ -129,9 +132,9 @@ export default function AdminSupportPage() {
       >
         <div className={styles.listPane}>
           {loadingChats ? (
-            <p className={styles.muted}>Завантаження…</p>
+            <p className={styles.muted}>{t('supportPage.loading')}</p>
           ) : chats.length === 0 ? (
-            <p className={styles.muted}>Звернень поки немає</p>
+            <p className={styles.muted}>{t('supportPage.empty')}</p>
           ) : (
             chats.map((chat) => (
               <button
@@ -143,7 +146,7 @@ export default function AdminSupportPage() {
                 }`}
               >
                 <div className={styles.avatarWrap}>
-                  <div className={styles.avatar}>{initialsOf(chat)}</div>
+                  <div className={styles.avatar}>{initialsOf(chat, t)}</div>
                   <span
                     className={`${styles.onlineDot} ${
                       chat.isOnline ? styles.online : ''
@@ -152,11 +155,11 @@ export default function AdminSupportPage() {
                 </div>
 
                 <div className={styles.chatInfo}>
-                  <div className={styles.chatName}>{nameOf(chat)}</div>
+                  <div className={styles.chatName}>{nameOf(chat, t)}</div>
                   <div className={styles.chatPreview}>
                     {chat.lastMessage
-                      ? `${chat.lastMessage.senderRole === 'ADMIN' ? 'Ви: ' : ''}${chat.lastMessage.content}`
-                      : 'Немає повідомлень'}
+                      ? `${chat.lastMessage.senderRole === 'ADMIN' ? t('supportPage.you') : ''}${chat.lastMessage.content}`
+                      : t('supportPage.noMessages')}
                   </div>
                 </div>
 
@@ -172,7 +175,7 @@ export default function AdminSupportPage() {
 
         <div className={styles.threadPane}>
           {!selectedChat ? (
-            <div className={styles.threadEmpty}>Оберіть чат зі списку</div>
+            <div className={styles.threadEmpty}>{t('supportPage.chooseChat')}</div>
           ) : (
             <ChatThread
               messages={messages}
@@ -180,7 +183,7 @@ export default function AdminSupportPage() {
               ownRole="ADMIN"
               onSend={handleSend}
               disabled={!socket}
-              emptyText="Повідомлень поки немає"
+              emptyText={t('supportPage.emptyThread')}
               header={
                 <div className={styles.threadHeader}>
                   {/* Phone-only way back to the list; the desktop layout
@@ -190,7 +193,7 @@ export default function AdminSupportPage() {
                     type="button"
                     onClick={() => setSelectedChatId(null)}
                     className={styles.backButton}
-                    aria-label="До списку чатів"
+                    aria-label={t('supportPage.backAria')}
                   >
                     <svg viewBox="0 0 24 24" fill="none">
                       <path
@@ -203,18 +206,20 @@ export default function AdminSupportPage() {
                     </svg>
                   </button>
 
-                  <div className={styles.avatar}>{initialsOf(selectedChat)}</div>
+                  <div className={styles.avatar}>{initialsOf(selectedChat, t)}</div>
 
                   <div className={styles.threadHeaderText}>
                     <div className={styles.threadHeaderName}>
-                      {nameOf(selectedChat)}
+                      {nameOf(selectedChat, t)}
                     </div>
                     <div
                       className={`${styles.threadHeaderStatus} ${
                         selectedChat.isOnline ? styles.online : ''
                       }`}
                     >
-                      {selectedChat.isOnline ? 'Онлайн' : 'Офлайн'}
+                      {selectedChat.isOnline
+                        ? t('supportPage.online')
+                        : t('supportPage.offline')}
                     </div>
                   </div>
                 </div>

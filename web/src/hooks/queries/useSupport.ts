@@ -8,6 +8,7 @@ import type { SupportMessage } from '../../types/support.types';
 import { queryKeys } from '../../lib/queryKeys';
 import type { SupportChatSummary } from '../../types/support.types';
 import { useAppSelector } from '../../store/hooks';
+import { stripLocale } from '../../utils/locale';
 
 function sumUnread(chats: SupportChatSummary[]) {
   return chats.reduce((sum, chat) => sum + chat.unreadByAdmin, 0);
@@ -44,7 +45,7 @@ export function useMyUnreadSupportCount(): number {
   // The chat page owns a socket of its own while it's open, and reading the
   // chat is what zeroes this — so stand down there.
   const { pathname } = useLocation();
-  const onChat = pathname.startsWith('/support/chat');
+  const onChat = stripLocale(pathname).startsWith('/support/chat');
 
   const { data } = useQuery({
     queryKey: queryKeys.support.myUnread(),

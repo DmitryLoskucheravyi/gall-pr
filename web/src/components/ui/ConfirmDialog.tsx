@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import styles from './ConfirmDialog.module.scss';
@@ -32,6 +33,7 @@ export function useConfirm(): ConfirmFn {
 }
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('common');
   const [options, setOptions] = useState<ConfirmOptions | null>(null);
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
 
@@ -82,7 +84,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 onClick={() => close(false)}
                 className={styles.cancel}
               >
-                {options.cancelLabel ?? 'Скасувати'}
+                {options.cancelLabel ?? t('cancel')}
               </button>
               <button
                 type="button"
@@ -90,7 +92,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 className={options.danger ? styles.confirmDanger : styles.confirm}
                 autoFocus
               >
-                {options.confirmLabel ?? 'Підтвердити'}
+                {options.confirmLabel ?? t('confirm')}
               </button>
             </div>
           </div>

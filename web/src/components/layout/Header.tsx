@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link, LocalizedNavLink as NavLink } from '../ui/LocalizedLink';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
@@ -10,6 +12,9 @@ import { queryClient } from '../../lib/queryClient';
 import { useCartCount } from '../../hooks/queries/useCart';
 import { useAdminPendingOrdersCount } from '../../hooks/queries/useOrders';
 import { useAdminUnreadSupportCount } from '../../hooks/queries/useSupport';
+import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
+import { useLocale, type Locale } from '../../hooks/useLocale';
+import { stripLocale } from '../../utils/locale';
 import styles from './Header.module.scss';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -30,8 +35,11 @@ type Props = {
 };
 
 export default function Header({ compact = false }: Props) {
-  const navigate = useNavigate();
+  const { t } = useTranslation('header');
+  const rawNavigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const location = useLocation();
+  const locale = useLocale();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   // The session is re-established from the refresh cookie after the page
@@ -153,6 +161,13 @@ export default function Header({ compact = false }: Props) {
     });
   };
 
+  // Swaps the locale segment and keeps everything after it — switching
+  // language mid-page stays on that page, it doesn't bounce home.
+  const otherLocale: Locale = locale === 'ua' ? 'en' : 'ua';
+  const handleLanguageToggle = () => {
+    rawNavigate(`/${otherLocale}${stripLocale(location.pathname)}${location.search}`);
+  };
+
   const themeIcon = isDark ? (
     <svg viewBox="0 0 24 24" fill="none">
       <path
@@ -235,13 +250,13 @@ export default function Header({ compact = false }: Props) {
 
         <nav className={styles.nav}>
           <NavLink to="/" className={navLinkClass} end>
-            Головна
+            {t('nav.home')}
           </NavLink>
           <NavLink to="/catalog" className={navLinkClass}>
-            Каталог
+            {t('nav.catalog')}
           </NavLink>
           <NavLink to="/gallery" className={navLinkClass}>
-            Галерея
+            {t('nav.gallery')}
           </NavLink>
 
           {user?.role === 'ADMIN' && (
@@ -253,7 +268,7 @@ export default function Header({ compact = false }: Props) {
                   isAdminMenuOpen ? styles.active : ''
                 }`}
               >
-                Адмін
+                {t('admin.menu')}
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -274,31 +289,31 @@ export default function Header({ compact = false }: Props) {
               {isAdminMenuOpen && (
                 <div className={styles.adminMenuPanel}>
                   <NavLink to="/admin/dictionaries" className={adminNavLinkClass}>
-                    Матеріали і техніки
+                    {t('admin.dictionaries')}
                   </NavLink>
                   <NavLink to="/admin/users" className={adminNavLinkClass}>
-                    Користувачі
+                    {t('admin.users')}
                   </NavLink>
                   <NavLink to="/admin/orders" className={adminNavLinkClass}>
-                    Замовлення
+                    {t('admin.orders')}
                     {pendingOrdersCount > 0 && (
                       <span className={styles.navBadge}>{pendingOrdersCount}</span>
                     )}
                   </NavLink>
                   <NavLink to="/admin/settings" className={adminNavLinkClass}>
-                    Налаштування
+                    {t('admin.settings')}
                   </NavLink>
                   <NavLink to="/admin/support" className={adminNavLinkClass}>
-                    Підтримка
+                    {t('admin.support')}
                     {unreadSupportCount > 0 && (
                       <span className={styles.navBadge}>{unreadSupportCount}</span>
                     )}
                   </NavLink>
                   <NavLink to="/admin/giveaways" className={adminNavLinkClass}>
-                    Розіграш
+                    {t('admin.giveaways')}
                   </NavLink>
                   <NavLink to="/admin/mail" className={adminNavLinkClass}>
-                    Журнал листів
+                    {t('admin.mail')}
                   </NavLink>
                 </div>
               )}
@@ -307,21 +322,29 @@ export default function Header({ compact = false }: Props) {
 
           {user && (
             <NavLink to="/favorites" className={navLinkClass}>
-              Улюблені
+              {t('nav.favorites')}
             </NavLink>
           )}
 
           <button
             onClick={handleThemeToggle}
-            aria-label="Перемкнути тему"
+            aria-label={t('themeToggle')}
             className={styles.themeButton}
           >
             {themeIcon}
           </button>
 
+          <button
+            onClick={handleLanguageToggle}
+            aria-label={t('languageToggle')}
+            className={styles.languageButton}
+          >
+            {otherLocale.toUpperCase()}
+          </button>
+
           <NavLink
             to="/cart"
-            aria-label="Кошик"
+            aria-label={t('cartAria')}
             className={({ isActive }) =>
               `${styles.cartButton} ${isActive ? styles.active : ''}`
             }
@@ -336,7 +359,7 @@ export default function Header({ compact = false }: Props) {
             <div className={styles.userGroup}>
               <NavLink
                 to="/profile"
-                aria-label="Профіль"
+                aria-label={t('profileAria')}
                 className={({ isActive }) =>
                   `${styles.profileButton} ${isActive ? styles.active : ''}`
                 }
@@ -345,7 +368,7 @@ export default function Header({ compact = false }: Props) {
               </NavLink>
               <button
                 onClick={handleLogout}
-                aria-label="Вийти"
+                aria-label={t('logoutAria')}
                 className={styles.logoutButton}
               >
                 <svg viewBox="0 0 24 24" fill="none">
@@ -368,7 +391,7 @@ export default function Header({ compact = false }: Props) {
             </div>
           ) : (
             <NavLink to="/login" className={navLinkClass}>
-              Увійти
+              {t('nav.login')}
             </NavLink>
           )}
         </nav>
@@ -378,10 +401,18 @@ export default function Header({ compact = false }: Props) {
               at this width — what's left up here is the occasional stuff. */}
           <button
             onClick={handleThemeToggle}
-            aria-label="Перемкнути тему"
+            aria-label={t('themeToggle')}
             className={styles.themeButton}
           >
             {themeIcon}
+          </button>
+
+          <button
+            onClick={handleLanguageToggle}
+            aria-label={t('languageToggle')}
+            className={styles.languageButton}
+          >
+            {otherLocale.toUpperCase()}
           </button>
 
           {/* The one slot that differs by role: an admin's most-used screen
@@ -391,8 +422,8 @@ export default function Header({ compact = false }: Props) {
               to="/admin/support"
               aria-label={
                 unreadSupportCount > 0
-                  ? `Підтримка, ${unreadSupportCount} нових звернень`
-                  : 'Підтримка'
+                  ? t('supportUnread', { count: unreadSupportCount })
+                  : t('supportAria')
               }
               className={({ isActive }) =>
                 `${styles.iconButton} ${isActive ? styles.active : ''}`
@@ -410,7 +441,7 @@ export default function Header({ compact = false }: Props) {
           {user && user.role !== 'ADMIN' && (
             <NavLink
               to="/favorites"
-              aria-label="Улюблені"
+              aria-label={t('nav.favorites')}
               className={({ isActive }) =>
                 `${styles.iconButton} ${isActive ? styles.active : ''}`
               }
@@ -422,7 +453,7 @@ export default function Header({ compact = false }: Props) {
           {user && (
             <NavLink
               to="/profile"
-              aria-label="Профіль"
+              aria-label={t('profileAria')}
               className={({ isActive }) =>
                 `${styles.profileButton} ${isActive ? styles.active : ''}`
               }
@@ -434,7 +465,7 @@ export default function Header({ compact = false }: Props) {
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-            aria-label={isMobileMenuOpen ? 'Закрити меню' : 'Відкрити меню'}
+            aria-label={isMobileMenuOpen ? t('menuClose') : t('menuOpen')}
             aria-expanded={isMobileMenuOpen}
             className={`${styles.burgerButton} ${
               isMobileMenuOpen ? styles.burgerOpen : ''
@@ -455,60 +486,60 @@ export default function Header({ compact = false }: Props) {
           />
           <nav className={styles.mobilePanel}>
             <NavLink to="/" className={mobileNavLinkClass} end>
-              Головна
+              {t('nav.home')}
             </NavLink>
             <NavLink to="/catalog" className={mobileNavLinkClass}>
-              Каталог
+              {t('nav.catalog')}
             </NavLink>
             <NavLink to="/gallery" className={mobileNavLinkClass}>
-              Галерея
+              {t('nav.gallery')}
             </NavLink>
             <NavLink to="/cart" className={mobileNavLinkClass}>
-              Кошик
+              {t('nav.cart')}
               {cartCount > 0 && (
                 <span className={styles.navBadge}>{cartCount}</span>
               )}
             </NavLink>
             <NavLink to="/orders" className={mobileNavLinkClass}>
-              Замовлення
+              {t('nav.orders')}
             </NavLink>
 
             {user && (
               <NavLink to="/favorites" className={mobileNavLinkClass}>
-                Улюблені
+                {t('nav.favorites')}
               </NavLink>
             )}
 
             {user?.role === 'ADMIN' && (
               <>
                 <div className={styles.mobileDivider} />
-                <span className={styles.mobileGroupLabel}>Адмін</span>
+                <span className={styles.mobileGroupLabel}>{t('adminGroupLabel')}</span>
                 <NavLink to="/admin/dictionaries" className={mobileNavLinkClass}>
-                  Матеріали і техніки
+                  {t('admin.dictionaries')}
                 </NavLink>
                 <NavLink to="/admin/users" className={mobileNavLinkClass}>
-                  Користувачі
+                  {t('admin.users')}
                 </NavLink>
                 <NavLink to="/admin/orders" className={mobileNavLinkClass}>
-                  Замовлення
+                  {t('admin.orders')}
                   {pendingOrdersCount > 0 && (
                     <span className={styles.navBadge}>{pendingOrdersCount}</span>
                   )}
                 </NavLink>
                 <NavLink to="/admin/settings" className={mobileNavLinkClass}>
-                  Налаштування
+                  {t('admin.settings')}
                 </NavLink>
                 <NavLink to="/admin/support" className={mobileNavLinkClass}>
-                  Підтримка
+                  {t('admin.support')}
                   {unreadSupportCount > 0 && (
                     <span className={styles.navBadge}>{unreadSupportCount}</span>
                   )}
                 </NavLink>
                 <NavLink to="/admin/giveaways" className={mobileNavLinkClass}>
-                  Розіграш
+                  {t('admin.giveaways')}
                 </NavLink>
                 <NavLink to="/admin/mail" className={mobileNavLinkClass}>
-                  Журнал листів
+                  {t('admin.mail')}
                 </NavLink>
               </>
             )}
@@ -517,11 +548,11 @@ export default function Header({ compact = false }: Props) {
 
             {!authKnown ? null : user ? (
               <button onClick={handleLogout} className={styles.mobileLogout}>
-                Вийти
+                {t('nav.logout')}
               </button>
             ) : (
               <NavLink to="/login" className={mobileNavLinkClass}>
-                Увійти
+                {t('nav.login')}
               </NavLink>
             )}
           </nav>

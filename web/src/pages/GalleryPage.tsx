@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useTechniques } from '../hooks/queries/useTechniques';
 import { usePaintings } from '../hooks/queries/usePaintings';
 import { useLikedIds } from '../hooks/queries/useLikedIds';
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -10,10 +13,9 @@ import { useAppSelector } from '../store/hooks';
 import styles from './GalleryPage.module.scss';
 
 export default function GalleryPage() {
-  usePageMeta(
-    'Галерея',
-    'Уся колекція робіт галереї Viktorumm — доступні для придбання та вже продані картини українських художників.',
-  );
+  const { t } = useTranslation('gallery');
+  const locale = useLocale();
+  usePageMeta(t('pageTitle'), t('pageDescription'));
 
   const user = useAppSelector((state) => state.auth.user);
   const { data: likedIds = [] } = useLikedIds();
@@ -39,10 +41,8 @@ export default function GalleryPage() {
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>Галерея</h1>
-        <p className={styles.subtitle}>
-          Уся колекція робіт — доступні для придбання та вже продані
-        </p>
+        <h1 className={styles.title}>{t('pageTitle')}</h1>
+        <p className={styles.subtitle}>{t('subtitle')}</p>
       </div>
 
       <div className={styles.chips}>
@@ -52,7 +52,7 @@ export default function GalleryPage() {
             selectedTechniqueId === null ? styles.chipActive : styles.chip
           }
         >
-          Усі
+          {t('allTechniques')}
         </button>
 
         {techniques.map((technique) => (
@@ -65,7 +65,7 @@ export default function GalleryPage() {
                 : styles.chip
             }
           >
-            {technique.name}
+            {pickLocale(technique, 'name', locale)}
           </button>
         ))}
 
@@ -74,7 +74,7 @@ export default function GalleryPage() {
             onClick={() => setShowLikedOnly((prev) => !prev)}
             className={showLikedOnly ? styles.chipActive : styles.chip}
           >
-            ♥ Уподобані
+            {t('likedOnly')}
           </button>
         )}
       </div>
@@ -87,9 +87,7 @@ export default function GalleryPage() {
         </div>
       ) : visiblePaintings.length === 0 ? (
         <p className={styles.muted}>
-          {showLikedOnly
-            ? 'Ви ще нічого не вподобали'
-            : 'Картин поки немає'}
+          {showLikedOnly ? t('emptyLiked') : t('emptyAll')}
         </p>
       ) : (
         <div className={styles.grid}>

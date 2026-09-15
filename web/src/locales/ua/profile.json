@@ -1,0 +1,44 @@
+{
+  "admin": "Адміністратор",
+  "stats": {
+    "email": "Email",
+    "phone": "Телефон",
+    "telegram": "Telegram"
+  },
+  "telegram": {
+    "linked": "✓ Звʼязано — сповіщення про замовлення приходять у Telegram",
+    "reset": "Скинути",
+    "comingSoon": "Незабаром",
+    "hint": "Отримуйте статуси замовлень у Telegram",
+    "openAgain": "Відкрити ще раз",
+    "generating": "Генеруємо…",
+    "link": "Прив'язати Telegram",
+    "startHint": "Натисніть Start у Telegram — акаунт звʼяжеться автоматично",
+    "haveCode": "Вже є код з Telegram? Ввести"
+  },
+  "confirmReset": {
+    "title": "Скинути прив'язку Telegram?",
+    "message": "Сповіщення про замовлення перестануть приходити, доки ви не привʼяжете акаунт знову.",
+    "confirmLabel": "Скинути"
+  },
+  "orders": {
+    "title": "Замовлення",
+    "all": "Усі →",
+    "empty": "У вас ще немає замовлень"
+  },
+  "favorites": {
+    "title": "Уподобані",
+    "all": "Усі →",
+    "empty": "Ви ще не вподобали жодної картини"
+  },
+  "codeModal": {
+    "title": "Підтвердження Telegram",
+    "hintBefore": "Напишіть боту",
+    "hintInTelegram": "у Telegram",
+    "hintAfter": "команду /start — він надішле код підтвердження. Введіть його нижче.",
+    "invalidCode": "Невірний або застарілий код",
+    "cancel": "Скасувати",
+    "checking": "Перевірка…",
+    "confirm": "Підтвердити"
+  }
+}

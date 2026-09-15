@@ -58,8 +58,11 @@ export class GiveawaysService {
   async create(dto: CreateGiveawayDto) {
     const giveaway = this.giveawaysRepository.create({
       title: dto.title,
+      titleEn: dto.titleEn ?? null,
       description: dto.description,
+      descriptionEn: dto.descriptionEn ?? null,
       conditions: dto.conditions ?? null,
+      conditionsEn: dto.conditionsEn ?? null,
       paintingId: dto.paintingId,
       deadline: new Date(dto.deadline),
     });
@@ -73,8 +76,11 @@ export class GiveawaysService {
 
     const patch: Partial<Giveaway> = {};
     if (dto.title !== undefined) patch.title = dto.title;
+    if (dto.titleEn !== undefined) patch.titleEn = dto.titleEn;
     if (dto.description !== undefined) patch.description = dto.description;
+    if (dto.descriptionEn !== undefined) patch.descriptionEn = dto.descriptionEn;
     if (dto.conditions !== undefined) patch.conditions = dto.conditions;
+    if (dto.conditionsEn !== undefined) patch.conditionsEn = dto.conditionsEn;
     if (dto.paintingId !== undefined) patch.paintingId = dto.paintingId;
     if (dto.deadline !== undefined) patch.deadline = new Date(dto.deadline);
 

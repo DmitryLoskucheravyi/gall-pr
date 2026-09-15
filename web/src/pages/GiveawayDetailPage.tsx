@@ -1,14 +1,18 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useGiveaway, useGiveawayMyStatus } from '../hooks/queries/useGiveaway';
 import { useGiveawayJoinMutation } from '../hooks/mutations/useGiveawayJoinMutation';
 import { useAppSelector } from '../store/hooks';
+import { useLocale, type Locale } from '../hooks/useLocale';
+import { useLocalizedNavigate } from '../hooks/useLocalizedNavigate';
+import { pickLocale } from '../utils/localizedField';
 import { cdnImage } from '../utils/imageUrl';
-import { plural } from '../utils/plural';
+import { plural, pluralForms } from '../utils/plural';
 import styles from './GiveawayDetailPage.module.scss';
 
-function formatDeadline(iso: string) {
-  return new Date(iso).toLocaleString('uk-UA', {
+function formatDeadline(iso: string, locale: Locale) {
+  return new Date(iso).toLocaleString(locale === 'en' ? 'en-GB' : 'uk-UA', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -33,8 +37,10 @@ function elapsedFraction(createdAt: string, deadline: string) {
 }
 
 export default function GiveawayDetailPage() {
+  const { t } = useTranslation('giveaway');
+  const locale = useLocale();
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const user = useAppSelector((state) => state.auth.user);
 
   const giveawayId = id ? Number(id) : undefined;
@@ -65,13 +71,23 @@ export default function GiveawayDetailPage() {
   }
 
   if (!giveaway) {
-    return <p className={styles.muted}>Розіграш не знайдено</p>;
+    return <p className={styles.muted}>{t('detail.notFound')}</p>;
   }
 
   const { painting } = giveaway;
   const days = daysLeft(giveaway.deadline);
   const active = giveaway.isActive;
   const progress = elapsedFraction(giveaway.createdAt, giveaway.deadline);
+  const title = pickLocale(giveaway, 'title', locale);
+  const description = pickLocale(giveaway, 'description', locale);
+  const conditions = pickLocale(giveaway, 'conditions', locale);
+  const paintingTitle = pickLocale(painting, 'title', locale);
+  const paintingSubtitle = painting.subtitle
+    ? pickLocale(painting, 'subtitle', locale)
+    : undefined;
+  const paintingDescription = painting.description
+    ? pickLocale(painting, 'description', locale)
+    : undefined;
 
   return (
     <div className={styles.grid}>
@@ -83,7 +99,7 @@ export default function GiveawayDetailPage() {
             type="button"
             onClick={() => navigate(-1)}
             className={styles.backButton}
-            aria-label="Назад"
+            aria-label={t('detail.backAria')}
           >
             <svg viewBox="0 0 24 24" fill="none" className={styles.backIcon}>
               <path
@@ -98,54 +114,54 @@ export default function GiveawayDetailPage() {
 
           <img
             src={cdnImage(painting.cardImage, 1200)}
-            alt={painting.title}
+            alt={paintingTitle}
             className={styles.image}
             decoding="async"
           />
         </div>
 
         <figcaption className={styles.workMeta}>
-          <span className={styles.workLabel}>Приз</span>
-          <h2 className={styles.workTitle}>{painting.title}</h2>
-          {painting.subtitle && (
-            <p className={styles.workSubtitle}>{painting.subtitle}</p>
+          <span className={styles.workLabel}>{t('detail.prizeLabel')}</span>
+          <h2 className={styles.workTitle}>{paintingTitle}</h2>
+          {paintingSubtitle && (
+            <p className={styles.workSubtitle}>{paintingSubtitle}</p>
           )}
-          {painting.description && (
-            <p className={styles.workText}>{painting.description}</p>
+          {paintingDescription && (
+            <p className={styles.workText}>{paintingDescription}</p>
           )}
         </figcaption>
       </figure>
 
       <aside className={styles.side}>
-        <h1 className={styles.title}>{giveaway.title}</h1>
+        <h1 className={styles.title}>{title}</h1>
 
         {/* Same ticket as the home page, stood upright: countdown above the
             perforation, the way in below it. */}
         <div className={styles.ticket}>
           <div className={styles.ticketHead}>
             <span className={styles.ticketLabel}>
-              {active ? 'До завершення' : 'Розіграш завершився'}
+              {active ? t('detail.untilEnd') : t('detail.ended')}
             </span>
 
             {active ? (
               <span className={styles.countdown}>
                 {days === 0 ? (
-                  <span className={styles.countdownClosing}>Останній день</span>
+                  <span className={styles.countdownClosing}>{t('detail.lastDay')}</span>
                 ) : (
                   <>
                     <span className={styles.countdownNumber}>{days}</span>
                     <span className={styles.countdownUnit}>
-                      {plural(days, 'день', 'дні', 'днів')}
+                      {plural(days, locale, pluralForms(t, 'days'))}
                     </span>
                   </>
                 )}
               </span>
             ) : (
-              <span className={styles.countdownClosing}>Завершено</span>
+              <span className={styles.countdownClosing}>{t('detail.finished')}</span>
             )}
 
             <span className={styles.deadline}>
-              {formatDeadline(giveaway.deadline)}
+              {formatDeadline(giveaway.deadline, locale)}
             </span>
 
             {active && (
@@ -161,16 +177,11 @@ export default function GiveawayDetailPage() {
           <div className={styles.ticketStub}>
             <span className={styles.participants}>
               <strong>{giveaway.participantsCount}</strong>{' '}
-              {plural(
-                giveaway.participantsCount,
-                'учасник',
-                'учасники',
-                'учасників',
-              )}
+              {plural(giveaway.participantsCount, locale, pluralForms(t, 'participants'))}
             </span>
 
             {!active ? (
-              <p className={styles.finishedNote}>Прийом заявок закрито</p>
+              <p className={styles.finishedNote}>{t('detail.closed')}</p>
             ) : joined ? (
               <p className={styles.joinedNote}>
                 <svg viewBox="0 0 24 24" fill="none" className={styles.tick}>
@@ -182,7 +193,7 @@ export default function GiveawayDetailPage() {
                     strokeLinejoin="round"
                   />
                 </svg>
-                Ви берете участь
+                {t('detail.joined')}
               </p>
             ) : (
               <button
@@ -191,26 +202,26 @@ export default function GiveawayDetailPage() {
                 disabled={joinMutation.isPending}
                 className={styles.joinButton}
               >
-                {joinMutation.isPending ? 'Зачекайте…' : 'Взяти участь'}
+                {joinMutation.isPending ? t('detail.wait') : t('detail.join')}
               </button>
             )}
           </div>
         </div>
       </aside>
 
-      {(giveaway.description || giveaway.conditions) && (
+      {(description || conditions) && (
         <div className={styles.blocks}>
-          {giveaway.description && (
+          {description && (
             <section className={styles.block}>
-              <h3 className={styles.blockTitle}>Про розіграш</h3>
-              <p className={styles.blockText}>{giveaway.description}</p>
+              <h3 className={styles.blockTitle}>{t('detail.about')}</h3>
+              <p className={styles.blockText}>{description}</p>
             </section>
           )}
 
-          {giveaway.conditions && (
+          {conditions && (
             <section className={styles.block}>
-              <h3 className={styles.blockTitle}>Умови участі</h3>
-              <p className={styles.blockText}>{giveaway.conditions}</p>
+              <h3 className={styles.blockTitle}>{t('detail.conditions')}</h3>
+              <p className={styles.blockText}>{conditions}</p>
             </section>
           )}
         </div>

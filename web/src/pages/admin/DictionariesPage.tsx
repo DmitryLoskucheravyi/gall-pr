@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { Material, Technique } from '../../types/dictionaries.types';
 import { useMaterials } from '../../hooks/queries/useMaterials';
@@ -9,14 +10,19 @@ import {
 } from '../../hooks/mutations/useDictionaryMutations';
 import Skeleton from '../../components/ui/Skeleton';
 import { useConfirm } from '../../components/ui/ConfirmDialog';
+import { useLocale } from '../../hooks/useLocale';
+import { pickLocale } from '../../utils/localizedField';
 import styles from './DictionariesPage.module.scss';
 
 type Tab = 'materials' | 'techniques';
 type Item = Material | Technique;
 
 export default function DictionariesPage() {
+  const { t } = useTranslation('admin');
+  const locale = useLocale();
   const [tab, setTab] = useState<Tab>('materials');
   const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   const { data: materials = [], isLoading: materialsLoading } = useMaterials();
@@ -35,21 +41,25 @@ export default function DictionariesPage() {
 
     const onSuccess = () => {
       setName('');
+      setNameEn('');
       setEditingItem(null);
     };
+    const input = { name: name.trim(), nameEn: nameEn.trim() || undefined };
 
     if (editingItem) {
-      mutations.update.mutate({ id: editingItem.id, name: name.trim() }, { onSuccess });
+      mutations.update.mutate({ id: editingItem.id, ...input }, { onSuccess });
     } else {
-      mutations.create.mutate(name.trim(), { onSuccess });
+      mutations.create.mutate(input, { onSuccess });
     }
   };
 
   const handleDelete = async (item: Item) => {
     const ok = await confirm({
-      title: 'Видалити запис?',
-      message: `«${item.name}» буде видалено.`,
-      confirmLabel: 'Видалити',
+      title: t('dictionaries.confirmDelete.title'),
+      message: t('dictionaries.confirmDelete.message', {
+        name: pickLocale(item, 'name', locale),
+      }),
+      confirmLabel: t('dictionaries.confirmDelete.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -58,7 +68,7 @@ export default function DictionariesPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Матеріали і техніки</h1>
+      <h1 className={styles.title}>{t('dictionaries.title')}</h1>
 
       <div className={styles.tabs}>
         <button
@@ -69,7 +79,7 @@ export default function DictionariesPage() {
           }}
           className={tab === 'materials' ? styles.chipActive : styles.chip}
         >
-          Матеріали
+          {t('dictionaries.materials')}
         </button>
         <button
           onClick={() => {
@@ -79,19 +89,25 @@ export default function DictionariesPage() {
           }}
           className={tab === 'techniques' ? styles.chipActive : styles.chip}
         >
-          Техніки
+          {t('dictionaries.techniques')}
         </button>
       </div>
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <input
-          placeholder="Назва"
+          placeholder={t('dictionaries.namePlaceholder')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className={styles.input}
         />
+        <input
+          placeholder={t('dictionaries.nameEnPlaceholder')}
+          value={nameEn}
+          onChange={(e) => setNameEn(e.target.value)}
+          className={styles.input}
+        />
         <button type="submit" className={styles.submitButton}>
-          {editingItem ? 'Зберегти' : 'Додати'}
+          {editingItem ? t('dictionaries.save') : t('dictionaries.add')}
         </button>
         {editingItem && (
           <button
@@ -99,10 +115,11 @@ export default function DictionariesPage() {
             onClick={() => {
               setEditingItem(null);
               setName('');
+              setNameEn('');
             }}
             className={styles.cancelButton}
           >
-            Скасувати
+            {t('dictionaries.cancel')}
           </button>
         )}
       </form>
@@ -117,27 +134,30 @@ export default function DictionariesPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <p className={styles.muted}>Записів поки немає</p>
+        <p className={styles.muted}>{t('dictionaries.empty')}</p>
       ) : (
         <div className={styles.list}>
           {items.map((item) => (
             <div key={item.id} className={styles.item}>
-              <span className={styles.itemName}>{item.name}</span>
+              <span className={styles.itemName}>
+                {pickLocale(item, 'name', locale)}
+              </span>
               <div className={styles.itemActions}>
                 <button
                   onClick={() => {
                     setEditingItem(item);
                     setName(item.name);
+                    setNameEn(item.nameEn ?? '');
                   }}
                   className={styles.editButton}
                 >
-                  Редагувати
+                  {t('dictionaries.edit')}
                 </button>
                 <button
                   onClick={() => handleDelete(item)}
                   className={styles.deleteButton}
                 >
-                  Видалити
+                  {t('dictionaries.delete')}
                 </button>
               </div>
             </div>

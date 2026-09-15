@@ -20,7 +20,15 @@ export class CreatePaintingDto {
 
   @IsOptional()
   @IsString()
+  titleEn?: string;
+
+  @IsOptional()
+  @IsString()
   subtitle?: string;
+
+  @IsOptional()
+  @IsString()
+  subtitleEn?: string;
 
   @IsString()
   cardImage: string;
@@ -84,4 +92,8 @@ export class CreatePaintingDto {
 
   @IsString()
   description: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionEn?: string;
 }

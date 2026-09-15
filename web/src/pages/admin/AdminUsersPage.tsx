@@ -1,8 +1,11 @@
+import { useTranslation } from 'react-i18next';
+
 import { useAdminUsers } from '../../hooks/queries/useUsers';
 import { useDeleteUserMutation } from '../../hooks/mutations/useUserMutations';
 import { useConfirm } from '../../components/ui/ConfirmDialog';
 import Skeleton from '../../components/ui/Skeleton';
 import { useAppSelector } from '../../store/hooks';
+import { useLocale } from '../../hooks/useLocale';
 import type { AdminUser } from '../../types/user.types';
 import styles from './AdminUsersPage.module.scss';
 
@@ -11,8 +14,8 @@ function fullName(user: AdminUser) {
   return name || '—';
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('uk-UA', {
+function formatDate(value: string, locale: 'ua' | 'en') {
+  return new Date(value).toLocaleDateString(locale === 'en' ? 'en-GB' : 'uk-UA', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -20,6 +23,8 @@ function formatDate(value: string) {
 }
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation('admin');
+  const locale = useLocale();
   const { data: users = [], isLoading: loading } = useAdminUsers();
   const deleteUser = useDeleteUserMutation();
   const confirm = useConfirm();
@@ -27,9 +32,12 @@ export default function AdminUsersPage() {
 
   const handleDelete = async (user: AdminUser) => {
     const ok = await confirm({
-      title: 'Видалити користувача?',
-      message: `${fullName(user)} (${user.email}) буде видалено. Замовлення збережуться, але стануть анонімними.`,
-      confirmLabel: 'Видалити',
+      title: t('users.confirmDelete.title'),
+      message: t('users.confirmDelete.message', {
+        name: fullName(user),
+        email: user.email,
+      }),
+      confirmLabel: t('users.confirmDelete.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -38,7 +46,7 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Користувачі</h1>
+      <h1 className={styles.title}>{t('users.title')}</h1>
 
       {loading ? (
         <div className={styles.list}>
@@ -47,10 +55,10 @@ export default function AdminUsersPage() {
           ))}
         </div>
       ) : users.length === 0 ? (
-        <p className={styles.muted}>Користувачів поки немає</p>
+        <p className={styles.muted}>{t('users.empty')}</p>
       ) : (
         <>
-          <p className={styles.count}>Усього: {users.length}</p>
+          <p className={styles.count}>{t('users.total', { count: users.length })}</p>
           <div className={styles.list}>
             {users.map((user) => (
               <div key={user.id} className={styles.row}>
@@ -58,7 +66,7 @@ export default function AdminUsersPage() {
                   <div className={styles.nameRow}>
                     <span className={styles.name}>{fullName(user)}</span>
                     {user.role === 'ADMIN' && (
-                      <span className={styles.adminBadge}>Адмін</span>
+                      <span className={styles.adminBadge}>{t('users.adminBadge')}</span>
                     )}
                   </div>
                   <div className={styles.meta}>
@@ -67,7 +75,7 @@ export default function AdminUsersPage() {
                     </a>
                     {user.phone && <span>· {user.phone}</span>}
                     <span className={styles.date}>
-                      · з {formatDate(user.createdAt)}
+                      {t('users.since', { date: formatDate(user.createdAt, locale) })}
                     </span>
                   </div>
                 </div>
@@ -78,12 +86,12 @@ export default function AdminUsersPage() {
                   disabled={user.id === currentUserId}
                   title={
                     user.id === currentUserId
-                      ? 'Не можна видалити власний акаунт'
-                      : 'Видалити'
+                      ? t('users.cantDeleteSelf')
+                      : t('users.delete')
                   }
                   className={styles.deleteButton}
                 >
-                  Видалити
+                  {t('users.delete')}
                 </button>
               </div>
             ))}

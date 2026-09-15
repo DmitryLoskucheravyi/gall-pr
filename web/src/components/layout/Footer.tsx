@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link, LocalizedNavLink as NavLink } from '../ui/LocalizedLink';
 import { useAuthorName, useSupportTelegramUrl } from '../../hooks/queries/useSettings';
 import { useAppSelector } from '../../store/hooks';
 import { safeExternalUrl } from '../../utils/safeUrl';
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export default function Footer({ continueTo, continueProgress = 0 }: Props) {
+  const { t } = useTranslation('footer');
   const authorName = useAuthorName();
   const supportTelegramUrl = useSupportTelegramUrl();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -43,7 +45,7 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
               className={styles.continue}
               style={{ '--progress': continueProgress } as CSSProperties}
             >
-              <span className={styles.continueLabel}>Далі</span>
+              <span className={styles.continueLabel}>{t('continueLabel')}</span>
               <span className={styles.continueTrack} aria-hidden="true">
                 <span className={styles.continueFill} />
               </span>
@@ -68,46 +70,46 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
         <div className={styles.main}>
           <div className={styles.brand}>
             <p className={styles.tagline}>
-              Кураторська добірка оригінальних картин{' '}
-              {authorName ? `від ${authorName}` : 'від українських художників'}.
-              Кожна робота — в єдиному екземплярі.
+              {authorName
+                ? t('taglineWithAuthor', { author: authorName })
+                : t('taglineNoAuthor')}
             </p>
           </div>
 
           <div className={styles.links}>
             <nav className={styles.column}>
-              <h3 className={styles.columnTitle}>Навігація</h3>
+              <h3 className={styles.columnTitle}>{t('columns.navigation')}</h3>
               <NavLink to="/" end className={linkClass}>
-                Головна
+                {t('nav.home')}
               </NavLink>
               <NavLink to="/catalog" className={linkClass}>
-                Каталог
+                {t('nav.catalog')}
               </NavLink>
               <NavLink to="/gallery" className={linkClass}>
-                Галерея
+                {t('nav.gallery')}
               </NavLink>
             </nav>
 
             <nav className={styles.column}>
-              <h3 className={styles.columnTitle}>Кабінет</h3>
+              <h3 className={styles.columnTitle}>{t('columns.account')}</h3>
               <NavLink to="/favorites" className={linkClass}>
-                Улюблені
+                {t('nav.favorites')}
               </NavLink>
               <NavLink to="/cart" className={linkClass}>
-                Кошик
+                {t('nav.cart')}
               </NavLink>
               <NavLink to="/orders" className={linkClass}>
-                Замовлення
+                {t('nav.orders')}
               </NavLink>
               <NavLink to="/profile" className={linkClass}>
-                Профіль
+                {t('nav.profile')}
               </NavLink>
             </nav>
 
             <nav className={styles.column}>
-              <h3 className={styles.columnTitle}>Допомога</h3>
+              <h3 className={styles.columnTitle}>{t('columns.help')}</h3>
               <NavLink to="/support" className={linkClass}>
-                Підтримка
+                {t('nav.support')}
               </NavLink>
               {supportTelegramUrl && (
                 <a
@@ -116,16 +118,16 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
                   rel="noreferrer"
                   className={styles.link}
                 >
-                  Бот у Telegram
+                  {t('nav.telegramBot')}
                 </a>
               )}
               {!isAuthenticated && (
                 <>
                   <NavLink to="/login" className={linkClass}>
-                    Увійти
+                    {t('nav.login')}
                   </NavLink>
                   <NavLink to="/register" className={linkClass}>
-                    Реєстрація
+                    {t('nav.register')}
                   </NavLink>
                 </>
               )}
@@ -135,32 +137,30 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
 
         <div className={styles.info}>
           <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Оплата</span>
-            <span className={styles.infoValue}>
-              При отриманні · Переказ на карту
-            </span>
+            <span className={styles.infoLabel}>{t('info.paymentLabel')}</span>
+            <span className={styles.infoValue}>{t('info.paymentValue')}</span>
           </div>
           <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Доставка</span>
-            <span className={styles.infoValue}>Нова пошта по Україні</span>
+            <span className={styles.infoLabel}>{t('info.deliveryLabel')}</span>
+            <span className={styles.infoValue}>{t('info.deliveryValue')}</span>
           </div>
           <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Гарантія</span>
-            <span className={styles.infoValue}>Оригінал у єдиному екземплярі</span>
+            <span className={styles.infoLabel}>{t('info.guaranteeLabel')}</span>
+            <span className={styles.infoValue}>{t('info.guaranteeValue')}</span>
           </div>
         </div>
 
         <div className={styles.bottom}>
           <span className={styles.copyright}>
-            © {year} {authorName || 'Viktorumm'}. Усі права захищено.
+            {t('copyright', { year, author: authorName || 'Viktorumm' })}
           </span>
           <button
             type="button"
             onClick={scrollToTop}
-            aria-label="Нагору"
+            aria-label={t('toTopAria')}
             className={styles.topButton}
           >
-            Нагору
+            {t('toTop')}
             <svg viewBox="0 0 24 24" fill="none">
               <path
                 d="M6 15.5 12 9l6 6.5"

@@ -26,7 +26,9 @@ export class NewsService {
   async create(dto: CreateNewsDto) {
     const news = this.newsRepository.create({
       title: dto.title,
+      titleEn: dto.titleEn ?? null,
       text: dto.text,
+      textEn: dto.textEn ?? null,
       imageUrl: dto.imageUrl ?? null,
     });
 
@@ -38,7 +40,9 @@ export class NewsService {
 
     const patch: Partial<News> = {};
     if (dto.title !== undefined) patch.title = dto.title;
+    if (dto.titleEn !== undefined) patch.titleEn = dto.titleEn;
     if (dto.text !== undefined) patch.text = dto.text;
+    if (dto.textEn !== undefined) patch.textEn = dto.textEn;
     if (dto.imageUrl !== undefined) patch.imageUrl = dto.imageUrl;
 
     if (Object.keys(patch).length > 0) {

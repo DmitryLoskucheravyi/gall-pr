@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from './ui/LocalizedLink';
 import type { Painting } from '../types/painting.types';
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
 import LikeButton from './ui/LikeButton';
 import styles from './GalleryCard.module.scss';
 import { cdnImage } from '../utils/imageUrl';
@@ -14,12 +17,16 @@ type Props = {
 };
 
 export default function GalleryCard({ painting, natural = false }: Props) {
+  const { t } = useTranslation('common');
+  const locale = useLocale();
+  const title = pickLocale(painting, 'title', locale);
+
   return (
     <article className={styles.card}>
       <Link to={`/painting/${painting.id}`} className={styles.linkArea}>
         <img
           src={cdnImage(painting.cardImage, 600)}
-          alt={painting.title}
+          alt={title}
           loading="lazy"
           decoding="async"
           className={natural ? styles.imageNatural : styles.image}
@@ -30,19 +37,19 @@ export default function GalleryCard({ painting, natural = false }: Props) {
             be had is the only thing the viewer wants to know. */}
         {!painting.isAvailable && (
           <div className={styles.badges}>
-            <span className={styles.soldBadge}>Продано</span>
+            <span className={styles.soldBadge}>{t('sold')}</span>
             <span
               className={`${styles.editionBadge} ${
                 painting.isRepeatable ? styles.editionRepeatable : ''
               }`}
             >
-              {editionLabel(painting.isRepeatable)}
+              {editionLabel(painting.isRepeatable, t)}
             </span>
           </div>
         )}
 
         <div className={styles.overlay}>
-          <span className={styles.titleText}>{painting.title}</span>
+          <span className={styles.titleText}>{title}</span>
         </div>
       </Link>
 

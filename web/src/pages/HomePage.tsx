@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from '../components/ui/LocalizedLink';
 import { useCoarsePointer } from '../hooks/useCoarsePointer';
 import { useHeroSequence } from '../hooks/useHeroSequence';
 import { usePaintings } from '../hooks/queries/usePaintings';
@@ -13,9 +14,6 @@ import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
 import CorridorSection from '../components/CorridorSection';
 import Reveal from '../components/ui/Reveal';
 import styles from './HomePage.module.scss';
-
-const MARQUEE_QUOTE = 'Мистецтво - це лінія навколо твоїх думок';
-const MARQUEE_AUTHOR = 'Густав Клімт';
 
 // How many works the corridor is hung with. The flag itself is free for the
 // admin to set on as many as they like; this is the display cap, and it is
@@ -31,36 +29,33 @@ const HERO_FOOTAGE = {
   frames: { base: '/frames/hero', count: 48 },
 };
 
-// The hero headline, as lines of parts — stacked and staggered by
-// .titleLine.
-const HERO_TITLE_LINES: Array<Array<{ text: string; em?: boolean }>> = [
-  [{ text: 'Мистецтво,' }],
-  [{ text: 'що ' }, { text: 'говорить', em: true }],
-];
-const HERO_TITLE_TEXT = 'Мистецтво, що говорить';
+type TitlePart = { text: string; em?: boolean };
 
 // Kicker above the headline — its letters slide in one after another, left
 // to right (see .eyebrowLetter), ahead of the headline's own reveal.
-const HERO_EYEBROW_TEXT = 'Галерея сучасного мистецтва';
 const HERO_EYEBROW_STAGGER_MS = 35;
 
 // Letters the reveal cycles through before a slot locks onto its real one.
-const SCRAMBLE_ALPHABET = 'АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЮЯ';
+// Latin added alongside Cyrillic now that the headline can be either.
+const SCRAMBLE_ALPHABET = 'АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЮЯABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-// Flattened once at module scope: every character tagged with its scramble
-// slot, or -1 for spaces and punctuation, which never spin.
-const HERO_TITLE_SLOT_CHARS: string[] = [];
-const HERO_TITLE_CELLS = HERO_TITLE_LINES.map((line) =>
-  line.map((part) => ({
-    em: part.em === true,
-    cells: [...part.text].map((char) => {
-      if (!/\p{L}/u.test(char)) return { char, slot: -1 };
-      HERO_TITLE_SLOT_CHARS.push(char);
-      return { char, slot: HERO_TITLE_SLOT_CHARS.length - 1 };
-    }),
-  })),
-);
-const HERO_TITLE_SLOTS = HERO_TITLE_SLOT_CHARS.length;
+// Splits the headline (lines of parts, see buildHeroTitle below) into one
+// scramble slot per letter, flattened across the whole title so the lock
+// order below can run left to right through it regardless of line breaks.
+function buildTitleCells(lines: TitlePart[][]) {
+  const slotChars: string[] = [];
+  const cells = lines.map((line) =>
+    line.map((part) => ({
+      em: part.em === true,
+      cells: [...part.text].map((char) => {
+        if (!/\p{L}/u.test(char)) return { char, slot: -1 };
+        slotChars.push(char);
+        return { char, slot: slotChars.length - 1 };
+      }),
+    })),
+  );
+  return { cells, slotChars, slots: slotChars.length };
+}
 
 // Reveal pacing, counted in ticks of SCRAMBLE_TICK_MS: the chosen letters
 // spin together for the first stretch, then lock one at a time, left to
@@ -85,12 +80,12 @@ function randomGlyph(target: string) {
 // there from the first frame. Two neighbours never spin at once, which is
 // what keeps the sparse, legible rhythm — "Мистецтво" churns on и/е/т/о
 // while М, с, ц, в hold still.
-function pickScramblePlan() {
-  const lockOrder = new Array<number>(HERO_TITLE_SLOTS).fill(-1);
+function pickScramblePlan(slots: number) {
+  const lockOrder = new Array<number>(slots).fill(-1);
   let total = 0;
   let previousPicked: boolean = false;
 
-  for (let slot = 0; slot < HERO_TITLE_SLOTS; slot++) {
+  for (let slot = 0; slot < slots; slot++) {
     const picked: boolean = !previousPicked && Math.random() < SCRAMBLE_DENSITY;
     previousPicked = picked;
     if (picked) lockOrder[slot] = total++;
@@ -98,7 +93,7 @@ function pickScramblePlan() {
 
   // Vanishingly unlikely, but a title with nothing to reveal would just pop
   // in — give it at least one letter to play with.
-  if (total === 0 && HERO_TITLE_SLOTS > 0) {
+  if (total === 0 && slots > 0) {
     lockOrder[0] = total++;
   }
 
@@ -111,16 +106,30 @@ function prefersReducedMotion() {
 
 // Slot-machine reveal of the hero headline. Its own component so the ~45ms
 // re-render cadence stays local instead of re-rendering the whole page.
-function HeroTitle({ start }: { start: boolean }) {
+// `lines`/`titleText` come from the current language (see HomePage) — keyed
+// by that resolved text there, so a language switch remounts this fresh
+// rather than trying to re-plan a scramble already mid-flight in the other
+// language.
+function HeroTitle({
+  lines,
+  titleText,
+  start,
+}: {
+  lines: TitlePart[][];
+  titleText: string;
+  start: boolean;
+}) {
+  const { cells: titleCells, slotChars, slots } = useMemo(
+    () => buildTitleCells(lines),
+    [lines],
+  );
   // Which letters churn is drawn fresh on each mount, so the headline
   // doesn't assemble the same way twice.
-  const [plan] = useState(pickScramblePlan);
+  const [plan] = useState(() => pickScramblePlan(slots));
   const [locked, setLocked] = useState(() =>
     prefersReducedMotion() ? plan.total : 0,
   );
-  const [glyphs, setGlyphs] = useState(() =>
-    HERO_TITLE_SLOT_CHARS.map(randomGlyph),
-  );
+  const [glyphs, setGlyphs] = useState(() => slotChars.map(randomGlyph));
 
   useEffect(() => {
     // Held until the first hero painting has decoded, so the headline
@@ -147,7 +156,7 @@ function HeroTitle({ start }: { start: boolean }) {
           const lock = plan.lockOrder[slot];
           // Static letters and already-locked ones keep whatever they hold.
           if (lock < 0 || lock < settled) return glyph;
-          return randomGlyph(HERO_TITLE_SLOT_CHARS[slot]);
+          return randomGlyph(slotChars[slot]);
         }),
       );
 
@@ -155,13 +164,13 @@ function HeroTitle({ start }: { start: boolean }) {
     }, SCRAMBLE_TICK_MS);
 
     return () => clearInterval(id);
-  }, [plan, start]);
+  }, [plan, start, slotChars]);
 
   return (
     // The animated glyphs are decorative churn — screen readers get the
     // finished sentence off the label instead.
-    <h1 className={styles.title} aria-label={HERO_TITLE_TEXT}>
-      {HERO_TITLE_CELLS.map((line, lineIndex) => (
+    <h1 className={styles.title} aria-label={titleText}>
+      {titleCells.map((line, lineIndex) => (
         <Fragment key={lineIndex}>
           {/* Keeps the lines a single sentence once desktop inlines them. */}
           {lineIndex > 0 && ' '}
@@ -201,6 +210,17 @@ function HeroTitle({ start }: { start: boolean }) {
 }
 
 export default function HomePage() {
+  const { t } = useTranslation('home');
+  const heroLines: TitlePart[][] = useMemo(
+    () => [
+      [{ text: t('hero.titleLine1') }],
+      [{ text: t('hero.titleLine2Prefix') }, { text: t('hero.titleLine2Em'), em: true }],
+    ],
+    [t],
+  );
+  const heroTitleText = `${t('hero.titleLine1')} ${t('hero.titleLine2Prefix')}${t('hero.titleLine2Em')}`;
+  const heroEyebrowText = t('hero.eyebrow');
+
   const { data: paintingsResponse } = usePaintings({
     page: 1,
     limit: 200,
@@ -283,8 +303,8 @@ export default function HomePage() {
     <>
       {[0, 1, 2].map((copy) => (
         <span key={copy} className={styles.marqueeItem}>
-          {MARQUEE_QUOTE}
-          <span className={styles.marqueeAuthor}>— {MARQUEE_AUTHOR}</span>
+          {t('marqueeQuote')}
+          <span className={styles.marqueeAuthor}>— {t('marqueeAuthor')}</span>
           <span className={styles.marqueeDot} />
         </span>
       ))}
@@ -354,9 +374,9 @@ export default function HomePage() {
             <div className={styles.heroText}>
               {/* Letters are decorative once split — the label carries the
                   text. */}
-              <span className={styles.eyebrow} aria-label={HERO_EYEBROW_TEXT}>
+              <span className={styles.eyebrow} aria-label={heroEyebrowText}>
                 <span className={styles.eyebrowText} aria-hidden="true">
-                  {[...HERO_EYEBROW_TEXT].map((char, index) => (
+                  {[...heroEyebrowText].map((char, index) => (
                     <span
                       key={index}
                       className={styles.eyebrowLetter}
@@ -369,10 +389,22 @@ export default function HomePage() {
                   ))}
                 </span>
               </span>
-              <HeroTitle start={heroReady} />
-              <p className={styles.subtitle}>
-                Оригінальні картини — кожна в єдиному екземплярі.
-              </p>
+              {/* Keyed by the resolved title text, not the locale: the URL's
+                  locale param updates a render before i18n's own async
+                  changeLanguage() resolves, so keying on locale alone would
+                  remount one render too early — still carrying the old
+                  language's text — and then update `lines` in place on the
+                  next render without remounting, leaving the scramble's
+                  glyph/plan state sized for a title of the wrong length.
+                  Keying on the text itself remounts exactly when it changes,
+                  regardless of that timing gap. */}
+              <HeroTitle
+                key={heroTitleText}
+                lines={heroLines}
+                titleText={heroTitleText}
+                start={heroReady}
+              />
+              <p className={styles.subtitle}>{t('hero.subtitle')}</p>
             </div>
 
             {/* Outside .heroText deliberately: these are the way off this
@@ -380,7 +412,7 @@ export default function HomePage() {
                 sequence rather than rushing the reader along with it. */}
             <div className={styles.actions}>
               <Link to="/catalog" className={styles.ctaButton}>
-                Каталог
+                {t('hero.cta')}
                 <svg viewBox="0 0 24 24" fill="none">
                   <path
                     d="M8 16 16 8M9.5 8H16v6.5"
@@ -392,7 +424,7 @@ export default function HomePage() {
                 </svg>
               </Link>
               <Link to="/gallery" className={styles.ctaGhost}>
-                Галерея
+                {t('hero.ctaGhost')}
               </Link>
             </div>
           </div>

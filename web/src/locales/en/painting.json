@@ -1,0 +1,66 @@
+{
+  "metaDescription": "{{title}}{{author}}. Original painting, {{price}}.",
+  "notFound": "Painting not found",
+  "backAria": "Back",
+  "openImageAria": "Open image {{n}} full screen",
+  "prevImageAria": "Previous image",
+  "nextImageAria": "Next image",
+  "thumbAria": "Image {{n}}",
+  "buy": "Buy",
+  "order": "Order",
+  "sold": "Sold",
+  "sections": {
+    "description": "Description",
+    "characteristics": "Details"
+  },
+  "specs": {
+    "author": "Artist",
+    "year": "Year",
+    "technique": "Technique",
+    "material": "Material",
+    "size": "Size"
+  },
+  "sizeUnit": "cm",
+  "edition": {
+    "repeatable": "Available on commission — the artist can paint it again to order",
+    "unique": "One of a kind — exists in a single copy"
+  },
+  "interior": {
+    "title": "In a room",
+    "hint": "How the work looks on a wall — to picture it in yours",
+    "photoAria": "Photo {{n}} of {{total}}",
+    "alt": "The painting in a room"
+  },
+  "animation3d": {
+    "title": "3D view"
+  },
+  "related": "You might also like",
+  "closeAria": "Close",
+  "stretcherLabel": "original · canvas",
+  "commission": {
+    "closeAria": "Close",
+    "genericError": "Couldn't send. Please try again",
+    "done": {
+      "title": "Thank you!",
+      "lead": "We've received your request to commission a repeat of “{{title}}” and sent a confirmation to {{email}}.",
+      "note": "We'll be in touch soon to agree on size, timing and price. Every repeat is hand-painted, so it will be close to the original but not identical to it.",
+      "ok": "Got it"
+    },
+    "title": "Order a repeat",
+    "lead": "“{{title}}” has already sold, but the artist can paint it again. Leave your contact details — we'll reach out to work out the specifics.",
+    "namePlaceholder": "Your name",
+    "phonePlaceholder": "Phone",
+    "contactPlaceholder": "Telegram or Instagram — if that's easier",
+    "amountLabel": "Amount",
+    "amountBelowOriginal": "No less than the original's price — {{price}} ₴",
+    "amountHint": "The original cost <strong>{{price}} ₴</strong>. You can offer more — it speeds up the queue.",
+    "deliveryLabel": "Delivery — if you already know where",
+    "chooseWarehouse": "Choose a branch",
+    "commentPlaceholder": "Preferences: size, colors, timing",
+    "sending": "Sending…",
+    "submit": "Send request",
+    "or": "or write to us directly",
+    "instagram": "Instagram Direct",
+    "telegram": "Telegram"
+  }
+}

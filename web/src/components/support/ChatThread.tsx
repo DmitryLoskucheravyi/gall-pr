@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { SupportMessage, SupportSenderRole } from '../../types/support.types';
 import styles from './ChatThread.module.scss';
@@ -30,6 +31,7 @@ export default function ChatThread({
   header,
   disabled = false,
 }: ChatThreadProps) {
+  const { t } = useTranslation('support');
   const [input, setInput] = useState('');
   const messagesRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +57,7 @@ export default function ChatThread({
 
       <div ref={messagesRef} className={styles.messages}>
         {loading ? (
-          <p className={styles.notice}>Завантаження…</p>
+          <p className={styles.notice}>{t('loading', { ns: 'common' })}</p>
         ) : messages.length === 0 ? (
           <p className={styles.notice}>{emptyText}</p>
         ) : (
@@ -76,7 +78,7 @@ export default function ChatThread({
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Повідомлення…"
+          placeholder={t('messagePlaceholder')}
           className={styles.input}
           disabled={disabled}
         />
@@ -84,7 +86,7 @@ export default function ChatThread({
           type="submit"
           className={styles.sendButton}
           disabled={disabled || input.trim().length === 0}
-          aria-label="Надіслати"
+          aria-label={t('sendAria')}
         >
           <svg viewBox="0 0 24 24" fill="none">
             <path

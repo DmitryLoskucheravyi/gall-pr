@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useMyUnreadSupportCount } from '../../hooks/queries/useSupport';
 import { useAppSelector } from '../../store/hooks';
+import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
+import { stripLocale } from '../../utils/locale';
 import styles from './SupportWidget.module.scss';
 
 // Kept in sync with .launcher's box in SupportWidget.module.scss.
@@ -41,13 +44,14 @@ function readDock(): Dock | null {
 }
 
 export default function SupportWidget() {
+  const { t } = useTranslation('support');
   const isAdmin = useAppSelector((state) => state.auth.user?.role === 'ADMIN');
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const location = useLocation();
 
   // Same source as the header's icon on phones, so the two can't disagree.
   const unread = useMyUnreadSupportCount();
-  const onSupportPage = location.pathname.startsWith('/support');
+  const onSupportPage = stripLocale(location.pathname).startsWith('/support');
   const [dock, setDock] = useState<Dock>(
     () =>
       readDock() ?? {
@@ -154,9 +158,7 @@ export default function SupportWidget() {
         }
         navigate('/support');
       }}
-      aria-label={
-        unread > 0 ? `Підтримка, ${unread} нових повідомлень` : 'Підтримка'
-      }
+      aria-label={unread > 0 ? t('widgetUnreadAria', { count: unread }) : t('title')}
       className={`${styles.launcher} ${drag ? styles.dragging : ''}`}
       style={{
         left: drag ? drag.x : dockedX,

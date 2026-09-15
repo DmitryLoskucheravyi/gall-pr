@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { NovaPoshtaOption } from '../../types/novaPoshta.types';
 import { useNovaPoshtaCities } from '../../hooks/queries/useNovaPoshta';
@@ -16,9 +17,11 @@ type Props = {
 export default function NovaPoshtaCityPicker({
   value,
   onChange,
-  placeholder = 'Почніть вводити назву міста',
+  placeholder,
   className,
 }: Props) {
+  const { t } = useTranslation('common');
+  const resolvedPlaceholder = placeholder ?? t('cityPlaceholder');
   const [query, setQuery] = useState(value?.name ?? '');
   const [open, setOpen] = useState(false);
 
@@ -40,7 +43,7 @@ export default function NovaPoshtaCityPicker({
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         className={styles.input}
       />
       {open && cityOptions.length > 0 && (

@@ -30,15 +30,18 @@ function useFaqMutation<TVars>(
 
 export function useCreateFaqItemMutation() {
   return useFaqMutation(
-    (dto: { title: string; text: string }) => faqService.createItem(dto),
+    (dto: { title: string; titleEn?: string; text: string; textEn?: string }) =>
+      faqService.createItem(dto),
     'Не вдалося додати запитання',
   );
 }
 
 export function useUpdateFaqItemMutation() {
   return useFaqMutation(
-    (vars: { id: string; dto: { title?: string; text?: string } }) =>
-      faqService.updateItem(vars.id, vars.dto),
+    (vars: {
+      id: string;
+      dto: { title?: string; titleEn?: string; text?: string; textEn?: string };
+    }) => faqService.updateItem(vars.id, vars.dto),
     'Не вдалося зберегти запитання',
   );
 }

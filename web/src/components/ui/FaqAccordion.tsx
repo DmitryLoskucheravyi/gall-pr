@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FaqEntry } from '../../types/faq.types';
+import { useLocale } from '../../hooks/useLocale';
+import { pickLocale } from '../../utils/localizedField';
 import styles from './FaqAccordion.module.scss';
 
 type Props = {
@@ -8,10 +11,12 @@ type Props = {
 };
 
 export default function FaqAccordion({ items }: Props) {
+  const { t } = useTranslation('faq');
+  const locale = useLocale();
   const [openId, setOpenId] = useState<string | null>(null);
 
   if (items.length === 0) {
-    return <p className={styles.empty}>Питань поки немає</p>;
+    return <p className={styles.empty}>{t('empty')}</p>;
   }
 
   return (
@@ -27,7 +32,9 @@ export default function FaqAccordion({ items }: Props) {
               aria-expanded={isOpen}
               className={styles.header}
             >
-              <span className={styles.title}>{item.title}</span>
+              <span className={styles.title}>
+                {pickLocale(item, 'title', locale)}
+              </span>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -43,7 +50,9 @@ export default function FaqAccordion({ items }: Props) {
               </svg>
             </button>
 
-            {isOpen && <p className={styles.text}>{item.text}</p>}
+            {isOpen && (
+              <p className={styles.text}>{pickLocale(item, 'text', locale)}</p>
+            )}
           </div>
         );
       })}

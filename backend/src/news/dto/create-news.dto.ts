@@ -4,8 +4,16 @@ export class CreateNewsDto {
   @IsString()
   title: string;
 
+  @IsOptional()
+  @IsString()
+  titleEn?: string;
+
   @IsString()
   text: string;
+
+  @IsOptional()
+  @IsString()
+  textEn?: string;
 
   @IsOptional()
   @IsString()

@@ -1,7 +1,12 @@
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from './ui/LocalizedLink';
 import type { Painting } from '../types/painting.types';
 import { useAuthorName } from '../hooks/queries/useSettings';
+import { useLocale } from '../hooks/useLocale';
+import { useExchangeRate } from '../hooks/queries/useExchangeRate';
+import { pickLocale } from '../utils/localizedField';
+import { formatPrice } from '../utils/formatPrice';
 import LikeButton from './ui/LikeButton';
 import styles from './PaintingCard.module.scss';
 import { cdnImage } from '../utils/imageUrl';
@@ -24,8 +29,12 @@ export default function PaintingCard({
   onDelete,
   compact,
 }: Props) {
+  const { t } = useTranslation('common');
+  const locale = useLocale();
   const authorName = useAuthorName();
+  const { data: usdRate } = useExchangeRate();
   const price = Number(painting.price);
+  const title = pickLocale(painting, 'title', locale);
 
   return (
     <article className={styles.card}>
@@ -33,20 +42,20 @@ export default function PaintingCard({
         <Link to={`/painting/${painting.id}`} className={styles.imageLink}>
           <img
             src={cdnImage(painting.cardImage, 600)}
-            alt={painting.title}
+            alt={title}
             loading="lazy"
             decoding="async"
             className={styles.image}
           />
           {!painting.isAvailable && (
             <div className={styles.badges}>
-              <span className={styles.soldBadge}>Продано</span>
+              <span className={styles.soldBadge}>{t('sold')}</span>
               <span
                 className={`${styles.editionBadge} ${
                   painting.isRepeatable ? styles.editionRepeatable : ''
                 }`}
               >
-                {editionLabel(painting.isRepeatable)}
+                {editionLabel(painting.isRepeatable, t)}
               </span>
             </div>
           )}
@@ -62,24 +71,24 @@ export default function PaintingCard({
 
       <div className={styles.body}>
         <Link to={`/painting/${painting.id}`} className={styles.title}>
-          {painting.title}
+          {title}
         </Link>
 
         {!!authorName && <span className={styles.author}>{authorName}</span>}
 
         {!compact && painting.width && painting.height && (
           <span className={styles.size}>
-            {painting.width} × {painting.height} см
+            {painting.width} × {painting.height} {t('sizeUnit')}
           </span>
         )}
 
-        <span className={styles.price}>{price.toLocaleString()} ₴</span>
+        <span className={styles.price}>{formatPrice(price, locale, usdRate)}</span>
 
         {!compact && (
           <div className={styles.actions}>
             <Link
               to={`/painting/${painting.id}`}
-              aria-label="Детальніше"
+              aria-label={t('details')}
               className={styles.detailsButton}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className={styles.buttonIcon}>
@@ -87,12 +96,12 @@ export default function PaintingCard({
                 <circle cx="12" cy="12" r="2" />
                 <circle cx="19" cy="12" r="2" />
               </svg>
-              <span className={styles.buttonText}>Детальніше</span>
+              <span className={styles.buttonText}>{t('details')}</span>
             </Link>
             <button
               onClick={onBuy}
               disabled={!painting.isAvailable}
-              aria-label={painting.isAvailable ? 'Купити' : 'Продано'}
+              aria-label={painting.isAvailable ? t('buy') : t('sold')}
               className={styles.buyButton}
             >
               <svg
@@ -111,7 +120,7 @@ export default function PaintingCard({
                 <circle cx="17" cy="21" r="1.4" fill="currentColor" />
               </svg>
               <span className={styles.buttonText}>
-                {painting.isAvailable ? 'В кошик' : 'Продано'}
+                {painting.isAvailable ? t('addToCart') : t('sold')}
               </span>
             </button>
           </div>
@@ -121,7 +130,7 @@ export default function PaintingCard({
           <div className={styles.adminActions}>
             <button
               onClick={onEdit}
-              aria-label="Редагувати"
+              aria-label={t('edit')}
               className={styles.editButton}
             >
               <svg viewBox="0 0 24 24" fill="none" className={styles.buttonIcon}>
@@ -133,11 +142,11 @@ export default function PaintingCard({
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className={styles.buttonText}>Редагувати</span>
+              <span className={styles.buttonText}>{t('edit')}</span>
             </button>
             <button
               onClick={onDelete}
-              aria-label="Видалити"
+              aria-label={t('delete')}
               className={styles.deleteButton}
             >
               <svg viewBox="0 0 24 24" fill="none" className={styles.buttonIcon}>
@@ -149,7 +158,7 @@ export default function PaintingCard({
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className={styles.buttonText}>Видалити</span>
+              <span className={styles.buttonText}>{t('delete')}</span>
             </button>
           </div>
         )}

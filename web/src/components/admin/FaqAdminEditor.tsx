@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FaqEntry } from '../../types/faq.types';
 import { useFaqEntries } from '../../hooks/queries/useFaq';
@@ -12,6 +13,8 @@ import FaqAccordion from '../ui/FaqAccordion';
 import { useConfirm } from '../ui/ConfirmDialog';
 import styles from './FaqAdminEditor.module.scss';
 
+type FaqItemDto = { title: string; titleEn: string; text: string; textEn: string };
+
 function FaqEditorItem({
   entry,
   onSave,
@@ -23,7 +26,7 @@ function FaqEditorItem({
   onHandleKeyDown,
 }: {
   entry: FaqEntry;
-  onSave: (id: string, dto: { title: string; text: string }) => void;
+  onSave: (id: string, dto: FaqItemDto) => void;
   onDelete: (id: string) => void;
   isDragging: boolean;
   onHandlePointerDown: (event: React.PointerEvent<HTMLButtonElement>) => void;
@@ -31,9 +34,16 @@ function FaqEditorItem({
   onHandlePointerUp: (event: React.PointerEvent<HTMLButtonElement>) => void;
   onHandleKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
 }) {
+  const { t } = useTranslation('admin');
   const [title, setTitle] = useState(entry.title);
+  const [titleEn, setTitleEn] = useState(entry.titleEn ?? '');
   const [text, setText] = useState(entry.text);
-  const dirty = title.trim() !== entry.title || text.trim() !== entry.text;
+  const [textEn, setTextEn] = useState(entry.textEn ?? '');
+  const dirty =
+    title.trim() !== entry.title ||
+    titleEn.trim() !== (entry.titleEn ?? '') ||
+    text.trim() !== entry.text ||
+    textEn.trim() !== (entry.textEn ?? '');
 
   return (
     <div
@@ -51,7 +61,7 @@ function FaqEditorItem({
         onPointerUp={onHandlePointerUp}
         onPointerCancel={onHandlePointerUp}
         onKeyDown={onHandleKeyDown}
-        aria-label={`Перемістити «${entry.title}»`}
+        aria-label={t('faq.moveAria', { title: entry.title })}
         className={styles.dragHandle}
       >
         ⠿
@@ -61,13 +71,26 @@ function FaqEditorItem({
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Заголовок питання"
+          placeholder={t('faq.titlePlaceholder')}
+          className={styles.input}
+        />
+        <input
+          value={titleEn}
+          onChange={(e) => setTitleEn(e.target.value)}
+          placeholder={t('faq.titleEnPlaceholder')}
           className={styles.input}
         />
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Текст відповіді"
+          placeholder={t('faq.textPlaceholder')}
+          rows={2}
+          className={styles.textarea}
+        />
+        <textarea
+          value={textEn}
+          onChange={(e) => setTextEn(e.target.value)}
+          placeholder={t('faq.textEnPlaceholder')}
           rows={2}
           className={styles.textarea}
         />
@@ -77,16 +100,16 @@ function FaqEditorItem({
         {dirty && (
           <button
             type="button"
-            onClick={() => onSave(entry.id, { title, text })}
+            onClick={() => onSave(entry.id, { title, titleEn, text, textEn })}
             className={styles.saveItemButton}
           >
-            Зберегти
+            {t('faq.save')}
           </button>
         )}
         <button
           type="button"
           onClick={() => onDelete(entry.id)}
-          aria-label="Видалити питання"
+          aria-label={t('faq.deleteAria')}
           className={styles.deleteItemButton}
         >
           ×
@@ -97,6 +120,7 @@ function FaqEditorItem({
 }
 
 export default function FaqAdminEditor() {
+  const { t } = useTranslation('admin');
   const entries = useFaqEntries();
   const createItem = useCreateFaqItemMutation();
   const updateItem = useUpdateFaqItemMutation();
@@ -105,7 +129,9 @@ export default function FaqAdminEditor() {
   const confirm = useConfirm();
 
   const [newTitle, setNewTitle] = useState('');
+  const [newTitleEn, setNewTitleEn] = useState('');
   const [newText, setNewText] = useState('');
+  const [newTextEn, setNewTextEn] = useState('');
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   // The order as it stands right now. The pointer handlers commit on release
@@ -124,21 +150,36 @@ export default function FaqAdminEditor() {
 
   const handleAdd = () => {
     if (!newTitle.trim() || !newText.trim()) return;
-    createItem.mutate({ title: newTitle.trim(), text: newText.trim() });
+    createItem.mutate({
+      title: newTitle.trim(),
+      titleEn: newTitleEn.trim() || undefined,
+      text: newText.trim(),
+      textEn: newTextEn.trim() || undefined,
+    });
     setNewTitle('');
+    setNewTitleEn('');
     setNewText('');
+    setNewTextEn('');
   };
 
-  const handleSaveItem = (id: string, dto: { title: string; text: string }) => {
+  const handleSaveItem = (id: string, dto: FaqItemDto) => {
     if (!dto.title.trim() || !dto.text.trim()) return;
-    updateItem.mutate({ id, dto: { title: dto.title.trim(), text: dto.text.trim() } });
+    updateItem.mutate({
+      id,
+      dto: {
+        title: dto.title.trim(),
+        titleEn: dto.titleEn.trim() || undefined,
+        text: dto.text.trim(),
+        textEn: dto.textEn.trim() || undefined,
+      },
+    });
   };
 
   const handleDelete = async (id: string) => {
     const ok = await confirm({
-      title: 'Видалити запитання?',
-      message: 'Це запитання зникне з FAQ.',
-      confirmLabel: 'Видалити',
+      title: t('faq.confirmDelete.title'),
+      message: t('faq.confirmDelete.message'),
+      confirmLabel: t('faq.confirmDelete.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -254,13 +295,26 @@ export default function FaqAdminEditor() {
           <input
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Нове запитання"
+            placeholder={t('faq.newTitlePlaceholder')}
+            className={styles.input}
+          />
+          <input
+            value={newTitleEn}
+            onChange={(e) => setNewTitleEn(e.target.value)}
+            placeholder={t('faq.titleEnPlaceholder')}
             className={styles.input}
           />
           <textarea
             value={newText}
             onChange={(e) => setNewText(e.target.value)}
-            placeholder="Відповідь"
+            placeholder={t('faq.newTextPlaceholder')}
+            rows={2}
+            className={styles.textarea}
+          />
+          <textarea
+            value={newTextEn}
+            onChange={(e) => setNewTextEn(e.target.value)}
+            placeholder={t('faq.textEnPlaceholder')}
             rows={2}
             className={styles.textarea}
           />
@@ -270,13 +324,13 @@ export default function FaqAdminEditor() {
             disabled={createItem.isPending}
             className={styles.addButton}
           >
-            + Додати запитання
+            {t('faq.add')}
           </button>
         </div>
       </div>
 
       <div className={styles.previewColumn}>
-        <p className={styles.previewLabel}>Превʼю</p>
+        <p className={styles.previewLabel}>{t('faq.preview')}</p>
         <FaqAccordion items={orderedEntries} />
       </div>
     </div>

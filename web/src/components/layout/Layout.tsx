@@ -9,17 +9,19 @@ import ScrollToTop from './ScrollToTop';
 import SupportWidget from '../support/SupportWidget';
 import { useAppSelector } from '../../store/hooks';
 import { useScrollContinue } from '../../hooks/useScrollContinue';
+import { stripLocale } from '../../utils/locale';
 import styles from './Layout.module.scss';
 
 // AuthPage is its own full-bleed arrival screen — video, one docked form,
 // nothing else. The ordinary chrome below (footer, the support launcher)
-// belongs to the rest of the site, not to that moment.
+// belongs to the rest of the site, not to that moment. Compared against the
+// locale-stripped path, so this stays a plain, unprefixed lookup.
 const CHROME_FREE_PATHS = new Set(['/login', '/register']);
 
 export default function Layout() {
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const { pathname } = useLocation();
-  const showChrome = !CHROME_FREE_PATHS.has(pathname);
+  const showChrome = !CHROME_FREE_PATHS.has(stripLocale(pathname));
   // Scrolling past the bottom of a handful of pages carries the reader on to
   // the next one — see the hook for which. Owned here, not by Footer, so the
   // handover veil below can sit above the whole page rather than just it.

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from '../ui/LocalizedLink';
 import styles from './ContinuePrompt.module.scss';
 
 type Props = {
@@ -24,6 +25,7 @@ const REVEAL_AT = 0.05;
 // moment — the sort of thing a native "you've reached the end, keep going"
 // gesture would give for free and the web has to ask for by hand.
 export default function ContinuePrompt({ nextPath, progress }: Props) {
+  const { t } = useTranslation('footer');
   const [revealed, setRevealed] = useState(false);
   const wasRevealed = useRef(false);
 
@@ -45,7 +47,7 @@ export default function ContinuePrompt({ nextPath, progress }: Props) {
       data-revealed={revealed}
       style={{ '--progress': progress } as CSSProperties}
     >
-      <span className={styles.label}>Далі</span>
+      <span className={styles.label}>{t('continueLabel')}</span>
       <span className={styles.track} aria-hidden="true">
         <span className={styles.fill} />
       </span>

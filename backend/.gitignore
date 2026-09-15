@@ -15,6 +15,10 @@ lerna-debug.log*
 # OS
 .DS_Store
 
+# Raw DB content dumped by scripts/dump-content.ts for hand-translation —
+# real data, not something to commit.
+/scripts/content-dump.json
+
 # Tests
 /coverage
 /.nyc_output

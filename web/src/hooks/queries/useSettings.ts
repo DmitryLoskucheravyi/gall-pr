@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { settingsService } from '../../api/settings.api';
 import { queryKeys } from '../../lib/queryKeys';
+import { useLocale } from '../useLocale';
+import { pickLocale } from '../../utils/localizedField';
 
 export function useSettings() {
   return useQuery({
@@ -24,7 +26,9 @@ export function useAdminSettings() {
 
 export function useAuthorName(): string {
   const { data } = useSettings();
-  return data?.authorName ?? '';
+  const locale = useLocale();
+  if (!data) return '';
+  return pickLocale(data, 'authorName', locale);
 }
 
 export function useCardTransferIban(): string {

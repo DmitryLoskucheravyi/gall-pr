@@ -19,8 +19,18 @@ export class Painting {
   @Column({ unique: true })
   title: string;
 
+  // English counterpart of `title`/`subtitle`/`description` below — set by
+  // the admin, optional. The frontend falls back to the Ukrainian value
+  // wherever one of these is empty, so a row nobody has translated yet never
+  // renders blank on the English site.
+  @Column({ name: 'title_en', type: 'varchar', nullable: true })
+  titleEn: string | null;
+
   @Column({ nullable: true })
   subtitle: string;
+
+  @Column({ name: 'subtitle_en', type: 'varchar', nullable: true })
+  subtitleEn: string | null;
 
   @Column({ name: 'card_image' })
   cardImage: string;
@@ -100,6 +110,9 @@ export class Painting {
 
   @Column('text')
   description: string;
+
+  @Column({ name: 'description_en', type: 'text', nullable: true })
+  descriptionEn: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

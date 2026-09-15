@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { useLocale } from '../../hooks/useLocale';
+import { pickLocale } from '../../utils/localizedField';
 import { uploadImage } from '../../api/uploads.api';
 import type { Painting } from '../../types/painting.types';
 import { useTechniques } from '../../hooks/queries/useTechniques';
@@ -39,10 +42,14 @@ export default function CreatePaintingForm({
   onSaved,
   onClose,
 }: Props) {
+  const { t } = useTranslation('admin');
+  const locale = useLocale();
   useEscapeKey(onClose, true);
 
   const [title, setTitle] = useState(painting?.title ?? '');
+  const [titleEn, setTitleEn] = useState(painting?.titleEn ?? '');
   const [description, setDescription] = useState(painting?.description ?? '');
+  const [descriptionEn, setDescriptionEn] = useState(painting?.descriptionEn ?? '');
   const [price, setPrice] = useState(painting?.price?.toString() ?? '');
   const [techniqueId, setTechniqueId] = useState(
     painting?.techniqueId?.toString() ?? '',
@@ -136,12 +143,15 @@ export default function CreatePaintingForm({
   }, []);
 
   const techniqueOptions = [
-    { value: '', label: 'Не вказано' },
-    ...techniques.map((t) => ({ value: String(t.id), label: t.name })),
+    { value: '', label: t('paintingForm.notSet') },
+    ...techniques.map((tech) => ({
+      value: String(tech.id),
+      label: pickLocale(tech, 'name', locale),
+    })),
   ];
   const materialOptions = [
-    { value: '', label: 'Не вказано' },
-    ...materials.map((m) => ({ value: String(m.id), label: m.name })),
+    { value: '', label: t('paintingForm.notSet') },
+    ...materials.map((m) => ({ value: String(m.id), label: pickLocale(m, 'name', locale) })),
   ];
 
   const handleCoverSelected = (fileList: FileList | null) => {
@@ -229,7 +239,7 @@ export default function CreatePaintingForm({
     setError(null);
 
     if (!existingCover && !coverImage) {
-      setError('Додайте фото обкладинки');
+      setError(t('paintingForm.errors.coverRequired'));
       return;
     }
 
@@ -237,9 +247,7 @@ export default function CreatePaintingForm({
     const interiorCount =
       existingInteriorImages.length + interiorImages.length;
     if (interiorCount > 0 && interiorCount < INTERIOR_MIN) {
-      setError(
-        `Фото в інтер'єрі: потрібно щонайменше ${INTERIOR_MIN}, або приберіть усі`,
-      );
+      setError(t('paintingForm.errors.interiorCount', { min: INTERIOR_MIN }));
       return;
     }
 
@@ -274,7 +282,10 @@ export default function CreatePaintingForm({
         setExistingGalleryImages((prev) => [...prev, ...uploadedGalleryUrls]);
         setGalleryImages(failedGalleryImages);
         setError(
-          `Не вдалося завантажити ${failedGalleryImages.length} з ${galleryImages.length} фото. Решта збережені — спробуйте ще раз.`,
+          t('paintingForm.errors.galleryUploadFailed', {
+            failed: failedGalleryImages.length,
+            total: galleryImages.length,
+          }),
         );
         return;
       }
@@ -298,7 +309,10 @@ export default function CreatePaintingForm({
         setExistingInteriorImages((prev) => [...prev, ...uploadedInteriorUrls]);
         setInteriorImages(failedInteriorImages);
         setError(
-          `Не вдалося завантажити ${failedInteriorImages.length} з ${interiorImages.length} фото інтер'єру. Решта збережені — спробуйте ще раз.`,
+          t('paintingForm.errors.interiorUploadFailed', {
+            failed: failedInteriorImages.length,
+            total: interiorImages.length,
+          }),
         );
         return;
       }
@@ -315,7 +329,9 @@ export default function CreatePaintingForm({
 
       const payload = {
         title,
+        titleEn: titleEn.trim() || undefined,
         description,
+        descriptionEn: descriptionEn.trim() || undefined,
         cardImage: coverUrl!,
         images: [coverUrl!, ...gallery],
         // Always sent, including as [] — that's how removing every interior
@@ -341,7 +357,7 @@ export default function CreatePaintingForm({
 
       onSaved();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Не вдалося зберегти картину');
+      setError(err?.response?.data?.message ?? t('paintingForm.errors.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -355,11 +371,11 @@ export default function CreatePaintingForm({
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
         <h2 className={styles.title}>
-          {painting ? 'Редагування картини' : 'Створення картини'}
+          {painting ? t('paintingForm.editTitle') : t('paintingForm.createTitle')}
         </h2>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <span className={styles.fileLabel}>Обкладинка</span>
+          <span className={styles.fileLabel}>{t('paintingForm.cover')}</span>
 
           <input
             ref={coverFileInputRef}
@@ -392,11 +408,11 @@ export default function CreatePaintingForm({
               onClick={() => coverFileInputRef.current?.click()}
               className={styles.filePickerButton}
             >
-              + Додати обкладинку
+              {t('paintingForm.addCover')}
             </button>
           )}
 
-          <span className={styles.fileLabel}>Інші фото</span>
+          <span className={styles.fileLabel}>{t('paintingForm.otherPhotos')}</span>
 
           <input
             ref={galleryFileInputRef}
@@ -412,7 +428,7 @@ export default function CreatePaintingForm({
             onClick={() => galleryFileInputRef.current?.click()}
             className={styles.filePickerButton}
           >
-            + Додати фото
+            {t('paintingForm.addPhotos')}
           </button>
 
           {(existingGalleryImages.length > 0 || galleryImages.length > 0) && (
@@ -454,11 +470,13 @@ export default function CreatePaintingForm({
           )}
 
           <span className={styles.fileLabel}>
-            Фото в інтер'єрі
+            {t('paintingForm.interiorPhotos')}
             <span className={styles.fileHint}>
               {' '}
-              — {INTERIOR_MIN}–{INTERIOR_MAX} фото, гортаються автоматично.
-              Залиште порожнім, щоб не показувати.
+              {t('paintingForm.interiorHint', {
+                min: INTERIOR_MIN,
+                max: INTERIOR_MAX,
+              })}
             </span>
           </span>
 
@@ -478,8 +496,10 @@ export default function CreatePaintingForm({
               onClick={() => interiorFileInputRef.current?.click()}
               className={styles.filePickerButton}
             >
-              + Додати фото ({existingInteriorImages.length + interiorImages.length}
-              /{INTERIOR_MAX})
+              {t('paintingForm.addPhotosCount', {
+                count: existingInteriorImages.length + interiorImages.length,
+                max: INTERIOR_MAX,
+              })}
             </button>
           )}
 
@@ -522,7 +542,8 @@ export default function CreatePaintingForm({
           )}
 
           <span className={styles.fileLabel}>
-            Фото для 3D-анімації <span className={styles.soonBadge}>скоро</span>
+            {t('paintingForm.animationPhotos')}{' '}
+            <span className={styles.soonBadge}>{t('paintingForm.soon')}</span>
           </span>
 
           <input
@@ -556,22 +577,29 @@ export default function CreatePaintingForm({
               onClick={() => animationFileInputRef.current?.click()}
               className={styles.filePickerButton}
             >
-              + Додати фото
+              {t('paintingForm.addPhotos')}
             </button>
           )}
 
           <input
             required
-            placeholder="Назва"
+            placeholder={t('paintingForm.titlePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className={styles.input}
           />
 
           <input
+            placeholder={t('paintingForm.titleEnPlaceholder')}
+            value={titleEn}
+            onChange={(e) => setTitleEn(e.target.value)}
+            className={styles.input}
+          />
+
+          <input
             required
             type="number"
-            placeholder="Ціна"
+            placeholder={t('paintingForm.pricePlaceholder')}
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className={styles.input}
@@ -580,7 +608,7 @@ export default function CreatePaintingForm({
           <input
             type="number"
             step="0.01"
-            placeholder="Вага, кг (для розрахунку доставки)"
+            placeholder={t('paintingForm.weightPlaceholder')}
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             className={styles.input}
@@ -590,27 +618,27 @@ export default function CreatePaintingForm({
             value={techniqueId}
             onChange={setTechniqueId}
             options={techniqueOptions}
-            placeholder="Техніка"
+            placeholder={t('paintingForm.techniquePlaceholder')}
           />
 
           <Select
             value={materialId}
             onChange={setMaterialId}
             options={materialOptions}
-            placeholder="Матеріал"
+            placeholder={t('paintingForm.materialPlaceholder')}
           />
 
           <div className={styles.row3}>
             <input
               type="number"
-              placeholder="Ширина"
+              placeholder={t('paintingForm.widthPlaceholder')}
               value={width}
               onChange={(e) => setWidth(e.target.value)}
               className={styles.input}
             />
             <input
               type="number"
-              placeholder="Висота"
+              placeholder={t('paintingForm.heightPlaceholder')}
               value={height}
               onChange={(e) => setHeight(e.target.value)}
               className={styles.input}
@@ -619,21 +647,29 @@ export default function CreatePaintingForm({
               value={year}
               onChange={setYear}
               options={YEAR_OPTIONS}
-              placeholder="Рік"
+              placeholder={t('paintingForm.yearPlaceholder')}
             />
           </div>
 
           <textarea
             required
-            placeholder="Опис"
+            placeholder={t('paintingForm.descriptionPlaceholder')}
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className={styles.textarea}
           />
 
+          <textarea
+            placeholder={t('paintingForm.descriptionEnPlaceholder')}
+            rows={4}
+            value={descriptionEn}
+            onChange={(e) => setDescriptionEn(e.target.value)}
+            className={styles.textarea}
+          />
+
           <Checkbox checked={isFeatured} onChange={setIsFeatured}>
-            Featured
+            {t('paintingForm.featured')}
           </Checkbox>
 
           {/* Radio rather than a checkbox: these are two answers to one
@@ -641,11 +677,8 @@ export default function CreatePaintingForm({
               "available as a repeat". Spelling both out means the choice is
               made deliberately for every work. */}
           <span className={styles.fileLabel}>
-            Тираж
-            <span className={styles.fileHint}>
-              {' '}
-              — визначає, що станеться зі сторінкою, коли роботу продадуть
-            </span>
+            {t('paintingForm.editionLabel')}
+            <span className={styles.fileHint}> {t('paintingForm.editionHint')}</span>
           </span>
 
           <div className={styles.editionChoice}>
@@ -654,7 +687,7 @@ export default function CreatePaintingForm({
               checked={!isRepeatable}
               onChange={() => setIsRepeatable(false)}
             >
-              Єдиний екземпляр — продано означає продано
+              {t('paintingForm.editionUnique')}
             </Radio>
 
             <Radio
@@ -662,7 +695,7 @@ export default function CreatePaintingForm({
               checked={isRepeatable}
               onChange={() => setIsRepeatable(true)}
             >
-              Доступна для повтору — після продажу можна замовити ще одну
+              {t('paintingForm.editionRepeatable')}
             </Radio>
           </div>
 
@@ -670,14 +703,14 @@ export default function CreatePaintingForm({
 
           <div className={styles.actions}>
             <button type="button" onClick={onClose} className={styles.cancelButton}>
-              Скасувати
+              {t('paintingForm.cancel')}
             </button>
             <button type="submit" disabled={saving} className={styles.saveButton}>
               {saving
-                ? 'Зберігаємо…'
+                ? t('paintingForm.saving')
                 : painting
-                  ? 'Оновити картину'
-                  : 'Створити картину'}
+                  ? t('paintingForm.update')
+                  : t('paintingForm.create')}
             </button>
           </div>
         </form>

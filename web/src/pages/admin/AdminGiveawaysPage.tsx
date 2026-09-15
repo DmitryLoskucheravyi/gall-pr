@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { uploadImage } from '../../api/uploads.api';
 import type { Giveaway } from '../../types/giveaway.types';
 import type { News } from '../../types/news.types';
+import { useLocale } from '../../hooks/useLocale';
+import { pickLocale } from '../../utils/localizedField';
 import { useGiveaways } from '../../hooks/queries/useGiveaways';
 import { useNews } from '../../hooks/queries/useNews';
 import { usePaintings } from '../../hooks/queries/usePaintings';
@@ -29,6 +32,8 @@ function toDatetimeLocalValue(iso: string) {
 }
 
 export default function AdminGiveawaysPage() {
+  const { t } = useTranslation('admin');
+  const locale = useLocale();
   const dispatch = useAppDispatch();
   const [tab, setTab] = useState<'giveaways' | 'news'>('giveaways');
 
@@ -47,14 +52,19 @@ export default function AdminGiveawaysPage() {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
+  const [titleEn, setTitleEn] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
   const [conditions, setConditions] = useState('');
+  const [conditionsEn, setConditionsEn] = useState('');
   const [paintingId, setPaintingId] = useState('');
   const [deadline, setDeadline] = useState('');
 
   const [newsEditingId, setNewsEditingId] = useState<number | null>(null);
   const [newsTitle, setNewsTitle] = useState('');
+  const [newsTitleEn, setNewsTitleEn] = useState('');
   const [newsText, setNewsText] = useState('');
+  const [newsTextEn, setNewsTextEn] = useState('');
   const [newsImage, setNewsImage] = useState<{
     file: File;
     previewUrl: string;
@@ -79,8 +89,11 @@ export default function AdminGiveawaysPage() {
   const resetForm = () => {
     setEditingId(null);
     setTitle('');
+    setTitleEn('');
     setDescription('');
+    setDescriptionEn('');
     setConditions('');
+    setConditionsEn('');
     setPaintingId('');
     setDeadline('');
   };
@@ -88,8 +101,11 @@ export default function AdminGiveawaysPage() {
   const handleEdit = (giveaway: Giveaway) => {
     setEditingId(giveaway.id);
     setTitle(giveaway.title);
+    setTitleEn(giveaway.titleEn ?? '');
     setDescription(giveaway.description);
+    setDescriptionEn(giveaway.descriptionEn ?? '');
     setConditions(giveaway.conditions ?? '');
+    setConditionsEn(giveaway.conditionsEn ?? '');
     setPaintingId(String(giveaway.painting.id));
     setDeadline(toDatetimeLocalValue(giveaway.deadline));
   };
@@ -100,8 +116,11 @@ export default function AdminGiveawaysPage() {
 
     const dto = {
       title: title.trim(),
+      titleEn: titleEn.trim() || undefined,
       description: description.trim(),
+      descriptionEn: descriptionEn.trim() || undefined,
       conditions: conditions.trim(),
+      conditionsEn: conditionsEn.trim() || undefined,
       paintingId: Number(paintingId),
       deadline: new Date(deadline).toISOString(),
     };
@@ -115,9 +134,11 @@ export default function AdminGiveawaysPage() {
 
   const handleDelete = async (giveaway: Giveaway) => {
     const ok = await confirm({
-      title: 'Видалити розіграш?',
-      message: `«${giveaway.title}» буде видалено.`,
-      confirmLabel: 'Видалити',
+      title: t('giveawaysPage.giveaway.confirmDelete.title'),
+      message: t('giveawaysPage.giveaway.confirmDelete.message', {
+        title: giveaway.title,
+      }),
+      confirmLabel: t('giveawaysPage.giveaway.confirmDelete.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -127,7 +148,9 @@ export default function AdminGiveawaysPage() {
   const resetNewsForm = () => {
     setNewsEditingId(null);
     setNewsTitle('');
+    setNewsTitleEn('');
     setNewsText('');
+    setNewsTextEn('');
     if (newsImage) URL.revokeObjectURL(newsImage.previewUrl);
     setNewsImage(null);
     setNewsExistingImageUrl(null);
@@ -136,7 +159,9 @@ export default function AdminGiveawaysPage() {
   const handleNewsEdit = (item: News) => {
     setNewsEditingId(item.id);
     setNewsTitle(item.title);
+    setNewsTitleEn(item.titleEn ?? '');
     setNewsText(item.text);
+    setNewsTextEn(item.textEn ?? '');
     if (newsImage) URL.revokeObjectURL(newsImage.previewUrl);
     setNewsImage(null);
     setNewsExistingImageUrl(item.imageUrl);
@@ -173,7 +198,7 @@ export default function AdminGiveawaysPage() {
         dispatch(
           showToast({
             message:
-              error?.response?.data?.message ?? 'Не вдалося завантажити зображення',
+              error?.response?.data?.message ?? t('giveawaysPage.news.uploadFailed'),
             variant: 'error',
           }),
         );
@@ -185,7 +210,9 @@ export default function AdminGiveawaysPage() {
 
     const dto = {
       title: newsTitle.trim(),
+      titleEn: newsTitleEn.trim() || undefined,
       text: newsText.trim(),
+      textEn: newsTextEn.trim() || undefined,
       imageUrl,
     };
 
@@ -198,9 +225,9 @@ export default function AdminGiveawaysPage() {
 
   const handleNewsDelete = async (item: News) => {
     const ok = await confirm({
-      title: 'Видалити новину?',
-      message: `«${item.title}» буде видалено.`,
-      confirmLabel: 'Видалити',
+      title: t('giveawaysPage.news.confirmDelete.title'),
+      message: t('giveawaysPage.news.confirmDelete.message', { title: item.title }),
+      confirmLabel: t('giveawaysPage.news.confirmDelete.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -209,14 +236,14 @@ export default function AdminGiveawaysPage() {
 
   const paintingOptions = paintings.map((p) => ({
     value: String(p.id),
-    label: p.title,
+    label: pickLocale(p, 'title', locale),
   }));
 
   const newsPreviewUrl = newsImage?.previewUrl ?? newsExistingImageUrl;
 
   return (
     <div>
-      <h1 className={styles.title}>Розіграш та новини</h1>
+      <h1 className={styles.title}>{t('giveawaysPage.title')}</h1>
 
       <div className={styles.tabs}>
         <button
@@ -224,14 +251,14 @@ export default function AdminGiveawaysPage() {
           onClick={() => setTab('giveaways')}
           className={`${styles.tabButton} ${tab === 'giveaways' ? styles.tabActive : ''}`}
         >
-          Розіграш
+          {t('giveawaysPage.tabs.giveaways')}
         </button>
         <button
           type="button"
           onClick={() => setTab('news')}
           className={`${styles.tabButton} ${tab === 'news' ? styles.tabActive : ''}`}
         >
-          Новини
+          {t('giveawaysPage.tabs.news')}
         </button>
       </div>
 
@@ -240,9 +267,15 @@ export default function AdminGiveawaysPage() {
           <form onSubmit={handleSubmit} className={styles.form}>
             <input
               required
-              placeholder="Назва розіграшу"
+              placeholder={t('giveawaysPage.giveaway.namePlaceholder')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className={styles.input}
+            />
+            <input
+              placeholder={t('giveawaysPage.giveaway.nameEnPlaceholder')}
+              value={titleEn}
+              onChange={(e) => setTitleEn(e.target.value)}
               className={styles.input}
             />
 
@@ -250,7 +283,7 @@ export default function AdminGiveawaysPage() {
               value={paintingId}
               onChange={setPaintingId}
               options={paintingOptions}
-              placeholder="Картина"
+              placeholder={t('giveawaysPage.giveaway.paintingPlaceholder')}
             />
 
             <input
@@ -264,17 +297,31 @@ export default function AdminGiveawaysPage() {
             <textarea
               required
               rows={4}
-              placeholder="Опис розіграшу"
+              placeholder={t('giveawaysPage.giveaway.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              className={styles.textarea}
+            />
+            <textarea
+              rows={4}
+              placeholder={t('giveawaysPage.giveaway.descriptionEnPlaceholder')}
+              value={descriptionEn}
+              onChange={(e) => setDescriptionEn(e.target.value)}
               className={styles.textarea}
             />
 
             <textarea
               rows={4}
-              placeholder="Умови участі (необов'язково)"
+              placeholder={t('giveawaysPage.giveaway.conditionsPlaceholder')}
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
+              className={styles.textarea}
+            />
+            <textarea
+              rows={4}
+              placeholder={t('giveawaysPage.giveaway.conditionsEnPlaceholder')}
+              value={conditionsEn}
+              onChange={(e) => setConditionsEn(e.target.value)}
               className={styles.textarea}
             />
 
@@ -285,19 +332,21 @@ export default function AdminGiveawaysPage() {
                   onClick={resetForm}
                   className={styles.cancelButton}
                 >
-                  Скасувати
+                  {t('giveawaysPage.giveaway.cancel')}
                 </button>
               )}
               <button type="submit" className={styles.submitButton}>
-                {editingId ? 'Зберегти' : 'Створити розіграш'}
+                {editingId
+                  ? t('giveawaysPage.giveaway.save')
+                  : t('giveawaysPage.giveaway.create')}
               </button>
             </div>
           </form>
 
           {loading ? (
-            <p className={styles.muted}>Завантаження…</p>
+            <p className={styles.muted}>{t('giveawaysPage.giveaway.loading')}</p>
           ) : giveaways.length === 0 ? (
-            <p className={styles.muted}>Розіграшів поки немає</p>
+            <p className={styles.muted}>{t('giveawaysPage.giveaway.empty')}</p>
           ) : (
             <div className={styles.list}>
               {giveaways.map((giveaway) => (
@@ -311,7 +360,10 @@ export default function AdminGiveawaysPage() {
                     <span className={styles.itemTitle}>{giveaway.title}</span>
                     <span className={styles.itemMeta}>
                       {giveaway.painting.title} · {giveaway.participantsCount}{' '}
-                      учасників · {giveaway.isActive ? 'активний' : 'завершено'}
+                      {t('giveawaysPage.giveaway.participants')} ·{' '}
+                      {giveaway.isActive
+                        ? t('giveawaysPage.giveaway.active')
+                        : t('giveawaysPage.giveaway.finished')}
                     </span>
                   </div>
                   <div className={styles.itemActions}>
@@ -319,13 +371,13 @@ export default function AdminGiveawaysPage() {
                       onClick={() => handleEdit(giveaway)}
                       className={styles.editButton}
                     >
-                      Редагувати
+                      {t('giveawaysPage.giveaway.edit')}
                     </button>
                     <button
                       onClick={() => handleDelete(giveaway)}
                       className={styles.deleteButton}
                     >
-                      Видалити
+                      {t('giveawaysPage.giveaway.delete')}
                     </button>
                   </div>
                 </div>
@@ -336,7 +388,7 @@ export default function AdminGiveawaysPage() {
       ) : (
         <>
           <form onSubmit={handleNewsSubmit} className={styles.form}>
-            <span className={styles.fileLabel}>Зображення (необов'язково)</span>
+            <span className={styles.fileLabel}>{t('giveawaysPage.news.imageLabel')}</span>
 
             <input
               ref={newsFileInputRef}
@@ -367,24 +419,37 @@ export default function AdminGiveawaysPage() {
                 onClick={() => newsFileInputRef.current?.click()}
                 className={styles.filePickerButton}
               >
-                + Додати зображення
+                {t('giveawaysPage.news.addImage')}
               </button>
             )}
 
             <input
               required
-              placeholder="Заголовок новини"
+              placeholder={t('giveawaysPage.news.titlePlaceholder')}
               value={newsTitle}
               onChange={(e) => setNewsTitle(e.target.value)}
+              className={styles.input}
+            />
+            <input
+              placeholder={t('giveawaysPage.news.titleEnPlaceholder')}
+              value={newsTitleEn}
+              onChange={(e) => setNewsTitleEn(e.target.value)}
               className={styles.input}
             />
 
             <textarea
               required
               rows={4}
-              placeholder="Текст новини"
+              placeholder={t('giveawaysPage.news.textPlaceholder')}
               value={newsText}
               onChange={(e) => setNewsText(e.target.value)}
+              className={styles.textarea}
+            />
+            <textarea
+              rows={4}
+              placeholder={t('giveawaysPage.news.textEnPlaceholder')}
+              value={newsTextEn}
+              onChange={(e) => setNewsTextEn(e.target.value)}
               className={styles.textarea}
             />
 
@@ -395,7 +460,7 @@ export default function AdminGiveawaysPage() {
                   onClick={resetNewsForm}
                   className={styles.cancelButton}
                 >
-                  Скасувати
+                  {t('giveawaysPage.news.cancel')}
                 </button>
               )}
               <button
@@ -404,18 +469,18 @@ export default function AdminGiveawaysPage() {
                 className={styles.submitButton}
               >
                 {newsSaving
-                  ? 'Зберігаємо…'
+                  ? t('giveawaysPage.news.saving')
                   : newsEditingId
-                    ? 'Зберегти'
-                    : 'Створити новину'}
+                    ? t('giveawaysPage.news.save')
+                    : t('giveawaysPage.news.create')}
               </button>
             </div>
           </form>
 
           {newsLoading ? (
-            <p className={styles.muted}>Завантаження…</p>
+            <p className={styles.muted}>{t('giveawaysPage.news.loading')}</p>
           ) : news.length === 0 ? (
-            <p className={styles.muted}>Новин поки немає</p>
+            <p className={styles.muted}>{t('giveawaysPage.news.empty')}</p>
           ) : (
             <div className={styles.list}>
               {news.map((item) => (
@@ -432,13 +497,13 @@ export default function AdminGiveawaysPage() {
                       onClick={() => handleNewsEdit(item)}
                       className={styles.editButton}
                     >
-                      Редагувати
+                      {t('giveawaysPage.news.edit')}
                     </button>
                     <button
                       onClick={() => handleNewsDelete(item)}
                       className={styles.deleteButton}
                     >
-                      Видалити
+                      {t('giveawaysPage.news.delete')}
                     </button>
                   </div>
                 </div>

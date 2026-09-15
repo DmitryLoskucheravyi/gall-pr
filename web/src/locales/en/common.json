@@ -1,0 +1,26 @@
+{
+  "brand": "Viktorumm",
+  "back": "Back",
+  "loading": "Loading…",
+  "wait": "Please wait…",
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "close": "Close",
+  "language": "Language",
+  "sold": "Sold",
+  "details": "Details",
+  "buy": "Buy",
+  "addToCart": "Add to cart",
+  "edition": {
+    "unique": "One of a kind",
+    "repeatable": "Available on commission"
+  },
+  "sizeUnit": "cm",
+  "like": "Like",
+  "unlike": "Unlike",
+  "confirm": "Confirm",
+  "selectPlaceholder": "Select…",
+  "cityPlaceholder": "Start typing a city name"
+}

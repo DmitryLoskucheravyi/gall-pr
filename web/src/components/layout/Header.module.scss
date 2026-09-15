@@ -495,3 +495,35 @@
     transform: rotate(180deg);
   }
 }
+
+// Same box as .themeButton, sized for a two-letter code instead of an
+// icon — the hover lift/press is shared, the rotate-on-hover isn't (there's
+// no glyph to spin).
+.languageButton {
+  display: flex;
+  height: 34px;
+  width: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pill;
+  font-family: $font-accent;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.3s ease,
+    transform 0.45s $ease-spring;
+
+  &:hover {
+    color: var(--color-accent-text);
+    background-color: var(--color-accent-soft);
+    transform: scale(1.14);
+  }
+
+  &:active {
+    transform: scale(0.88);
+  }
+}

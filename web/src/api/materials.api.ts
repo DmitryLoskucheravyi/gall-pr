@@ -1,19 +1,21 @@
 import { api } from './client';
 import type { Material } from '../types/dictionaries.types';
 
+type MaterialInput = { name: string; nameEn?: string };
+
 class MaterialsService {
   async getMaterials(): Promise<Material[]> {
     const response = await api.get('/materials');
     return response.data;
   }
 
-  async createMaterial(name: string): Promise<Material> {
-    const response = await api.post('/materials', { name });
+  async createMaterial(input: MaterialInput): Promise<Material> {
+    const response = await api.post('/materials', input);
     return response.data;
   }
 
-  async updateMaterial(id: number, name: string): Promise<Material> {
-    const response = await api.patch(`/materials/${id}`, { name });
+  async updateMaterial(id: number, input: MaterialInput): Promise<Material> {
+    const response = await api.patch(`/materials/${id}`, input);
     return response.data;
   }
 

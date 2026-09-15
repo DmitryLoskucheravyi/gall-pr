@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { useLocale } from './useLocale';
+import { stripLocale } from '../utils/locale';
+
 // A handful of pages read as one continuous walk rather than separate
 // destinations: the homepage's corridor closes into the catalog, and the
 // catalog opens onto the full gallery. Scrolling past the very bottom of
 // one — past the footer, past everything — carries the reader on to the
 // next rather than just stopping. Not a site-wide thing: most pages have
 // nowhere further to go, and stay silent here.
+//
+// Keyed by the locale-stripped path and returned unprefixed — Footer and
+// ContinuePrompt render it through LocalizedLink, which adds the current
+// locale itself; only this hook's own internal navigate() call (the
+// auto-complete case, below) needs the prefix spelled out by hand.
 const NEXT_PATH: Record<string, string> = {
   '/': '/catalog',
   '/catalog': '/gallery',
@@ -42,7 +50,8 @@ const VEIL_MS = 320;
 export function useScrollContinue() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const nextPath = NEXT_PATH[pathname];
+  const locale = useLocale();
+  const nextPath = NEXT_PATH[stripLocale(pathname)];
 
   const [progress, setProgress] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -98,11 +107,12 @@ export function useScrollContinue() {
 
       if (value.current >= 0.999 && !arrived.current) {
         arrived.current = true;
+        const target = `/${locale}${nextPath}`;
         if (reduced) {
-          navigate(nextPath);
+          navigate(target);
         } else {
           setLeaving(true);
-          window.setTimeout(() => navigate(nextPath), VEIL_MS);
+          window.setTimeout(() => navigate(target), VEIL_MS);
         }
         return;
       }
@@ -183,7 +193,7 @@ export function useScrollContinue() {
       if (frame.current) cancelAnimationFrame(frame.current);
       frame.current = 0;
     };
-  }, [nextPath, navigate]);
+  }, [nextPath, navigate, locale]);
 
   return { nextPath, progress, leaving };
 }

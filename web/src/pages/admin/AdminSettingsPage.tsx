@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { NovaPoshtaOption } from '../../types/novaPoshta.types';
 import { useAdminSettings } from '../../hooks/queries/useSettings';
@@ -19,12 +20,14 @@ const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
   string | undefined;
 
 export default function AdminSettingsPage() {
+  const { t } = useTranslation('admin');
   const { data: settings, isLoading: loading } = useAdminSettings();
   const updateSettings = useUpdateSettingsMutation();
   const adminTelegramLink = useAdminTelegramLinkMutation();
   const resetAdminTelegramLink = useResetAdminTelegramLinkMutation();
   const confirm = useConfirm();
   const [authorName, setAuthorNameInput] = useState('');
+  const [authorNameEn, setAuthorNameEnInput] = useState('');
   const [cardTransferIban, setCardTransferIban] = useState('');
   const [senderCity, setSenderCity] = useState<NovaPoshtaOption | null>(null);
   const [supportEmail, setSupportEmail] = useState('');
@@ -54,6 +57,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     if (settings) {
       setAuthorNameInput(settings.authorName);
+      setAuthorNameEnInput(settings.authorNameEn ?? '');
       setCardTransferIban(settings.cardTransferIban);
       setSenderCity(
         settings.novaPoshtaSenderCityRef
@@ -79,6 +83,7 @@ export default function AdminSettingsPage() {
     event.preventDefault();
     updateSettings.mutate({
       authorName: authorName.trim(),
+      authorNameEn: authorNameEn.trim() || undefined,
       cardTransferIban: cardTransferIban.trim(),
       novaPoshtaSenderCityRef: senderCity?.ref ?? '',
       novaPoshtaSenderCityName: senderCity?.name ?? '',
@@ -104,10 +109,9 @@ export default function AdminSettingsPage() {
 
   const handleResetAdminTelegramLink = async () => {
     const ok = await confirm({
-      title: "Скинути прив'язку бота?",
-      message:
-        'Сповіщення адміну перестануть надходити, доки ви не привʼяжете бота знову.',
-      confirmLabel: 'Скинути',
+      title: t('settingsPage.bot.confirmReset.title'),
+      message: t('settingsPage.bot.confirmReset.message'),
+      confirmLabel: t('settingsPage.bot.confirmReset.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -118,10 +122,10 @@ export default function AdminSettingsPage() {
   if (loading) {
     return (
       <div className={styles.wrap}>
-        <h1 className={styles.title}>Налаштування</h1>
+        <h1 className={styles.title}>{t('settingsPage.title')}</h1>
         <div className={styles.grid}>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Бренд</h2>
+            <h2 className={styles.cardTitle}>{t('settingsPage.brand.cardTitle')}</h2>
             <Skeleton className={styles.skeletonInput} />
           </div>
         </div>
@@ -131,36 +135,37 @@ export default function AdminSettingsPage() {
 
   return (
     <div className={styles.wrap}>
-      <h1 className={styles.title}>Налаштування</h1>
+      <h1 className={styles.title}>{t('settingsPage.title')}</h1>
 
       <form onSubmit={handleSave}>
         <div className={styles.grid}>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Бренд</h2>
+            <h2 className={styles.cardTitle}>{t('settingsPage.brand.cardTitle')}</h2>
 
-            <label className={styles.label}>Поточний автор</label>
-            <p className={styles.hint}>
-              Цей автор відображатиметься на всіх картинах у каталозі
-            </p>
+            <label className={styles.label}>
+              {t('settingsPage.brand.currentAuthorLabel')}
+            </label>
+            <p className={styles.hint}>{t('settingsPage.brand.hint')}</p>
 
             <input
               value={authorName}
               onChange={(e) => setAuthorNameInput(e.target.value)}
-              placeholder="Ім'я автора"
+              placeholder={t('settingsPage.brand.namePlaceholder')}
+              className={styles.input}
+            />
+            <input
+              value={authorNameEn}
+              onChange={(e) => setAuthorNameEnInput(e.target.value)}
+              placeholder={t('settingsPage.brand.nameEnPlaceholder')}
               className={styles.input}
             />
           </div>
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Головна сторінка</h2>
+            <h2 className={styles.cardTitle}>{t('settingsPage.home.cardTitle')}</h2>
 
-            <label className={styles.label}>Картини на головному екрані</label>
-            <p className={styles.hint}>
-              Три роботи для шапки головної сторінки. На комп'ютері камера
-              обходить їх по черзі, на телефоні показується одна з трьох, обрана
-              випадково. Порожній слот заповнюється рекомендованою роботою
-              автоматично.
-            </p>
+            <label className={styles.label}>{t('settingsPage.home.heroLabel')}</label>
+            <p className={styles.hint}>{t('settingsPage.home.hint')}</p>
 
             <div className={styles.heroSlots}>
               {heroPaintingIds.map((selected, slot) => (
@@ -174,45 +179,39 @@ export default function AdminSettingsPage() {
                       ),
                     )
                   }
-                  // "Автоматично" is a real option rather than the
-                  // placeholder, so a slot that's been set can be cleared
-                  // back to it.
+                  // "Auto" is a real option rather than the placeholder, so a
+                  // slot that's been set can be cleared back to it.
                   options={[
-                    { value: '', label: 'Автоматично' },
+                    { value: '', label: t('settingsPage.home.auto') },
                     ...heroOptions.map((painting) => ({
                       value: String(painting.id),
                       label: painting.title,
                     })),
                   ]}
                   disabled={paintingsLoading}
-                  ariaLabel={`Картина ${slot + 1}`}
+                  ariaLabel={t('settingsPage.home.slotAria', { slot: slot + 1 })}
                 />
               ))}
             </div>
 
             {/* A saved painting can go missing later — deleted, sold or
                 hidden. Say so instead of silently snapping that slot back to
-                "Автоматично". */}
+                "Auto". */}
             {!paintingsLoading &&
               heroPaintingIds.some(
                 (selected) =>
                   selected !== null &&
                   !heroOptions.some((painting) => painting.id === selected),
               ) && (
-                <p className={styles.hint}>
-                  Одна з обраних раніше картин більше недоступна — замість неї
-                  показується рекомендована. Оберіть іншу.
-                </p>
+                <p className={styles.hint}>{t('settingsPage.home.missingHint')}</p>
               )}
           </div>
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Оплата та доставка</h2>
+            <h2 className={styles.cardTitle}>{t('settingsPage.payment.cardTitle')}</h2>
 
-            <label className={styles.label}>IBAN для переказу на карту</label>
-            <p className={styles.hint}>
-              Показується покупцю, коли він обирає оплату "Переказ на карту"
-            </p>
+            <label className={styles.label}>{t('settingsPage.payment.ibanLabel')}</label>
+            <p className={styles.hint}>{t('settingsPage.payment.ibanHint')}</p>
 
             <input
               value={cardTransferIban}
@@ -222,24 +221,20 @@ export default function AdminSettingsPage() {
             />
 
             <label className={styles.label}>
-              Місто відправлення (Нова пошта)
+              {t('settingsPage.payment.senderCityLabel')}
             </label>
-            <p className={styles.hint}>
-              Звідки рахується вартість доставки й комісія за накладений платіж
-            </p>
+            <p className={styles.hint}>{t('settingsPage.payment.senderCityHint')}</p>
 
             <NovaPoshtaCityPicker value={senderCity} onChange={setSenderCity} />
           </div>
 
           <div className={`${styles.card} ${styles.cardWide}`}>
-            <h2 className={styles.cardTitle}>Контакти підтримки</h2>
-            <p className={styles.hint}>
-              Показуються в чаті підтримки як альтернативні способи звʼязку
-            </p>
+            <h2 className={styles.cardTitle}>{t('settingsPage.support.cardTitle')}</h2>
+            <p className={styles.hint}>{t('settingsPage.support.hint')}</p>
 
             <div className={styles.subGrid}>
               <div>
-                <label className={styles.label}>Email</label>
+                <label className={styles.label}>{t('settingsPage.support.email')}</label>
                 <input
                   type="email"
                   value={supportEmail}
@@ -250,7 +245,7 @@ export default function AdminSettingsPage() {
               </div>
 
               <div>
-                <label className={styles.label}>Телефон</label>
+                <label className={styles.label}>{t('settingsPage.support.phone')}</label>
                 <input
                   type="tel"
                   value={supportPhone}
@@ -261,7 +256,7 @@ export default function AdminSettingsPage() {
               </div>
 
               <div>
-                <label className={styles.label}>Посилання на Telegram</label>
+                <label className={styles.label}>{t('settingsPage.support.telegram')}</label>
                 <input
                   type="url"
                   value={supportTelegramUrl}
@@ -272,7 +267,9 @@ export default function AdminSettingsPage() {
               </div>
 
               <div>
-                <label className={styles.label}>Посилання на Instagram</label>
+                <label className={styles.label}>
+                  {t('settingsPage.support.instagram')}
+                </label>
                 <input
                   type="url"
                   value={instagramUrl}
@@ -280,10 +277,7 @@ export default function AdminSettingsPage() {
                   placeholder="https://instagram.com/viktorumm"
                   className={styles.input}
                 />
-                <p className={styles.hint}>
-                  Показується у вікні замовлення повтору як спосіб написати
-                  напряму. Порожнє — рядок просто не зʼявиться.
-                </p>
+                <p className={styles.hint}>{t('settingsPage.support.instagramHint')}</p>
               </div>
             </div>
           </div>
@@ -294,31 +288,30 @@ export default function AdminSettingsPage() {
           disabled={updateSettings.isPending}
           className={styles.saveButton}
         >
-          {updateSettings.isPending ? 'Зберігаємо…' : 'Зберегти'}
+          {updateSettings.isPending
+            ? t('settingsPage.saving')
+            : t('settingsPage.save')}
         </button>
       </form>
 
       <div className={`${styles.card} ${styles.standaloneCard}`}>
-        <h2 className={styles.cardTitle}>Бот сповіщень</h2>
-        <p className={styles.hint}>
-          Сюди бот надсилатиме сповіщення про нові замовлення, скріни оплати й
-          повідомлення в підтримці.
-        </p>
+        <h2 className={styles.cardTitle}>{t('settingsPage.bot.cardTitle')}</h2>
+        <p className={styles.hint}>{t('settingsPage.bot.hint')}</p>
 
         {settings?.adminTelegramChatId ? (
           <div className={styles.telegramLinkedRow}>
-            <p className={styles.telegramLinked}>✓ Бот привʼязано</p>
+            <p className={styles.telegramLinked}>{t('settingsPage.bot.linked')}</p>
             <button
               type="button"
               onClick={handleResetAdminTelegramLink}
               disabled={resetAdminTelegramLink.isPending}
               className={styles.telegramResetButton}
             >
-              Скинути
+              {t('settingsPage.bot.reset')}
             </button>
           </div>
         ) : !TELEGRAM_BOT_USERNAME ? (
-          <p className={styles.hint}>Незабаром</p>
+          <p className={styles.hint}>{t('settingsPage.bot.soon')}</p>
         ) : (
           <>
             <button
@@ -328,26 +321,21 @@ export default function AdminSettingsPage() {
               className={styles.telegramButton}
             >
               {linkOpened
-                ? 'Відкрити ще раз'
+                ? t('settingsPage.bot.openAgain')
                 : adminTelegramLink.isPending
-                  ? 'Генеруємо…'
-                  : 'Привʼязати бота'}
+                  ? t('settingsPage.bot.generating')
+                  : t('settingsPage.bot.link')}
             </button>
             {linkOpened && (
-              <p className={styles.hint}>
-                Натисніть Start у Telegram — бот звʼяжеться автоматично
-              </p>
+              <p className={styles.hint}>{t('settingsPage.bot.startHint')}</p>
             )}
           </>
         )}
       </div>
 
       <div className={`${styles.card} ${styles.standaloneCard}`}>
-        <h2 className={styles.cardTitle}>FAQ</h2>
-        <p className={styles.hint}>
-          Питання й відповіді, що показуються в розділі підтримки. Перетягуйте
-          картки, щоб змінити порядок.
-        </p>
+        <h2 className={styles.cardTitle}>{t('settingsPage.faq.cardTitle')}</h2>
+        <p className={styles.hint}>{t('settingsPage.faq.hint')}</p>
 
         <FaqAdminEditor />
       </div>

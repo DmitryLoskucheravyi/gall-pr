@@ -3,6 +3,7 @@
 // come down this route too — see PublicSettings on the backend.
 export type PublicAppSettings = {
   authorName: string;
+  authorNameEn: string | null;
   cardTransferIban: string;
   supportEmail: string;
   supportPhone: string;
@@ -27,6 +28,7 @@ export type AppSettings = PublicAppSettings & {
 
 export type UpdateSettingsDto = {
   authorName: string;
+  authorNameEn?: string;
   cardTransferIban: string;
   novaPoshtaSenderCityRef: string;
   novaPoshtaSenderCityName: string;

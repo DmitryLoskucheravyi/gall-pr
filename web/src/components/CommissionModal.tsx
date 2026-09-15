@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import type { Painting } from '../types/painting.types';
 import type { NovaPoshtaOption } from '../types/novaPoshta.types';
 import { ordersService } from '../api/orders.api';
 import { useSettings } from '../hooks/queries/useSettings';
 import { useAppSelector } from '../store/hooks';
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useNovaPoshtaWarehouses } from '../hooks/queries/useNovaPoshta';
 import NovaPoshtaCityPicker from './ui/NovaPoshtaCityPicker';
@@ -32,6 +35,9 @@ type Props = {
 // two lines in a direct message than fill in anything at all, and pretending
 // otherwise just loses them.
 export default function CommissionModal({ painting, onClose }: Props) {
+  const { t } = useTranslation('painting');
+  const locale = useLocale();
+  const title = pickLocale(painting, 'title', locale);
   useEscapeKey(onClose, true);
 
   const user = useAppSelector((state) => state.auth.user);
@@ -125,9 +131,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
 
       setSent(true);
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ?? 'Не вдалося надіслати. Спробуйте ще раз',
-      );
+      setError(err?.response?.data?.message ?? t('commission.genericError'));
     } finally {
       setSending(false);
     }
@@ -146,7 +150,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
           type="button"
           onClick={onClose}
           className={styles.close}
-          aria-label="Закрити"
+          aria-label={t('commission.closeAria')}
         >
           ×
         </button>
@@ -155,32 +159,24 @@ export default function CommissionModal({ painting, onClose }: Props) {
           // No order number and no total on purpose: nothing has been bought,
           // and quoting a figure now would be a promise the artist hasn't made.
           <div className={styles.done}>
-            <h2 className={styles.title}>Дякуємо!</h2>
+            <h2 className={styles.title}>{t('commission.done.title')}</h2>
             <p className={styles.lead}>
-              Ми отримали ваше замовлення на повтор роботи «{painting.title}» і
-              надіслали підтвердження на {email.trim()}.
+              {t('commission.done.lead', { title, email: email.trim() })}
             </p>
-            <p className={styles.note}>
-              Найближчим часом звʼяжемося, щоб узгодити розмір, терміни й
-              вартість. Кожен повтор пишеться вручну, тож він буде близьким до
-              оригіналу, але не тотожним йому.
-            </p>
+            <p className={styles.note}>{t('commission.done.note')}</p>
             <button type="button" onClick={onClose} className={styles.submit}>
-              Зрозуміло
+              {t('commission.done.ok')}
             </button>
           </div>
         ) : (
           <>
-            <h2 className={styles.title}>Замовити повтор</h2>
-            <p className={styles.lead}>
-              «{painting.title}» вже продана, але автор може написати її знову.
-              Залиште контакти — ми звʼяжемося, щоб узгодити деталі.
-            </p>
+            <h2 className={styles.title}>{t('commission.title')}</h2>
+            <p className={styles.lead}>{t('commission.lead', { title })}</p>
 
             <form onSubmit={handleSubmit} className={styles.form}>
               <input
                 required
-                placeholder="Ваше імʼя"
+                placeholder={t('commission.namePlaceholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className={styles.input}
@@ -196,7 +192,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
               <input
                 required
                 type="tel"
-                placeholder="Телефон"
+                placeholder={t('commission.phonePlaceholder')}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className={styles.input}
@@ -206,13 +202,13 @@ export default function CommissionModal({ painting, onClose }: Props) {
                   Instagram separately makes someone fill in a box they don't
                   use, and which one this is is plain from what they type. */}
               <input
-                placeholder="Telegram або Instagram — якщо зручніше там"
+                placeholder={t('commission.contactPlaceholder')}
                 value={contactHandle}
                 onChange={(e) => setContactHandle(e.target.value)}
                 className={styles.input}
               />
 
-              <span className={styles.optional}>Сума</span>
+              <span className={styles.optional}>{t('commission.amountLabel')}</span>
 
               <div className={styles.amountRow}>
                 <input
@@ -233,21 +229,21 @@ export default function CommissionModal({ painting, onClose }: Props) {
               <p className={styles.amountHint}>
                 {belowOriginal ? (
                   <span className={styles.error}>
-                    Не менше за вартість оригіналу —{' '}
-                    {originalPrice.toLocaleString('uk-UA')} ₴
+                    {t('commission.amountBelowOriginal', {
+                      price: originalPrice.toLocaleString('uk-UA'),
+                    })}
                   </span>
                 ) : (
-                  <>
-                    Оригінал коштував{' '}
-                    <strong>{originalPrice.toLocaleString('uk-UA')} ₴</strong>.
-                    Можна запропонувати більше — це прискорює чергу.
-                  </>
+                  <Trans
+                    t={t}
+                    i18nKey="commission.amountHint"
+                    values={{ price: originalPrice.toLocaleString('uk-UA') }}
+                    components={{ strong: <strong /> }}
+                  />
                 )}
               </p>
 
-              <span className={styles.optional}>
-                Доставка — якщо вже знаєте, куди
-              </span>
+              <span className={styles.optional}>{t('commission.deliveryLabel')}</span>
 
               <NovaPoshtaCityPicker
                 value={city}
@@ -262,7 +258,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
                   value={warehouseRef}
                   onChange={setWarehouseRef}
                   options={[
-                    { value: '', label: 'Оберіть відділення' },
+                    { value: '', label: t('commission.chooseWarehouse') },
                     ...warehouses.map((warehouse) => ({
                       value: warehouse.ref,
                       label: warehouse.name,
@@ -272,7 +268,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
               )}
 
               <textarea
-                placeholder="Побажання: розмір, кольори, терміни"
+                placeholder={t('commission.commentPlaceholder')}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={3}
@@ -286,13 +282,13 @@ export default function CommissionModal({ painting, onClose }: Props) {
                 disabled={sending || belowOriginal}
                 className={styles.submit}
               >
-                {sending ? 'Надсилаємо…' : 'Надіслати замовлення'}
+                {sending ? t('commission.sending') : t('commission.submit')}
               </button>
             </form>
 
             {hasDirectContact && (
               <div className={styles.alternative}>
-                <span className={styles.or}>або напишіть напряму</span>
+                <span className={styles.or}>{t('commission.or')}</span>
                 <div className={styles.links}>
                   {instagramUrl && (
                     <a
@@ -301,7 +297,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
                       rel="noreferrer"
                       className={styles.link}
                     >
-                      Instagram Direct
+                      {t('commission.instagram')}
                     </a>
                   )}
                   {telegramUrl && (
@@ -311,7 +307,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
                       rel="noreferrer"
                       className={styles.link}
                     >
-                      Telegram
+                      {t('commission.telegram')}
                     </a>
                   )}
                 </div>

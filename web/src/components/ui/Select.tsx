@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import styles from './Select.module.scss';
 
@@ -23,11 +24,13 @@ export default function Select({
   value,
   onChange,
   options,
-  placeholder = 'Оберіть…',
+  placeholder,
   className,
   disabled = false,
   ariaLabel,
 }: Props) {
+  const { t } = useTranslation('common');
+  const resolvedPlaceholder = placeholder ?? t('selectPlaceholder');
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +70,7 @@ export default function Select({
         aria-haspopup="listbox"
       >
         <span className={selected ? styles.value : styles.placeholder}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : resolvedPlaceholder}
         </span>
         <svg
           viewBox="0 0 24 24"

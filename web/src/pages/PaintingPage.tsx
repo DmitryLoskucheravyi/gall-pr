@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
+import { useExchangeRate } from '../hooks/queries/useExchangeRate';
+import { formatPrice } from '../utils/formatPrice';
 import PaintingCard from '../components/PaintingCard';
 import Painting3DViewer from '../components/Painting3DViewer';
 import InteriorCarousel from '../components/InteriorCarousel';
@@ -18,10 +23,13 @@ import { cdnImage } from '../utils/imageUrl';
 import styles from './PaintingPage.module.scss';
 
 export default function PaintingPage() {
+  const { t } = useTranslation('painting');
+  const locale = useLocale();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const addToCart = useAddToCart();
   const authorName = useAuthorName();
+  const { data: usdRate } = useExchangeRate();
 
   const { data: painting, isLoading: loading } = usePainting(
     id ? Number(id) : undefined,
@@ -203,10 +211,15 @@ export default function PaintingPage() {
     });
   };
 
+  const pageTitle = painting ? pickLocale(painting, 'title', locale) : undefined;
   usePageMeta(
-    painting?.title,
+    pageTitle,
     painting
-      ? `${painting.title}${authorName ? ` — ${authorName}` : ''}. Оригінальна картина, ${Number(painting.price).toLocaleString('uk-UA')} ₴.`
+      ? t('metaDescription', {
+          title: pageTitle,
+          author: authorName ? ` — ${authorName}` : '',
+          price: formatPrice(Number(painting.price), locale, usdRate),
+        })
       : undefined,
   );
 
@@ -218,7 +231,7 @@ export default function PaintingPage() {
             <button
               onClick={() => navigate(-1)}
               className={styles.backButton}
-              aria-label="Назад"
+              aria-label={t('backAria')}
             >
               <svg viewBox="0 0 24 24" fill="none">
                 <path
@@ -246,18 +259,20 @@ export default function PaintingPage() {
     );
   }
 
-  if (!painting) return <p className={styles.muted}>Картину не знайдено</p>;
+  if (!painting) return <p className={styles.muted}>{t('notFound')}</p>;
 
   const price = Number(painting.price);
+  const title = pickLocale(painting, 'title', locale);
+  const description = pickLocale(painting, 'description', locale);
 
   // Product structured data — lets search engines show the painting as a rich
   // result (name, image, price, availability).
   const productJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: painting.title,
+    name: title,
     image: images,
-    ...(painting.description ? { description: painting.description } : {}),
+    ...(description ? { description } : {}),
     ...(authorName ? { brand: { '@type': 'Brand', name: authorName } } : {}),
     offers: {
       '@type': 'Offer',
@@ -290,7 +305,7 @@ export default function PaintingPage() {
             <button
               onClick={() => navigate(-1)}
               className={styles.backButton}
-              aria-label="Назад"
+              aria-label={t('backAria')}
             >
               <svg viewBox="0 0 24 24" fill="none">
                 <path
@@ -314,11 +329,11 @@ export default function PaintingPage() {
                   type="button"
                   onClick={openLightbox}
                   className={styles.slide}
-                  aria-label={`Відкрити зображення ${index + 1} на весь екран`}
+                  aria-label={t('openImageAria', { n: index + 1 })}
                 >
                   <img
                     src={cdnImage(url, 1400)}
-                    alt={index === 0 ? painting.title : ''}
+                    alt={index === 0 ? title : ''}
                     aria-hidden={index === 0 ? undefined : 'true'}
                     // Every shot is in the DOM now that this scrolls, so only
                     // the one on screen is worth fetching up front.
@@ -340,7 +355,7 @@ export default function PaintingPage() {
                   className={`${styles.navArrow} ${styles.navArrowLeft} ${
                     arrowsVisible ? styles.visible : ''
                   }`}
-                  aria-label="Попереднє зображення"
+                  aria-label={t('prevImageAria')}
                 >
                   <svg viewBox="0 0 24 24" fill="none">
                     <path
@@ -359,7 +374,7 @@ export default function PaintingPage() {
                   className={`${styles.navArrow} ${styles.navArrowRight} ${
                     arrowsVisible ? styles.visible : ''
                   }`}
-                  aria-label="Наступне зображення"
+                  aria-label={t('nextImageAria')}
                 >
                   <svg viewBox="0 0 24 24" fill="none">
                     <path
@@ -384,7 +399,7 @@ export default function PaintingPage() {
                   className={`${styles.thumbButton} ${
                     index === activeImage ? styles.active : ''
                   }`}
-                  aria-label={`Зображення ${index + 1}`}
+                  aria-label={t('thumbAria', { n: index + 1 })}
                 >
                   <img
                     src={cdnImage(url, 160)}
@@ -401,7 +416,7 @@ export default function PaintingPage() {
 
         <div>
           <div className={styles.titleRow}>
-            <h1 className={styles.title}>{painting.title}</h1>
+            <h1 className={styles.title}>{title}</h1>
             <LikeButton
               paintingId={painting.id}
               likesCount={painting.likesCount}
@@ -410,7 +425,7 @@ export default function PaintingPage() {
 
           {!!authorName && <p className={styles.author}>{authorName}</p>}
 
-          <p className={styles.price}>{price.toLocaleString()} ₴</p>
+          <p className={styles.price}>{formatPrice(price, locale, usdRate)}</p>
 
           {/* Three states, not two. In stock is always a purchase — buying the
               work that exists beats commissioning a copy of it. Sold splits on
@@ -421,53 +436,57 @@ export default function PaintingPage() {
               onClick={() => addToCart.mutate(painting)}
               className={styles.buyButton}
             >
-              Купити
+              {t('buy')}
             </button>
           ) : painting.isRepeatable ? (
             <button
               onClick={() => setCommissionOpen(true)}
               className={styles.buyButton}
             >
-              Замовити
+              {t('order')}
             </button>
           ) : (
             // Not a disabled button: there is nothing to press, and a greyed
             // one invites the attempt anyway.
-            <p className={styles.soldNotice}>Продано</p>
+            <p className={styles.soldNotice}>{t('sold')}</p>
           )}
 
           <SectionHeader
-            title="Опис"
+            title={t('sections.description')}
             open={isDescOpen}
             onClick={() => setIsDescOpen((prev) => !prev)}
             spacing="lg"
           />
-          {isDescOpen && (
-            <p className={styles.description}>{painting.description}</p>
-          )}
+          {isDescOpen && <p className={styles.description}>{description}</p>}
 
           <SectionHeader
-            title="Характеристики"
+            title={t('sections.characteristics')}
             open={isCharOpen}
             onClick={() => setIsCharOpen((prev) => !prev)}
             spacing="sm"
           />
           {isCharOpen && (
             <dl className={styles.specList}>
-              {!!authorName && <Row label="Автор" value={authorName} />}
+              {!!authorName && <Row label={t('specs.author')} value={authorName} />}
               {painting.year && (
-                <Row label="Рік" value={String(painting.year)} />
+                <Row label={t('specs.year')} value={String(painting.year)} />
               )}
               {painting.technique && (
-                <Row label="Техніка" value={painting.technique.name} />
+                <Row
+                  label={t('specs.technique')}
+                  value={pickLocale(painting.technique, 'name', locale)}
+                />
               )}
               {painting.material && (
-                <Row label="Матеріал" value={painting.material.name} />
+                <Row
+                  label={t('specs.material')}
+                  value={pickLocale(painting.material, 'name', locale)}
+                />
               )}
               {painting.width && painting.height && (
                 <Row
-                  label="Розмір"
-                  value={`${painting.width} × ${painting.height} см`}
+                  label={t('specs.size')}
+                  value={`${painting.width} × ${painting.height} ${t('sizeUnit')}`}
                 />
               )}
             </dl>
@@ -480,36 +499,29 @@ export default function PaintingPage() {
               painting.isRepeatable ? styles.editionRepeatable : ''
             }`}
           >
-            {painting.isRepeatable
-              ? 'Доступна для повтору — автор може написати її знову на замовлення'
-              : 'Єдиний екземпляр — існує в одному примірнику'}
+            {painting.isRepeatable ? t('edition.repeatable') : t('edition.unique')}
           </p>
         </div>
       </div>
 
       {interiorImages.length > 0 && (
         <section className={styles.interior}>
-          <h2 className={styles.interiorTitle}>В інтер'єрі</h2>
-          <p className={styles.interiorHint}>
-            Як робота виглядає на стіні — щоб уявити її у себе
-          </p>
+          <h2 className={styles.interiorTitle}>{t('interior.title')}</h2>
+          <p className={styles.interiorHint}>{t('interior.hint')}</p>
           <InteriorCarousel images={interiorImages} />
         </section>
       )}
 
       {painting.animation3dImage && (
         <section className={styles.animation3d}>
-          <h2 className={styles.animation3dTitle}>3D перегляд</h2>
-          <Painting3DViewer
-            imageUrl={painting.animation3dImage}
-            title={painting.title}
-          />
+          <h2 className={styles.animation3dTitle}>{t('animation3d.title')}</h2>
+          <Painting3DViewer imageUrl={painting.animation3dImage} title={title} />
         </section>
       )}
 
       {related.length > 0 && (
         <section className={styles.related}>
-          <h2 className={styles.relatedTitle}>Вам також може сподобатись</h2>
+          <h2 className={styles.relatedTitle}>{t('related')}</h2>
           <div className={styles.relatedGrid}>
             {related.map((item) => (
               <PaintingCard key={item.id} painting={item} compact />
@@ -539,7 +551,7 @@ export default function PaintingPage() {
             type="button"
             onClick={closeLightbox}
             className={styles.lightboxClose}
-            aria-label="Закрити"
+            aria-label={t('closeAria')}
           >
             <svg viewBox="0 0 24 24" fill="none">
               <path
@@ -560,7 +572,7 @@ export default function PaintingPage() {
               <div key={url} className={styles.lightboxSlide}>
                 <img
                   src={url}
-                  alt={index === activeImage ? painting.title : ''}
+                  alt={index === activeImage ? title : ''}
                   aria-hidden={index === activeImage ? undefined : 'true'}
                   className={styles.lightboxImage}
                 />
@@ -578,7 +590,7 @@ export default function PaintingPage() {
                   )
                 }
                 className={`${styles.navArrow} ${styles.navArrowLeft} ${styles.visible}`}
-                aria-label="Попереднє зображення"
+                aria-label={t('prevImageAria')}
               >
                 <svg viewBox="0 0 24 24" fill="none">
                   <path
@@ -597,7 +609,7 @@ export default function PaintingPage() {
                   goToLightboxImage((activeImage + 1) % images.length)
                 }
                 className={`${styles.navArrow} ${styles.navArrowRight} ${styles.visible}`}
-                aria-label="Наступне зображення"
+                aria-label={t('nextImageAria')}
               >
                 <svg viewBox="0 0 24 24" fill="none">
                   <path

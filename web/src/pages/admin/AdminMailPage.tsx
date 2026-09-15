@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useMailLetter, useMailOutbox } from '../../hooks/queries/useMailOutbox';
 import {
@@ -7,37 +8,13 @@ import {
 } from '../../hooks/mutations/useMailMutations';
 import { useConfirm } from '../../components/ui/ConfirmDialog';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useLocale } from '../../hooks/useLocale';
 import Skeleton from '../../components/ui/Skeleton';
-import type { MailKind, MailLogEntry, MailStatus } from '../../types/mail.types';
+import type { MailLogEntry } from '../../types/mail.types';
 import styles from './AdminMailPage.module.scss';
 
-const KIND_LABEL: Record<MailKind, string> = {
-  order_placed: 'Замовлення прийнято',
-  payment_proof_received: 'Скріншот оплати',
-  payment_confirmed: 'Оплату підтверджено',
-  payment_failed: 'Оплата не пройшла',
-  order_shipped: 'Відправлено',
-  order_completed: 'Подяка за замовлення',
-  order_cancelled: 'Скасовано',
-  order_apology: 'Вибачення',
-};
-
-const STATUS_LABEL: Record<MailStatus, string> = {
-  pending: 'У черзі',
-  sending: 'Надсилається',
-  sent: 'Надіслано',
-  failed: 'Помилка',
-  skipped: 'Пропущено',
-};
-
 type Tab = 'all' | 'queued' | 'failed' | 'sent';
-
-const TAB_LABEL: Record<Tab, string> = {
-  all: 'Усі',
-  queued: 'У черзі',
-  failed: 'Помилки',
-  sent: 'Надіслані',
-};
+const TABS: Tab[] = ['all', 'queued', 'failed', 'sent'];
 
 function matchesTab(letter: MailLogEntry, tab: Tab): boolean {
   if (tab === 'all') return true;
@@ -48,8 +25,8 @@ function matchesTab(letter: MailLogEntry, tab: Tab): boolean {
   return letter.status === 'sent' || letter.status === 'skipped';
 }
 
-function formatMoment(value: string) {
-  return new Date(value).toLocaleString('uk-UA', {
+function formatMoment(value: string, locale: 'ua' | 'en') {
+  return new Date(value).toLocaleString(locale === 'en' ? 'en-GB' : 'uk-UA', {
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
@@ -57,19 +34,9 @@ function formatMoment(value: string) {
   });
 }
 
-// What the row's timestamp should say depends on where the letter got to:
-// when it arrived, when it will be tried again, or nothing useful at all.
-function timingOf(letter: MailLogEntry): string {
-  if (letter.status === 'sent' && letter.sentAt) {
-    return `надіслано ${formatMoment(letter.sentAt)}`;
-  }
-  if (letter.status === 'pending' && new Date(letter.nextAttemptAt) > new Date()) {
-    return `наступна спроба ${formatMoment(letter.nextAttemptAt)}`;
-  }
-  return `створено ${formatMoment(letter.createdAt)}`;
-}
-
 export default function AdminMailPage() {
+  const { t } = useTranslation('admin');
+  const locale = useLocale();
   const [tab, setTab] = useState<Tab>('all');
   const [openLetterId, setOpenLetterId] = useState<number | null>(null);
 
@@ -81,6 +48,18 @@ export default function AdminMailPage() {
 
   useEscapeKey(() => setOpenLetterId(null), openLetterId !== null);
 
+  // What the row's timestamp should say depends on where the letter got to:
+  // when it arrived, when it will be tried again, or nothing useful at all.
+  const timingOf = (letter: MailLogEntry): string => {
+    if (letter.status === 'sent' && letter.sentAt) {
+      return t('mail.sentAt', { time: formatMoment(letter.sentAt, locale) });
+    }
+    if (letter.status === 'pending' && new Date(letter.nextAttemptAt) > new Date()) {
+      return t('mail.nextAttempt', { time: formatMoment(letter.nextAttemptAt, locale) });
+    }
+    return t('mail.createdAt', { time: formatMoment(letter.createdAt, locale) });
+  };
+
   const visible = letters.filter((letter) => matchesTab(letter, tab));
   const failedCount = letters.filter((letter) => letter.status === 'failed').length;
   const settledCount = letters.filter(
@@ -89,10 +68,9 @@ export default function AdminMailPage() {
 
   const handleClear = async () => {
     const ok = await confirm({
-      title: 'Очистити журнал?',
-      message:
-        'Записи про надіслані та пропущені листи буде видалено. Листи в черзі й помилки залишаться.',
-      confirmLabel: 'Очистити',
+      title: t('mail.confirmClear.title'),
+      message: t('mail.confirmClear.message'),
+      confirmLabel: t('mail.confirmClear.confirmLabel'),
       danger: true,
     });
     if (ok) clearSettled.mutate();
@@ -101,7 +79,7 @@ export default function AdminMailPage() {
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>Журнал листів</h1>
+        <h1 className={styles.title}>{t('mail.title')}</h1>
         {settledCount > 0 && (
           <button
             type="button"
@@ -109,33 +87,32 @@ export default function AdminMailPage() {
             disabled={clearSettled.isPending}
             className={styles.clearButton}
           >
-            Очистити надіслані
+            {t('mail.clearSent')}
           </button>
         )}
       </div>
 
       <p className={styles.intro}>
-        Кожен лист спершу записується сюди, і лише потім вирушає. Якщо пошта
-        недоступна, спроби повторюються: за 1 хв, 5 хв, 15 хв, 1 год і 6 год.
+        {t('mail.intro')}
         {failedCount > 0 && (
           <>
             {' '}
             <strong className={styles.alarm}>
-              Недоставлених: {failedCount}.
+              {t('mail.undelivered', { count: failedCount })}
             </strong>
           </>
         )}
       </p>
 
       <div className={styles.tabs}>
-        {(Object.keys(TAB_LABEL) as Tab[]).map((value) => (
+        {TABS.map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => setTab(value)}
             className={tab === value ? styles.tabActive : styles.tab}
           >
-            {TAB_LABEL[value]}
+            {t(`mail.tabs.${value}`)}
             {value === 'failed' && failedCount > 0 && ` (${failedCount})`}
           </button>
         ))}
@@ -149,7 +126,7 @@ export default function AdminMailPage() {
         </div>
       ) : visible.length === 0 ? (
         <p className={styles.muted}>
-          {tab === 'all' ? 'Листів ще не було' : 'У цій вкладці порожньо'}
+          {tab === 'all' ? t('mail.emptyAll') : t('mail.emptyTab')}
         </p>
       ) : (
         <div className={styles.list}>
@@ -158,10 +135,10 @@ export default function AdminMailPage() {
               <div className={styles.info}>
                 <div className={styles.topLine}>
                   <span className={`${styles.badge} ${styles[letter.status]}`}>
-                    {STATUS_LABEL[letter.status]}
+                    {t(`mail.status.${letter.status}`)}
                   </span>
                   <span className={styles.kind}>
-                    {KIND_LABEL[letter.kind] ?? letter.kind}
+                    {t(`mail.kind.${letter.kind}`, { defaultValue: letter.kind })}
                   </span>
                   {letter.orderId && (
                     <span className={styles.order}>№{letter.orderId}</span>
@@ -173,7 +150,9 @@ export default function AdminMailPage() {
                 <div className={styles.meta}>
                   <span className={styles.email}>{letter.toEmail}</span>
                   <span>· {timingOf(letter)}</span>
-                  {letter.attempts > 0 && <span>· спроб: {letter.attempts}</span>}
+                  {letter.attempts > 0 && (
+                    <span>{t('mail.attempts', { count: letter.attempts })}</span>
+                  )}
                 </div>
 
                 {letter.lastError && (
@@ -187,7 +166,7 @@ export default function AdminMailPage() {
                   onClick={() => setOpenLetterId(letter.id)}
                   className={styles.viewButton}
                 >
-                  Показати
+                  {t('mail.view')}
                 </button>
                 {letter.status !== 'sending' && (
                   <button
@@ -196,7 +175,7 @@ export default function AdminMailPage() {
                     disabled={retry.isPending}
                     className={styles.retryButton}
                   >
-                    {letter.status === 'sent' ? 'Надіслати ще раз' : 'Спробувати зараз'}
+                    {letter.status === 'sent' ? t('mail.resend') : t('mail.retryNow')}
                   </button>
                 )}
               </div>
@@ -211,18 +190,18 @@ export default function AdminMailPage() {
             className={styles.preview}
             role="dialog"
             aria-modal="true"
-            aria-label="Перегляд листа"
+            aria-label={t('mail.previewAria')}
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.previewHeader}>
               <div className={styles.previewSubject}>
-                {openLetter?.subject ?? 'Завантаження…'}
+                {openLetter?.subject ?? t('mail.loading')}
               </div>
               <button
                 type="button"
                 onClick={() => setOpenLetterId(null)}
                 className={styles.closeButton}
-                aria-label="Закрити"
+                aria-label={t('mail.closeAria')}
               >
                 ✕
               </button>
@@ -233,7 +212,7 @@ export default function AdminMailPage() {
               // with its own styling, and letting it into the page would drag
               // that styling in with it.
               <iframe
-                title="Лист"
+                title={t('mail.letterTitle')}
                 sandbox=""
                 srcDoc={openLetter.htmlBody}
                 className={styles.previewFrame}

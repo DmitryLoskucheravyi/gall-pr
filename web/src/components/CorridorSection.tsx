@@ -1,11 +1,14 @@
 import { Fragment, type CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from './ui/LocalizedLink';
 import type { Painting } from '../types/painting.types';
 import { useCoarsePointer } from '../hooks/useCoarsePointer';
 import { useNarrowViewport } from '../hooks/useNarrowViewport';
 import { useHeroSequence } from '../hooks/useHeroSequence';
+import { useLocale } from '../hooks/useLocale';
 import { cdnImage } from '../utils/imageUrl';
+import { pickLocale } from '../utils/localizedField';
 import styles from './CorridorSection.module.scss';
 
 const CORRIDOR_FOOTAGE = {
@@ -193,6 +196,8 @@ function Letters({ runs }: { runs: Run[] }) {
 // to it — a row of doorways, a panelled dado — would be a ruler against
 // which the two could be seen not to agree.
 export default function CorridorSection({ paintings }: Props) {
+  const { t } = useTranslation('home');
+  const locale = useLocale();
   const coarsePointer = useCoarsePointer();
 
   // Two different questions, and they were being answered by one test.
@@ -348,28 +353,33 @@ export default function CorridorSection({ paintings }: Props) {
             front of it. Laid out in screen space rather than hung in the
             scene, because text at a wall's angle and distance would be
             unreadable exactly when it mattered. */}
-        {paintings.map((painting, index) => (
-          <div
-            key={painting.id}
-            className={styles.caption}
-            style={
-              {
-                '--i': index,
-                '--side': index % 2 === 0 ? -1 : 1,
-                // How many letters the stagger has to fit inside, so a long
-                // title still finishes assembling.
-                '--n': painting.title.replace(/\s/g, '').length,
-              } as CSSProperties
-            }
-          >
-            <h3 className={styles.title} aria-label={painting.title}>
-              <Letters runs={[{ text: painting.title }]} />
-            </h3>
-            {painting.description ? (
-              <p className={styles.excerpt}>{excerpt(painting.description)}</p>
-            ) : null}
-          </div>
-        ))}
+        {paintings.map((painting, index) => {
+          const title = pickLocale(painting, 'title', locale);
+          const description = pickLocale(painting, 'description', locale);
+
+          return (
+            <div
+              key={painting.id}
+              className={styles.caption}
+              style={
+                {
+                  '--i': index,
+                  '--side': index % 2 === 0 ? -1 : 1,
+                  // How many letters the stagger has to fit inside, so a long
+                  // title still finishes assembling.
+                  '--n': title.replace(/\s/g, '').length,
+                } as CSSProperties
+              }
+            >
+              <h3 className={styles.title} aria-label={title}>
+                <Letters runs={[{ text: title }]} />
+              </h3>
+              {description ? (
+                <p className={styles.excerpt}>{excerpt(description)}</p>
+              ) : null}
+            </div>
+          );
+        })}
 
         {/* Closes over everything. Black by the end of the track, which is
             also the last thing on screen before the pin releases — so the
@@ -383,7 +393,7 @@ export default function CorridorSection({ paintings }: Props) {
             shaft. */}
         <div className={styles.cta}>
           <Link to="/catalog" className={styles.ctaButton}>
-            <span className={styles.ctaLabel}>До каталогу</span>
+            <span className={styles.ctaLabel}>{t('corridor.cta')}</span>
             <span className={styles.ctaRule} aria-hidden="true" />
             <svg
               className={styles.ctaArrow}

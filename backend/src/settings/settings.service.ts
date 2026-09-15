@@ -29,6 +29,7 @@ function secretsMatch(expected: string, received: string): boolean {
 // and nothing on the storefront reads.
 export type PublicSettings = {
   authorName: string;
+  authorNameEn: string | null;
   cardTransferIban: string;
   supportEmail: string;
   supportPhone: string;
@@ -120,6 +121,7 @@ export class SettingsService {
 
     return {
       authorName: settings.authorName,
+      authorNameEn: settings.authorNameEn,
       cardTransferIban: settings.cardTransferIban,
       supportEmail: settings.supportEmail,
       supportPhone: settings.supportPhone,
@@ -205,7 +207,13 @@ export class SettingsService {
       -1,
     );
 
-    faq[randomUUID()] = { title: dto.title, text: dto.text, order: maxOrder + 1 };
+    faq[randomUUID()] = {
+      title: dto.title,
+      titleEn: dto.titleEn,
+      text: dto.text,
+      textEn: dto.textEn,
+      order: maxOrder + 1,
+    };
 
     settings.faq = faq;
     await this.settingsRepository.save(settings);

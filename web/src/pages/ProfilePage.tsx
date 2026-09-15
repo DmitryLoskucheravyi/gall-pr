@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from '../components/ui/LocalizedLink';
 import { useLikedPaintings } from '../hooks/queries/useLikedPaintings';
 import { useMyOrders } from '../hooks/queries/useOrders';
 import {
@@ -23,6 +24,7 @@ const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
   | undefined;
 
 export default function ProfilePage() {
+  const { t } = useTranslation('profile');
   const user = useAppSelector((state) => state.auth.user);
   const { data: likedPaintings = [], isLoading: likedLoading } = useLikedPaintings();
   const { data: orders = [], isLoading: ordersLoading } = useMyOrders();
@@ -58,9 +60,9 @@ export default function ProfilePage() {
 
   const handleResetTelegramLink = async () => {
     const ok = await confirm({
-      title: "Скинути прив'язку Telegram?",
-      message: 'Сповіщення про замовлення перестануть приходити, доки ви не привʼяжете акаунт знову.',
-      confirmLabel: 'Скинути',
+      title: t('confirmReset.title'),
+      message: t('confirmReset.message'),
+      confirmLabel: t('confirmReset.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -101,7 +103,7 @@ export default function ProfilePage() {
                   {user.firstName} {user.lastName}
                 </h1>
                 {user.role === 'ADMIN' && (
-                  <span className={styles.adminBadge}>Адміністратор</span>
+                  <span className={styles.adminBadge}>{t('admin')}</span>
                 )}
               </div>
               <p className={styles.email}>{user.email}</p>
@@ -110,38 +112,34 @@ export default function ProfilePage() {
 
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
-              <p className={styles.infoLabel}>Email</p>
+              <p className={styles.infoLabel}>{t('stats.email')}</p>
               <p className={styles.infoValue}>{user.email}</p>
             </div>
 
             <div className={styles.statCard}>
-              <p className={styles.infoLabel}>Телефон</p>
+              <p className={styles.infoLabel}>{t('stats.phone')}</p>
               <p className={styles.infoValue}>{user.phone || '—'}</p>
             </div>
 
             <div className={`${styles.statCard} ${styles.telegramCard}`}>
-              <p className={styles.infoLabel}>Telegram</p>
+              <p className={styles.infoLabel}>{t('stats.telegram')}</p>
               {user.telegramLinked ? (
                 <div className={styles.telegramLinkedRow}>
-                  <p className={styles.telegramLinked}>
-                    ✓ Звʼязано — сповіщення про замовлення приходять у Telegram
-                  </p>
+                  <p className={styles.telegramLinked}>{t('telegram.linked')}</p>
                   <button
                     type="button"
                     onClick={handleResetTelegramLink}
                     disabled={resetTelegramLink.isPending}
                     className={styles.telegramResetButton}
                   >
-                    Скинути
+                    {t('telegram.reset')}
                   </button>
                 </div>
               ) : !TELEGRAM_BOT_USERNAME ? (
-                <p className={styles.infoValue}>Незабаром</p>
+                <p className={styles.infoValue}>{t('telegram.comingSoon')}</p>
               ) : (
                 <>
-                  <p className={styles.telegramHint}>
-                    Отримуйте статуси замовлень у Telegram
-                  </p>
+                  <p className={styles.telegramHint}>{t('telegram.hint')}</p>
                   <button
                     type="button"
                     onClick={handleTelegramLink}
@@ -149,15 +147,13 @@ export default function ProfilePage() {
                     className={styles.telegramButton}
                   >
                     {linkOpened
-                      ? 'Відкрити ще раз'
+                      ? t('telegram.openAgain')
                       : telegramLink.isPending
-                        ? 'Генеруємо…'
-                        : "Прив'язати Telegram"}
+                        ? t('telegram.generating')
+                        : t('telegram.link')}
                   </button>
                   {linkOpened && (
-                    <p className={styles.telegramHint}>
-                      Натисніть Start у Telegram — акаунт звʼяжеться автоматично
-                    </p>
+                    <p className={styles.telegramHint}>{t('telegram.startHint')}</p>
                   )}
 
                   <button
@@ -165,7 +161,7 @@ export default function ProfilePage() {
                     onClick={openCodeModal}
                     className={styles.telegramCodeLink}
                   >
-                    Вже є код з Telegram? Ввести
+                    {t('telegram.haveCode')}
                   </button>
                 </>
               )}
@@ -173,10 +169,10 @@ export default function ProfilePage() {
           </div>
 
           <div className={styles.ordersHeader}>
-            <h2 className={styles.ordersTitle}>Замовлення</h2>
+            <h2 className={styles.ordersTitle}>{t('orders.title')}</h2>
             {orders.length > 0 && (
               <Link to="/orders" className={styles.ordersLink}>
-                Усі →
+                {t('orders.all')}
               </Link>
             )}
           </div>
@@ -186,16 +182,16 @@ export default function ProfilePage() {
           ) : lastOrder ? (
             <OrderPreviewCard order={lastOrder} />
           ) : (
-            <p className={styles.ordersEmpty}>У вас ще немає замовлень</p>
+            <p className={styles.ordersEmpty}>{t('orders.empty')}</p>
           )}
         </div>
 
         <section className={styles.favoritesSection}>
           <div className={styles.favoritesHeader}>
-            <h2 className={styles.favoritesTitle}>Уподобані</h2>
+            <h2 className={styles.favoritesTitle}>{t('favorites.title')}</h2>
             {likedPaintings.length > 0 && (
               <Link to="/favorites" className={styles.favoritesLink}>
-                Усі →
+                {t('favorites.all')}
               </Link>
             )}
           </div>
@@ -207,9 +203,7 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : likedPaintings.length === 0 ? (
-            <p className={styles.favoritesEmpty}>
-              Ви ще не вподобали жодної картини
-            </p>
+            <p className={styles.favoritesEmpty}>{t('favorites.empty')}</p>
           ) : (
             <div className={styles.favoritesGrid}>
               {likedPaintings.slice(0, FAVORITES_PREVIEW_LIMIT).map((painting) => (
@@ -228,9 +222,9 @@ export default function ProfilePage() {
             aria-modal="true"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className={styles.codeModalTitle}>Підтвердження Telegram</h2>
+            <h2 className={styles.codeModalTitle}>{t('codeModal.title')}</h2>
             <p className={styles.codeModalHint}>
-              Напишіть боту{' '}
+              {t('codeModal.hintBefore')}{' '}
               {TELEGRAM_BOT_USERNAME ? (
                 <a
                   href={`https://t.me/${TELEGRAM_BOT_USERNAME}`}
@@ -240,9 +234,9 @@ export default function ProfilePage() {
                   @{TELEGRAM_BOT_USERNAME}
                 </a>
               ) : (
-                'у Telegram'
+                t('codeModal.hintInTelegram')
               )}{' '}
-              команду /start — він надішле код підтвердження. Введіть його нижче.
+              {t('codeModal.hintAfter')}
             </p>
 
             <form onSubmit={handleRedeemCode} className={styles.codeModalForm}>
@@ -261,7 +255,7 @@ export default function ProfilePage() {
               {redeemCode.isError && (
                 <p className={styles.codeModalError}>
                   {(redeemCode.error as any)?.response?.data?.message ??
-                    'Невірний або застарілий код'}
+                    t('codeModal.invalidCode')}
                 </p>
               )}
 
@@ -271,14 +265,14 @@ export default function ProfilePage() {
                   onClick={() => setCodeModalOpen(false)}
                   className={styles.codeModalCancel}
                 >
-                  Скасувати
+                  {t('codeModal.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={redeemCode.isPending || pendingCode.length !== 6}
                   className={styles.codeModalSubmit}
                 >
-                  {redeemCode.isPending ? 'Перевірка…' : 'Підтвердити'}
+                  {redeemCode.isPending ? t('codeModal.checking') : t('codeModal.confirm')}
                 </button>
               </div>
             </form>

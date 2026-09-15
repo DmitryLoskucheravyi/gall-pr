@@ -1,0 +1,44 @@
+{
+  "admin": "Administrator",
+  "stats": {
+    "email": "Email",
+    "phone": "Phone",
+    "telegram": "Telegram"
+  },
+  "telegram": {
+    "linked": "✓ Linked — order updates now arrive on Telegram",
+    "reset": "Unlink",
+    "comingSoon": "Coming soon",
+    "hint": "Get order status updates on Telegram",
+    "openAgain": "Open again",
+    "generating": "Generating…",
+    "link": "Link Telegram",
+    "startHint": "Press Start on Telegram — your account will link automatically",
+    "haveCode": "Already have a code from Telegram? Enter it"
+  },
+  "confirmReset": {
+    "title": "Unlink Telegram?",
+    "message": "Order notifications will stop arriving until you link your account again.",
+    "confirmLabel": "Unlink"
+  },
+  "orders": {
+    "title": "Orders",
+    "all": "All →",
+    "empty": "You don't have any orders yet"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "all": "All →",
+    "empty": "You haven't liked any painting yet"
+  },
+  "codeModal": {
+    "title": "Confirm Telegram",
+    "hintBefore": "Message the bot",
+    "hintInTelegram": "on Telegram",
+    "hintAfter": "the /start command — it'll send a confirmation code. Enter it below.",
+    "invalidCode": "Invalid or expired code",
+    "cancel": "Cancel",
+    "checking": "Checking…",
+    "confirm": "Confirm"
+  }
+}

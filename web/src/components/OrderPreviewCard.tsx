@@ -1,16 +1,13 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { Order, OrderStatus } from '../types/order.types';
 import { useUploadPaymentProofMutation } from '../hooks/mutations/useOrderMutations';
+import { useLocale } from '../hooks/useLocale';
+import { useExchangeRate } from '../hooks/queries/useExchangeRate';
+import { formatPrice } from '../utils/formatPrice';
+import { plural, pluralForms } from '../utils/plural';
 import styles from './OrderPreviewCard.module.scss';
-
-const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDING: 'Очікує',
-  CONFIRMED: 'Підтверджено',
-  SHIPPED: 'Відправлено',
-  CANCELLED: 'Скасовано',
-  COMPLETED: 'Виконано',
-};
 
 function statusClass(status: OrderStatus) {
   switch (status) {
@@ -31,6 +28,9 @@ type Props = {
 };
 
 export default function OrderPreviewCard({ order, onCancel }: Props) {
+  const { t } = useTranslation('orders');
+  const locale = useLocale();
+  const { data: usdRate } = useExchangeRate();
   const uploadProof = useUploadPaymentProofMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,14 +47,12 @@ export default function OrderPreviewCard({ order, onCancel }: Props) {
   return (
     <div className={styles.order}>
       <div className={styles.orderHeader}>
-        <span className={styles.orderNumber}>Замовлення №{order.id}</span>
-        <span className={statusClass(order.status)}>
-          {ORDER_STATUS_LABEL[order.status]}
-        </span>
+        <span className={styles.orderNumber}>{t('orderNumber', { id: order.id })}</span>
+        <span className={statusClass(order.status)}>{t(`status.${order.status}`)}</span>
       </div>
 
       <p className={styles.date}>
-        {new Date(order.createdAt).toLocaleDateString('uk-UA')}
+        {new Date(order.createdAt).toLocaleDateString(locale === 'en' ? 'en-GB' : 'uk-UA')}
       </p>
 
       <div className={styles.thumbs}>
@@ -72,18 +70,16 @@ export default function OrderPreviewCard({ order, onCancel }: Props) {
 
       <div className={styles.footer}>
         <span className={styles.footerLabel}>
-          {order.items.length} {order.items.length === 1 ? 'робота' : 'роботи'}
+          {order.items.length} {plural(order.items.length, locale, pluralForms(t, 'items'))}
         </span>
         <span className={styles.footerTotal}>
-          {Number(order.total).toLocaleString()} ₴
+          {formatPrice(Number(order.total), locale, usdRate)}
         </span>
       </div>
 
       {showProofUpload &&
         (order.paymentProofUrl ? (
-          <p className={styles.proofSent}>
-            ✓ Скрін оплати надіслано, очікуйте підтвердження
-          </p>
+          <p className={styles.proofSent}>{t('proofSent')}</p>
         ) : (
           <div className={styles.proofSection}>
             <input
@@ -99,16 +95,14 @@ export default function OrderPreviewCard({ order, onCancel }: Props) {
               disabled={uploadProof.isPending}
               className={styles.proofButton}
             >
-              {uploadProof.isPending
-                ? 'Завантаження…'
-                : 'Прикріпити скрін оплати'}
+              {uploadProof.isPending ? t('proofUploading') : t('proofUpload')}
             </button>
           </div>
         ))}
 
       {onCancel && (order.status === 'PENDING' || order.status === 'CONFIRMED') && (
         <button onClick={onCancel} className={styles.cancelButton}>
-          Скасувати замовлення
+          {t('cancelButton')}
         </button>
       )}
     </div>

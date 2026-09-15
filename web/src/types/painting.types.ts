@@ -4,7 +4,9 @@ export type Painting = {
   id: number;
 
   title: string;
+  titleEn: string | null;
   subtitle: string | null;
+  subtitleEn: string | null;
 
   cardImage: string;
   images: string[];
@@ -38,6 +40,7 @@ export type Painting = {
   weight: number | null;
 
   description: string;
+  descriptionEn: string | null;
 
   createdAt: string;
   updatedAt: string;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { useLocalizedNavigate } from '../hooks/useLocalizedNavigate';
 import { supportService } from '../api/support.api';
 import type { SupportMessage } from '../types/support.types';
 import { useSupportSocket } from '../hooks/useSupportSocket';
@@ -11,12 +12,13 @@ import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './SupportChatPage.module.scss';
 
 export default function SupportChatPage() {
+  const { t } = useTranslation('support');
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loading, setLoading] = useState(true);
 
   const socket = useSupportSocket(true);
   const { data: settings } = useSettings();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const scrollToTopAfterKeyboard = useScrollToTopAfterKeyboard();
 
   const hasContacts =
@@ -56,7 +58,7 @@ export default function SupportChatPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Підтримка</h1>
+      <h1 className={styles.title}>{t('title')}</h1>
 
       <div className={styles.layout}>
         <div className={styles.panel}>
@@ -66,7 +68,7 @@ export default function SupportChatPage() {
             ownRole="USER"
             onSend={handleSend}
             disabled={!socket}
-            emptyText="Напишіть нам, якщо виникли питання — ми відповімо якнайшвидше"
+            emptyText={t('emptyText')}
             header={
               // Phone-only: there the chat is a full screen with no page
               // heading above it, so this carries both the title and the way
@@ -76,7 +78,7 @@ export default function SupportChatPage() {
                   type="button"
                   onClick={() => navigate(-1)}
                   className={styles.backButton}
-                  aria-label="Назад"
+                  aria-label={t('backAria')}
                 >
                   <svg viewBox="0 0 24 24" fill="none">
                     <path
@@ -88,7 +90,7 @@ export default function SupportChatPage() {
                     />
                   </svg>
                 </button>
-                <span className={styles.chatHeaderTitle}>Підтримка</span>
+                <span className={styles.chatHeaderTitle}>{t('title')}</span>
               </div>
             }
           />
@@ -96,15 +98,13 @@ export default function SupportChatPage() {
 
         {hasContacts && (
           <aside className={styles.contacts}>
-            <h2 className={styles.contactsTitle}>Інші способи зв'язку</h2>
-            <p className={styles.contactsHint}>
-              Не хочете чекати в чаті? Напишіть нам напряму:
-            </p>
+            <h2 className={styles.contactsTitle}>{t('otherWays')}</h2>
+            <p className={styles.contactsHint}>{t('otherWaysHint')}</p>
 
             <ul className={styles.contactsList}>
               {settings?.supportEmail && (
                 <li className={styles.contactItem}>
-                  <span className={styles.contactLabel}>Email</span>
+                  <span className={styles.contactLabel}>{t('email')}</span>
                   <a
                     href={`mailto:${settings.supportEmail}`}
                     className={styles.contactValue}
@@ -116,7 +116,7 @@ export default function SupportChatPage() {
 
               {settings?.supportPhone && (
                 <li className={styles.contactItem}>
-                  <span className={styles.contactLabel}>Телефон</span>
+                  <span className={styles.contactLabel}>{t('phone')}</span>
                   <a
                     href={`tel:${settings.supportPhone.replace(/\s/g, '')}`}
                     className={styles.contactValue}
@@ -135,7 +135,7 @@ export default function SupportChatPage() {
                     rel="noreferrer"
                     className={styles.contactValue}
                   >
-                    Написати в Telegram
+                    {t('telegramLink')}
                   </a>
                 </li>
               )}

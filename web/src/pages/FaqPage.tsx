@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from '../components/ui/LocalizedLink';
 import { useFaq, useFaqEntries } from '../hooks/queries/useFaq';
 import { useSupportTelegramUrl } from '../hooks/queries/useSettings';
 import Skeleton from '../components/ui/Skeleton';
@@ -9,10 +10,8 @@ import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './FaqPage.module.scss';
 
 export default function FaqPage() {
-  usePageMeta(
-    'Підтримка',
-    'Поширені запитання про замовлення, оплату та доставку картин у галереї Viktorumm.',
-  );
+  const { t } = useTranslation('faq');
+  usePageMeta(t('pageTitle'), t('pageDescription'));
 
   const { isLoading: loading } = useFaq();
   const entries = useFaqEntries();
@@ -20,7 +19,7 @@ export default function FaqPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Підтримка</h1>
+      <h1 className={styles.title}>{t('pageTitle')}</h1>
 
       <div className={styles.layout}>
         <div className={styles.panel}>
@@ -35,40 +34,33 @@ export default function FaqPage() {
           )}
 
           <div className={styles.chatCta}>
-            <p className={styles.chatCtaText}>Це вам не допомогло?</p>
+            <p className={styles.chatCtaText}>{t('notHelped')}</p>
             <Link to="/support/chat" className={styles.chatCtaButton}>
-              Чат з нами
+              {t('chatWithUs')}
             </Link>
           </div>
         </div>
 
         {supportTelegramUrl && (
           <aside className={styles.botInfo}>
-            <h2 className={styles.botInfoTitle}>Бот у Telegram</h2>
-            <p className={styles.botInfoHint}>
-              Отримуйте сповіщення про статус замовлень і оплату прямо в
-              Telegram, а не лише на сайті.
-            </p>
+            <h2 className={styles.botInfoTitle}>{t('telegramBot')}</h2>
+            <p className={styles.botInfoHint}>{t('telegramHint')}</p>
 
             <ol className={styles.botInfoSteps}>
               <li>
-                Перейдіть за{' '}
+                {t('steps.step1Before')}{' '}
                 <a
                   href={safeExternalUrl(supportTelegramUrl)}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  посиланням на бота
+                  {t('steps.step1Link')}
                 </a>{' '}
-                і натисніть Start
+                {t('steps.step1After')}
               </li>
+              <li>{t('steps.step2')}</li>
               <li>
-                Введіть код, який надішле бот, у профілі на сайті — так бот
-                звʼяжеться з вашим акаунтом
-              </li>
-              <li>
-                Команда <code>/support</code> — щоб написати нам прямо з
-                Telegram
+                {t('steps.step3Before')} <code>/support</code> {t('steps.step3After')}
               </li>
             </ol>
           </aside>

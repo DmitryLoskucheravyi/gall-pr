@@ -14,6 +14,9 @@ export class Material {
   @Column({ unique: true })
   name: string;
 
+  @Column({ name: 'name_en', type: 'varchar', nullable: true })
+  nameEn: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

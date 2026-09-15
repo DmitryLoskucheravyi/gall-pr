@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useAdminOrders } from '../../hooks/queries/useOrders';
+import { useLocale } from '../../hooks/useLocale';
 import {
   useArchiveOrderMutation,
   useDeleteOrderMutation,
@@ -13,20 +15,11 @@ import type {
   DeliveryMethod,
   Order,
   OrderStatus,
-  PaymentProvider,
   PaymentStatus,
 } from '../../types/order.types';
 import Skeleton from '../../components/ui/Skeleton';
 import { useConfirm } from '../../components/ui/ConfirmDialog';
 import styles from './AdminOrdersPage.module.scss';
-
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDING: 'Очікує',
-  CONFIRMED: 'Підтверджено',
-  SHIPPED: 'Відправлено',
-  CANCELLED: 'Скасовано',
-  COMPLETED: 'Виконано',
-};
 
 const STATUS_OPTIONS: OrderStatus[] = [
   'PENDING',
@@ -36,36 +29,8 @@ const STATUS_OPTIONS: OrderStatus[] = [
   'COMPLETED',
 ];
 
-const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
-  LIQPAY: 'LiqPay',
-  WAYFORPAY: 'WayForPay',
-  CASH_ON_DELIVERY: 'Оплата при отриманні',
-  CARD_TRANSFER: 'Переказ на карту',
-  ON_AGREEMENT: 'За домовленістю',
-};
-
-const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
-  PENDING: 'Очікує оплати',
-  PAID: 'Оплачено',
-  FAILED: 'Помилка оплати',
-};
-
-const DELIVERY_METHOD_LABEL: Record<DeliveryMethod, string> = {
-  NOVA_POSHTA: 'Нова пошта',
-};
-
-// Which statuses have a letter behind them. CONFIRMED lands minutes after the
-// receipt and would only repeat it, so it has none — and the button says so
-// instead of pretending otherwise.
-const STATUS_MAIL_LABEL: Partial<Record<OrderStatus, string>> = {
-  PENDING: 'Надіслати лист про замовлення',
-  SHIPPED: 'Надіслати лист про відправку',
-  COMPLETED: 'Надіслати лист-подяку',
-  CANCELLED: 'Надіслати лист про скасування',
-};
-
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString('uk-UA', {
+function formatDateTime(value: string, locale: string) {
+  return new Date(value).toLocaleString(locale === 'en' ? 'en-US' : 'uk-UA', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -77,6 +42,8 @@ function formatDateTime(value: string) {
 type Tab = 'active' | 'completed';
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation('admin');
+  const locale = useLocale();
   const { data: orders = [], isLoading: loading } = useAdminOrders();
   const updateStatus = useUpdateOrderStatusMutation();
   // Which order is mid-shipping, and the waybill being typed for it.
@@ -126,9 +93,9 @@ export default function AdminOrdersPage() {
 
   const handleDelete = async (order: Order) => {
     const ok = await confirm({
-      title: `Видалити замовлення №${order.id}?`,
-      message: 'Замовлення буде видалено назавжди.',
-      confirmLabel: 'Видалити',
+      title: t('ordersPage.confirmDelete.title', { id: order.id }),
+      message: t('ordersPage.confirmDelete.message'),
+      confirmLabel: t('ordersPage.confirmDelete.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -140,9 +107,13 @@ export default function AdminOrdersPage() {
 
   const handleSendStatusMail = async (order: Order) => {
     const ok = await confirm({
-      title: STATUS_MAIL_LABEL[order.status] ?? 'Надіслати лист?',
-      message: `Лист про поточний статус піде на ${recipientOf(order)}. Якщо такий лист уже надсилали, клієнт отримає його вдруге.`,
-      confirmLabel: 'Надіслати',
+      title: t(`ordersPage.statusMail.${order.status}`, {
+        defaultValue: t('ordersPage.confirmStatusMail.title'),
+      }),
+      message: t('ordersPage.confirmStatusMail.message', {
+        email: recipientOf(order),
+      }),
+      confirmLabel: t('ordersPage.confirmStatusMail.confirmLabel'),
     });
     if (!ok) return;
     sendStatusMail.mutate(order.id);
@@ -150,9 +121,11 @@ export default function AdminOrdersPage() {
 
   const handleSendApologyMail = async (order: Order) => {
     const ok = await confirm({
-      title: `Надіслати лист-вибачення до №${order.id}?`,
-      message: `На ${recipientOf(order)} піде лист: сталася помилка, ми розбираємось і скоро звʼяжемось. Деталей у ньому немає — розкажете їх самі.`,
-      confirmLabel: 'Надіслати',
+      title: t('ordersPage.confirmApologyMail.title', { id: order.id }),
+      message: t('ordersPage.confirmApologyMail.message', {
+        email: recipientOf(order),
+      }),
+      confirmLabel: t('ordersPage.confirmApologyMail.confirmLabel'),
     });
     if (!ok) return;
     sendApologyMail.mutate(order.id);
@@ -160,19 +133,23 @@ export default function AdminOrdersPage() {
 
   const handleArchive = async (order: Order) => {
     const ok = await confirm({
-      title: `Прибрати замовлення №${order.id} з перегляду?`,
-      message:
-        'Воно зникне зі списку активних, але залишиться доступним у вкладці "Виконані".',
-      confirmLabel: 'Прибрати з перегляду',
+      title: t('ordersPage.confirmArchive.title', { id: order.id }),
+      message: t('ordersPage.confirmArchive.message'),
+      confirmLabel: t('ordersPage.confirmArchive.confirmLabel'),
     });
     if (!ok) return;
     archiveOrder.mutate(order.id);
   };
 
+  const statusMailLabel = (status: OrderStatus): string | undefined => {
+    const exists = ['PENDING', 'SHIPPED', 'COMPLETED', 'CANCELLED'].includes(status);
+    return exists ? t(`ordersPage.statusMail.${status}`) : undefined;
+  };
+
   if (loading) {
     return (
       <div>
-        <h1 className={styles.title}>Замовлення</h1>
+        <h1 className={styles.title}>{t('ordersPage.title')}</h1>
         <div className={styles.list}>
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className={styles.order}>
@@ -199,7 +176,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Замовлення</h1>
+      <h1 className={styles.title}>{t('ordersPage.title')}</h1>
 
       <div className={styles.tabs}>
         <button
@@ -207,22 +184,24 @@ export default function AdminOrdersPage() {
           onClick={() => setTab('active')}
           className={tab === 'active' ? styles.tabActive : styles.tab}
         >
-          Активні ({activeOrders.length})
+          {t('ordersPage.tabs.active', { count: activeOrders.length })}
         </button>
         <button
           type="button"
           onClick={() => setTab('completed')}
           className={tab === 'completed' ? styles.tabActive : styles.tab}
         >
-          Виконані ({completedOrders.length})
+          {t('ordersPage.tabs.completed', { count: completedOrders.length })}
         </button>
       </div>
 
       {orders.length === 0 ? (
-        <p className={styles.muted}>Замовлень поки немає</p>
+        <p className={styles.muted}>{t('ordersPage.empty')}</p>
       ) : visibleOrders.length === 0 ? (
         <p className={styles.muted}>
-          {tab === 'active' ? 'Активних замовлень немає' : 'Виконаних замовлень немає'}
+          {tab === 'active'
+            ? t('ordersPage.emptyActive')
+            : t('ordersPage.emptyCompleted')}
         </p>
       ) : (
         <div className={styles.list}>
@@ -242,9 +221,14 @@ export default function AdminOrdersPage() {
                         has left stock, nothing is owed yet, and the first move
                         is the artist's. Reading it as an ordinary sale would
                         be the wrong response entirely. */}
-                    {order.isCommission ? 'Повтор' : 'Замовлення'} №{order.id}
+                    {order.isCommission
+                      ? t('ordersPage.commission')
+                      : t('ordersPage.order')}{' '}
+                    №{order.id}
                     {order.isCommission && (
-                      <span className={styles.commissionTag}>на замовлення</span>
+                      <span className={styles.commissionTag}>
+                        {t('ordersPage.commissionTag')}
+                      </span>
                     )}
                   </span>
                   <span className={styles.orderTotal}>
@@ -267,7 +251,9 @@ export default function AdminOrdersPage() {
                           buried in the comment. */}
                       {order.contactHandle ? ` · ${order.contactHandle}` : ''}
                       {' · '}
-                      <span className={styles.guestBadge}>Гість</span>
+                      <span className={styles.guestBadge}>
+                        {t('ordersPage.guestBadge')}
+                      </span>
                       {order.guestAddress && (
                         <>
                           <br />
@@ -278,17 +264,25 @@ export default function AdminOrdersPage() {
                   )
                 )}
 
-                <p className={styles.date}>{formatDateTime(order.createdAt)}</p>
+                <p className={styles.date}>
+                  {formatDateTime(order.createdAt, locale)}
+                </p>
 
                 <div className={styles.detailsGrid}>
                   <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Оплата</span>
-                    <span>{PAYMENT_PROVIDER_LABEL[order.paymentProvider]}</span>
+                    <span className={styles.detailLabel}>
+                      {t('ordersPage.payment')}
+                    </span>
+                    <span>
+                      {t(`ordersPage.paymentProvider.${order.paymentProvider}`)}
+                    </span>
                   </div>
 
                   {order.paymentProvider !== 'CASH_ON_DELIVERY' && (
                     <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Статус оплати</span>
+                      <span className={styles.detailLabel}>
+                        {t('ordersPage.paymentStatusLabel')}
+                      </span>
                       <span className={styles.paymentStatusControl}>
                         <span
                           className={
@@ -297,7 +291,7 @@ export default function AdminOrdersPage() {
                               : styles.paymentStatusPending
                           }
                         >
-                          {PAYMENT_STATUS_LABEL[order.paymentStatus]}
+                          {t(`ordersPage.paymentStatus.${order.paymentStatus}`)}
                         </span>
                         <button
                           type="button"
@@ -305,8 +299,8 @@ export default function AdminOrdersPage() {
                           className={styles.paymentStatusButton}
                         >
                           {order.paymentStatus === 'PAID'
-                            ? 'Скасувати позначку'
-                            : 'Позначити оплаченим'}
+                            ? t('ordersPage.markUnpaid')
+                            : t('ordersPage.markPaid')}
                         </button>
                         {order.paymentProofUrl && (
                           <a
@@ -315,7 +309,7 @@ export default function AdminOrdersPage() {
                             rel="noreferrer"
                             className={styles.paymentProofLink}
                           >
-                            Скрін оплати
+                            {t('ordersPage.paymentProof')}
                           </a>
                         )}
                       </span>
@@ -323,9 +317,11 @@ export default function AdminOrdersPage() {
                   )}
 
                   <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Доставка</span>
+                    <span className={styles.detailLabel}>
+                      {t('ordersPage.delivery')}
+                    </span>
                     <span>
-                      {DELIVERY_METHOD_LABEL[order.deliveryMethod]}
+                      {t(`ordersPage.deliveryMethod.${order.deliveryMethod as DeliveryMethod}`)}
                       {order.novaPoshtaCity && `, ${order.novaPoshtaCity}`}
                       {order.novaPoshtaWarehouse && ` — ${order.novaPoshtaWarehouse}`}
                     </span>
@@ -333,20 +329,24 @@ export default function AdminOrdersPage() {
 
                   {order.callMeRequested && (
                     <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Зв'язок</span>
-                      <span>Просив(ла) зателефонувати</span>
+                      <span className={styles.detailLabel}>
+                        {t('ordersPage.contact')}
+                      </span>
+                      <span>{t('ordersPage.callRequested')}</span>
                     </div>
                   )}
 
                   {(deliveryCost > 0 || codFee > 0) && (
                     <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Розбивка суми</span>
+                      <span className={styles.detailLabel}>
+                        {t('ordersPage.amountBreakdown')}
+                      </span>
                       <span>
-                        Товари: {itemsSubtotal.toLocaleString()} ₴
+                        {t('ordersPage.items')}: {itemsSubtotal.toLocaleString()} ₴
                         {deliveryCost > 0 &&
-                          ` + Доставка: ${deliveryCost.toLocaleString()} ₴`}
+                          ` + ${t('ordersPage.deliveryCost')}: ${deliveryCost.toLocaleString()} ₴`}
                         {codFee > 0 &&
-                          ` + Комісія за накладений платіж: ${codFee.toLocaleString()} ₴`}
+                          ` + ${t('ordersPage.codFee')}: ${codFee.toLocaleString()} ₴`}
                       </span>
                     </div>
                   )}
@@ -356,7 +356,8 @@ export default function AdminOrdersPage() {
                   {order.items.map((item) => (
                     <li key={item.id} className={styles.itemRow}>
                       <span className={styles.itemTitle}>
-                        {item.painting?.title ?? `Картина №${item.paintingId}`}
+                        {item.painting?.title ??
+                          t('ordersPage.paintingFallback', { id: item.paintingId })}
                       </span>
                       <span className={styles.itemPrice}>
                         {item.quantity} × {Number(item.price).toLocaleString()} ₴
@@ -367,7 +368,9 @@ export default function AdminOrdersPage() {
 
                 {order.comment && (
                   <p className={styles.comment}>
-                    <span className={styles.commentLabel}>Коментар:</span>{' '}
+                    <span className={styles.commentLabel}>
+                      {t('ordersPage.comment')}
+                    </span>{' '}
                     {order.comment}
                   </p>
                 )}
@@ -383,7 +386,7 @@ export default function AdminOrdersPage() {
                           : styles.statusOption
                       }
                     >
-                      {STATUS_LABEL[status]}
+                      {t(`ordersPage.status.${status}`)}
                     </button>
                   ))}
                 </div>
@@ -393,7 +396,7 @@ export default function AdminOrdersPage() {
                     <input
                       value={trackingInput}
                       onChange={(event) => setTrackingInput(event.target.value)}
-                      placeholder="Номер накладної (ТТН)"
+                      placeholder={t('ordersPage.trackingPlaceholder')}
                       autoFocus
                       className={styles.trackingInput}
                       onKeyDown={(event) => {
@@ -407,21 +410,22 @@ export default function AdminOrdersPage() {
                       disabled={!trackingInput.trim() || updateStatus.isPending}
                       className={styles.trackingConfirm}
                     >
-                      Відправлено
+                      {t('ordersPage.shipped')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShippingOrderId(null)}
                       className={styles.trackingCancel}
                     >
-                      Скасувати
+                      {t('ordersPage.cancel')}
                     </button>
                   </div>
                 )}
 
                 {order.trackingNumber && shippingOrderId !== order.id && (
                   <p className={styles.trackingLine}>
-                    ТТН: <strong>{order.trackingNumber}</strong>
+                    {t('ordersPage.trackingLine')}{' '}
+                    <strong>{order.trackingNumber}</strong>
                   </p>
                 )}
 
@@ -435,16 +439,16 @@ export default function AdminOrdersPage() {
                         type="button"
                         onClick={() => handleSendStatusMail(order)}
                         disabled={
-                          !STATUS_MAIL_LABEL[order.status] || sendStatusMail.isPending
+                          !statusMailLabel(order.status) || sendStatusMail.isPending
                         }
                         title={
-                          STATUS_MAIL_LABEL[order.status]
+                          statusMailLabel(order.status)
                             ? undefined
-                            : 'Для цього статусу листа не передбачено'
+                            : t('ordersPage.noMailTitle')
                         }
                         className={styles.mailButton}
                       >
-                        {STATUS_MAIL_LABEL[order.status] ?? 'Листа для статусу немає'}
+                        {statusMailLabel(order.status) ?? t('ordersPage.noMailButton')}
                       </button>
                       <button
                         type="button"
@@ -452,13 +456,11 @@ export default function AdminOrdersPage() {
                         disabled={sendApologyMail.isPending}
                         className={styles.apologyButton}
                       >
-                        Лист-вибачення
+                        {t('ordersPage.apologyMail')}
                       </button>
                     </>
                   ) : (
-                    <span className={styles.mailMuted}>
-                      Немає email — листи цьому замовленню не надсилаються
-                    </span>
+                    <span className={styles.mailMuted}>{t('ordersPage.noEmail')}</span>
                   )}
                 </div>
 
@@ -467,7 +469,7 @@ export default function AdminOrdersPage() {
                     onClick={() => handleDelete(order)}
                     className={styles.deleteButton}
                   >
-                    Видалити замовлення
+                    {t('ordersPage.deleteOrder')}
                   </button>
                 )}
 
@@ -476,7 +478,7 @@ export default function AdminOrdersPage() {
                     onClick={() => handleArchive(order)}
                     className={styles.archiveButton}
                   >
-                    Прибрати з перегляду
+                    {t('ordersPage.removeFromView')}
                   </button>
                 )}
               </div>

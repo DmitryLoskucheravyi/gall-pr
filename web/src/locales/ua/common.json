@@ -1,0 +1,26 @@
+{
+  "brand": "Viktorumm",
+  "back": "Назад",
+  "loading": "Завантаження…",
+  "wait": "Зачекайте…",
+  "save": "Зберегти",
+  "cancel": "Скасувати",
+  "delete": "Видалити",
+  "edit": "Редагувати",
+  "close": "Закрити",
+  "language": "Мова",
+  "sold": "Продано",
+  "details": "Детальніше",
+  "buy": "Купити",
+  "addToCart": "В кошик",
+  "edition": {
+    "unique": "Єдиний екземпляр",
+    "repeatable": "Доступна для повтору"
+  },
+  "sizeUnit": "см",
+  "like": "Лайкнути",
+  "unlike": "Прибрати лайк",
+  "confirm": "Підтвердити",
+  "selectPlaceholder": "Оберіть…",
+  "cityPlaceholder": "Почніть вводити назву міста"
+}

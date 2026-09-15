@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cdnImage } from '../utils/imageUrl';
 import styles from './Painting3DViewer.module.scss';
@@ -30,6 +31,7 @@ export default function Painting3DViewer({
   imageUrl: string;
   title?: string;
 }) {
+  const { t } = useTranslation('painting');
   // One sized URL for both the front face and the edge slivers — same cache
   // entry, and no 3 MB original for what is at most a 640px-wide box.
   const src = cdnImage(imageUrl, 1280);
@@ -225,7 +227,7 @@ export default function Painting3DViewer({
             {title && (
               <span className={styles.sticker}>
                 {title}
-                <em>оригінал · полотно</em>
+                <em>{t('stretcherLabel')}</em>
               </span>
             )}
           </div>

@@ -36,6 +36,7 @@ import { SupportModule } from './support/support.module';
 import { GiveawaysModule } from './giveaways/giveaways.module';
 import { NewsModule } from './news/news.module';
 import { NovaPoshtaModule } from './nova-poshta/nova-poshta.module';
+import { ExchangeRateModule } from './exchange-rate/exchange-rate.module';
 
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -112,6 +113,8 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
     UploadsModule,
 
     NovaPoshtaModule,
+
+    ExchangeRateModule,
   ],
   controllers: [AppController],
   providers: [

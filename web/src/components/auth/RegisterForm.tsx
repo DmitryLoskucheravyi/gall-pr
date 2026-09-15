@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from '../ui/LocalizedLink';
+import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
 import { authService } from '../../api/auth.api';
 import { supportService } from '../../api/support.api';
 import { ordersService } from '../../api/orders.api';
@@ -11,7 +13,8 @@ import { peekGuestToken } from '../../utils/guestToken';
 import styles from './AuthPanel.module.scss';
 
 export default function RegisterForm() {
-  const navigate = useNavigate();
+  const { t } = useTranslation('auth');
+  const navigate = useLocalizedNavigate();
   const dispatch = useAppDispatch();
   const mergeGuestCart = useMergeGuestCartMutation();
 
@@ -50,7 +53,7 @@ export default function RegisterForm() {
 
       navigate('/');
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Не вдалося зареєструватись');
+      setError(err?.response?.data?.message ?? t('register.error'));
     } finally {
       setLoading(false);
     }
@@ -58,12 +61,12 @@ export default function RegisterForm() {
 
   return (
     <div className={styles.panel}>
-      <p className={styles.eyebrow}>Новий гість</p>
-      <h1 className={styles.title}>Реєстрація</h1>
+      <p className={styles.eyebrow}>{t('register.eyebrow')}</p>
+      <h1 className={styles.title}>{t('register.title')}</h1>
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <label className={styles.field}>
-          <span className={styles.label}>Ім'я</span>
+          <span className={styles.label}>{t('register.firstName')}</span>
           <input
             required
             value={firstName}
@@ -73,7 +76,7 @@ export default function RegisterForm() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Прізвище</span>
+          <span className={styles.label}>{t('register.lastName')}</span>
           <input
             required
             value={lastName}
@@ -83,7 +86,7 @@ export default function RegisterForm() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Email</span>
+          <span className={styles.label}>{t('register.email')}</span>
           <input
             type="email"
             required
@@ -94,7 +97,7 @@ export default function RegisterForm() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Телефон</span>
+          <span className={styles.label}>{t('register.phone')}</span>
           <input
             required
             value={phone}
@@ -104,7 +107,7 @@ export default function RegisterForm() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Пароль</span>
+          <span className={styles.label}>{t('register.password')}</span>
           <input
             type="password"
             required
@@ -117,14 +120,14 @@ export default function RegisterForm() {
         {error && <p className={styles.error}>{error}</p>}
 
         <button type="submit" disabled={loading} className={styles.submit}>
-          {loading ? 'Зачекайте…' : 'Зареєструватись'}
+          {loading ? t('register.wait') : t('register.submit')}
         </button>
       </form>
 
       <p className={styles.switch}>
-        Вже є акаунт?{' '}
+        {t('register.switchText')}{' '}
         <Link to="/login" className={styles.switchLink}>
-          Увійти
+          {t('register.switchLink')}
         </Link>
       </p>
     </div>

@@ -21,6 +21,10 @@ export class UpdateSettingsDto {
 
   @IsOptional()
   @IsString()
+  authorNameEn?: string;
+
+  @IsOptional()
+  @IsString()
   cardTransferIban?: string;
 
   @IsOptional()

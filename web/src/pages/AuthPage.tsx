@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
 import { useAlternatingVideo } from '../hooks/useAlternatingVideo';
+import { stripLocale } from '../utils/locale';
 import styles from './AuthPage.module.scss';
 
 // One page for both routes, but only ever one form: /login shows the login
@@ -13,7 +14,7 @@ import styles from './AuthPage.module.scss';
 // form mounts, it never shows both at once.
 export default function AuthPage() {
   const { pathname } = useLocation();
-  const active = pathname === '/register' ? 'register' : 'login';
+  const active = stripLocale(pathname) === '/register' ? 'register' : 'login';
   const side = active === 'register' ? 'left' : 'right';
 
   // Matched once, not watched — a visitor who changes the OS setting mid

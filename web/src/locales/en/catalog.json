@@ -1,0 +1,21 @@
+{
+  "pageTitle": "Catalog",
+  "pageDescription": "A catalog of original paintings by Ukrainian artists — available works, shipped nationwide via Nova Poshta.",
+  "createButton": "+ Create painting",
+  "likedOnlyAria": "Show liked only",
+  "emptyLiked": "You haven't liked anything yet",
+  "emptyAll": "No paintings yet",
+  "confirmDelete": {
+    "title": "Delete this painting?",
+    "message": "“{{title}}” will be deleted permanently.",
+    "confirmLabel": "Delete"
+  },
+  "filters": {
+    "trigger": "Filters",
+    "technique": "Technique",
+    "allTechniques": "All",
+    "priceLabel": "Price, ₴",
+    "reset": "Reset",
+    "apply": "Apply"
+  }
+}

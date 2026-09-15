@@ -1,8 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useIsLiked } from '../../hooks/queries/useLikedIds';
 import { useLikeMutation } from '../../hooks/mutations/useLikeMutation';
 import { useAppSelector } from '../../store/hooks';
+import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
 import styles from './LikeButton.module.scss';
 
 type Props = {
@@ -20,7 +21,8 @@ export default function LikeButton({
   showCount = true,
   hoverReveal = false,
 }: Props) {
-  const navigate = useNavigate();
+  const { t } = useTranslation('common');
+  const navigate = useLocalizedNavigate();
   const user = useAppSelector((state) => state.auth.user);
   const isLiked = useIsLiked(paintingId);
   const likeMutation = useLikeMutation();
@@ -60,7 +62,7 @@ export default function LikeButton({
       <button
         type="button"
         onClick={handleClick}
-        aria-label={isLiked ? 'Прибрати лайк' : 'Лайкнути'}
+        aria-label={isLiked ? t('unlike') : t('like')}
         className={`${styles.overlay} ${isLiked ? styles.liked : ''} ${
           hoverReveal ? styles.hoverReveal : ''
         }`}
@@ -75,7 +77,7 @@ export default function LikeButton({
     <button
       type="button"
       onClick={handleClick}
-      aria-label={isLiked ? 'Прибрати лайк' : 'Лайкнути'}
+      aria-label={isLiked ? t('unlike') : t('like')}
       className={`${styles.button} ${isLiked ? styles.liked : ''}`}
     >
       {heart}

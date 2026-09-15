@@ -7,14 +7,19 @@ class FaqService {
     return response.data;
   }
 
-  async createItem(dto: { title: string; text: string }): Promise<FaqMap> {
+  async createItem(dto: {
+    title: string;
+    titleEn?: string;
+    text: string;
+    textEn?: string;
+  }): Promise<FaqMap> {
     const response = await api.post('/settings/faq', dto);
     return response.data;
   }
 
   async updateItem(
     id: string,
-    dto: { title?: string; text?: string },
+    dto: { title?: string; titleEn?: string; text?: string; textEn?: string },
   ): Promise<FaqMap> {
     const response = await api.patch(`/settings/faq/${id}`, dto);
     return response.data;

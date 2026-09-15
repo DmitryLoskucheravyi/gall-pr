@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { Painting } from '../types/painting.types';
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
 import { useTechniques } from '../hooks/queries/useTechniques';
 import { usePriceRange } from '../hooks/queries/usePriceRange';
 import { usePaintings } from '../hooks/queries/usePaintings';
@@ -19,10 +22,9 @@ import styles from './CatalogPage.module.scss';
 type PriceRange = { min: number; max: number };
 
 export default function CatalogPage() {
-  usePageMeta(
-    'Каталог',
-    'Каталог оригінальних картин українських художників — доступні для придбання роботи з доставкою Новою поштою.',
-  );
+  const { t } = useTranslation('catalog');
+  const locale = useLocale();
+  usePageMeta(t('pageTitle'), t('pageDescription'));
 
   const user = useAppSelector((state) => state.auth.user);
   const addToCart = useAddToCart();
@@ -65,9 +67,11 @@ export default function CatalogPage() {
 
   const handleDelete = async (painting: Painting) => {
     const ok = await confirm({
-      title: 'Видалити картину?',
-      message: `«${painting.title}» буде видалено назавжди.`,
-      confirmLabel: 'Видалити',
+      title: t('confirmDelete.title'),
+      message: t('confirmDelete.message', {
+        title: pickLocale(painting, 'title', locale),
+      }),
+      confirmLabel: t('confirmDelete.confirmLabel'),
       danger: true,
     });
     if (!ok) return;
@@ -77,14 +81,14 @@ export default function CatalogPage() {
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>Каталог</h1>
+        <h1 className={styles.title}>{t('pageTitle')}</h1>
 
         {user?.role === 'ADMIN' && (
           <button
             onClick={() => setShowCreateForm(true)}
             className={styles.createButton}
           >
-            + Створити картину
+            {t('createButton')}
           </button>
         )}
       </div>
@@ -93,7 +97,7 @@ export default function CatalogPage() {
         {user && (
           <button
             onClick={() => setShowLikedOnly((prev) => !prev)}
-            aria-label="Показати лише вподобані"
+            aria-label={t('likedOnlyAria')}
             className={
               showLikedOnly ? styles.likedButtonActive : styles.likedButton
             }
@@ -130,9 +134,7 @@ export default function CatalogPage() {
         </div>
       ) : visiblePaintings.length === 0 ? (
         <p className={styles.muted}>
-          {showLikedOnly
-            ? 'Ви ще нічого не вподобали'
-            : 'Картин поки немає'}
+          {showLikedOnly ? t('emptyLiked') : t('emptyAll')}
         </p>
       ) : (
         <div className={styles.grid}>

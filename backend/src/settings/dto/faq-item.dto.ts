@@ -5,9 +5,17 @@ export class CreateFaqItemDto {
   @IsNotEmpty()
   title: string;
 
+  @IsOptional()
+  @IsString()
+  titleEn?: string;
+
   @IsString()
   @IsNotEmpty()
   text: string;
+
+  @IsOptional()
+  @IsString()
+  textEn?: string;
 }
 
 export class UpdateFaqItemDto {
@@ -18,8 +26,16 @@ export class UpdateFaqItemDto {
 
   @IsOptional()
   @IsString()
+  titleEn?: string;
+
+  @IsOptional()
+  @IsString()
   @IsNotEmpty()
   text?: string;
+
+  @IsOptional()
+  @IsString()
+  textEn?: string;
 }
 
 export class ReorderFaqDto {

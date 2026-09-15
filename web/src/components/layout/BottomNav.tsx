@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedNavLink as NavLink } from '../ui/LocalizedLink';
 import { useCartCount } from '../../hooks/queries/useCart';
 import styles from './BottomNav.module.scss';
 
@@ -73,6 +74,7 @@ const galleryIcon = (
 // keeps only what's occasional up top — theme, support, profile, the rest of
 // the menu. Hidden from $breakpoint-lg, where the header's own nav takes over.
 export default function BottomNav() {
+  const { t } = useTranslation('bottomNav');
   const cartCount = useCartCount();
   const barRef = useRef<HTMLElement>(null);
 
@@ -101,15 +103,15 @@ export default function BottomNav() {
   }, []);
 
   return (
-    <nav ref={barRef} className={styles.bar} aria-label="Основна навігація">
+    <nav ref={barRef} className={styles.bar} aria-label={t('ariaLabel')}>
       <NavLink to="/" className={linkClass} end>
         {homeIcon}
-        <span>Головна</span>
+        <span>{t('home')}</span>
       </NavLink>
 
       <NavLink to="/catalog" className={linkClass}>
         {catalogIcon}
-        <span>Каталог</span>
+        <span>{t('catalog')}</span>
       </NavLink>
 
       <NavLink to="/cart" className={linkClass}>
@@ -121,17 +123,17 @@ export default function BottomNav() {
             </span>
           )}
         </span>
-        <span>Кошик</span>
+        <span>{t('cart')}</span>
       </NavLink>
 
       <NavLink to="/orders" className={linkClass}>
         {ordersIcon}
-        <span>Замовлення</span>
+        <span>{t('orders')}</span>
       </NavLink>
 
       <NavLink to="/gallery" className={linkClass}>
         {galleryIcon}
-        <span>Галерея</span>
+        <span>{t('gallery')}</span>
       </NavLink>
     </nav>
   );

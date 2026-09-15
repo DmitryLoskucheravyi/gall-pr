@@ -6,9 +6,11 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 
+type DictionaryInput = { name: string; nameEn?: string };
+
 type DictionaryService = {
-  create: (name: string) => Promise<unknown>;
-  update: (id: number, name: string) => Promise<unknown>;
+  create: (input: DictionaryInput) => Promise<unknown>;
+  update: (id: number, input: DictionaryInput) => Promise<unknown>;
   remove: (id: number) => Promise<unknown>;
 };
 
@@ -35,7 +37,7 @@ function useDictionaryCrud(service: DictionaryService, listKey: readonly unknown
   const invalidate = () => queryClient.invalidateQueries({ queryKey: listKey });
 
   const create = useMutation({
-    mutationFn: (name: string) => service.create(name),
+    mutationFn: (input: DictionaryInput) => service.create(input),
     onSuccess: () => {
       invalidate();
       store.dispatch(showToast({ message: 'Збережено' }));
@@ -44,7 +46,8 @@ function useDictionaryCrud(service: DictionaryService, listKey: readonly unknown
   });
 
   const update = useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) => service.update(id, name),
+    mutationFn: ({ id, ...input }: { id: number } & DictionaryInput) =>
+      service.update(id, input),
     onSuccess: () => {
       invalidate();
       store.dispatch(showToast({ message: 'Збережено' }));
@@ -67,8 +70,8 @@ function useDictionaryCrud(service: DictionaryService, listKey: readonly unknown
 export function useMaterialMutations() {
   return useDictionaryCrud(
     {
-      create: (name) => materialsService.createMaterial(name),
-      update: (id, name) => materialsService.updateMaterial(id, name),
+      create: (input) => materialsService.createMaterial(input),
+      update: (id, input) => materialsService.updateMaterial(id, input),
       remove: (id) => materialsService.deleteMaterial(id),
     },
     queryKeys.materials.list(),
@@ -78,8 +81,8 @@ export function useMaterialMutations() {
 export function useTechniqueMutations() {
   return useDictionaryCrud(
     {
-      create: (name) => techniquesService.createTechnique(name),
-      update: (id, name) => techniquesService.updateTechnique(id, name),
+      create: (input) => techniquesService.createTechnique(input),
+      update: (id, input) => techniquesService.updateTechnique(id, input),
       remove: (id) => techniquesService.deleteTechnique(id),
     },
     queryKeys.techniques.list(),

@@ -1,6 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from '../components/ui/LocalizedLink';
+import { useLocalizedNavigate } from '../hooks/useLocalizedNavigate';
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
+import { useExchangeRate } from '../hooks/queries/useExchangeRate';
+import { formatPrice } from '../utils/formatPrice';
 import type { CartItem } from '../types/cart.types';
 import type { PaymentProvider } from '../types/order.types';
 import type { NovaPoshtaOption } from '../types/novaPoshta.types';
@@ -21,11 +27,6 @@ import NovaPoshtaCityPicker from '../components/ui/NovaPoshtaCityPicker';
 import InfoTooltip from '../components/ui/InfoTooltip';
 import Checkbox from '../components/ui/Checkbox';
 import styles from './CartPage.module.scss';
-
-const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
-  { value: 'CASH_ON_DELIVERY', label: 'Оплата при отриманні' },
-  { value: 'CARD_TRANSFER', label: 'Переказ на карту' },
-];
 
 function FloatField({
   id,
@@ -74,9 +75,17 @@ function FloatField({
 }
 
 export default function CartPage() {
-  const navigate = useNavigate();
+  const { t } = useTranslation('cart');
+  const locale = useLocale();
+  const { data: usdRate } = useExchangeRate();
+  const navigate = useLocalizedNavigate();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+
+  const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
+    { value: 'CASH_ON_DELIVERY', label: t('payment.cod') },
+    { value: 'CARD_TRANSFER', label: t('payment.cardTransfer') },
+  ];
 
   const { data: cart, isLoading: loading } = useCart();
   const removeItem = useRemoveCartItemMutation();
@@ -126,7 +135,7 @@ export default function CartPage() {
         showToast({
           // Email is where every update about this order goes — a guest has
           // no account to check.
-          message: "Вкажіть ім'я, телефон та email для оформлення замовлення",
+          message: t('toasts.guestFieldsRequired'),
           variant: 'error',
         }),
       );
@@ -135,7 +144,7 @@ export default function CartPage() {
 
     if (!paymentProvider) {
       dispatch(
-        showToast({ message: 'Оберіть спосіб оплати', variant: 'error' }),
+        showToast({ message: t('toasts.choosePayment'), variant: 'error' }),
       );
       return;
     }
@@ -143,7 +152,7 @@ export default function CartPage() {
     if (!npSelectedCity || !npWarehouseRef) {
       dispatch(
         showToast({
-          message: 'Оберіть місто та відділення Нової пошти',
+          message: t('toasts.chooseDelivery'),
           variant: 'error',
         }),
       );
@@ -187,13 +196,13 @@ export default function CartPage() {
 
       if (isAuthenticated) {
         dispatch(
-          showToast({ message: `Замовлення №${order.id} прийнято в обробку` }),
+          showToast({ message: t('toasts.orderAcceptedAuth', { id: order.id }) }),
         );
         navigate('/orders');
       } else {
         dispatch(
           showToast({
-            message: `Замовлення №${order.id} прийнято! Ми зв'яжемось з вами за вказаним телефоном.`,
+            message: t('toasts.orderAcceptedGuest', { id: order.id }),
           }),
         );
         navigate('/');
@@ -201,9 +210,7 @@ export default function CartPage() {
     } catch (error: any) {
       dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ??
-            'Не вдалося оформити замовлення',
+          message: error?.response?.data?.message ?? t('toasts.checkoutFailed'),
           variant: 'error',
         }),
       );
@@ -213,7 +220,7 @@ export default function CartPage() {
   if (loading) {
     return (
       <div>
-        <h1 className={styles.title}>Кошик</h1>
+        <h1 className={styles.title}>{t('title')}</h1>
         <div className={styles.items}>
           {Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className={styles.item}>
@@ -231,33 +238,33 @@ export default function CartPage() {
 
   return (
     <div>
-      <h1 className={styles.title}>Кошик</h1>
+      <h1 className={styles.title}>{t('title')}</h1>
 
       {items.length === 0 ? (
-        <p className={styles.muted}>Кошик порожній</p>
+        <p className={styles.muted}>{t('empty')}</p>
       ) : (
         <div className={styles.layout}>
           <div className={styles.summary}>
             {!isAuthenticated && (
               <div className={styles.guestForm}>
-                <p className={styles.guestFormLabel}>Ваші контактні дані</p>
+                <p className={styles.guestFormLabel}>{t('guest.label')}</p>
                 <FloatField
                   id="guest-name"
-                  label="Ім'я та прізвище"
+                  label={t('guest.name')}
                   required
                   value={guestName}
                   onChange={setGuestName}
                 />
                 <FloatField
                   id="guest-phone"
-                  label="Телефон"
+                  label={t('guest.phone')}
                   required
                   value={guestPhone}
                   onChange={setGuestPhone}
                 />
                 <FloatField
                   id="guest-email"
-                  label="Email"
+                  label={t('guest.email')}
                   type="email"
                   value={guestEmail}
                   onChange={setGuestEmail}
@@ -268,7 +275,7 @@ export default function CartPage() {
             <div className={styles.commentField}>
               <FloatField
                 id="order-comment"
-                label="Коментар до замовлення (необов'язково)"
+                label={t('comment')}
                 value={comment}
                 onChange={setComment}
                 multiline
@@ -276,7 +283,7 @@ export default function CartPage() {
             </div>
 
             <div className={styles.paymentMethods}>
-              <p className={styles.guestFormLabel}>Доставка: Нова пошта</p>
+              <p className={styles.guestFormLabel}>{t('deliveryLabel')}</p>
 
               <div className={styles.npFields}>
                 <NovaPoshtaCityPicker
@@ -295,20 +302,22 @@ export default function CartPage() {
                       value: warehouse.ref,
                       label: warehouse.name,
                     }))}
-                    placeholder="Оберіть відділення"
+                    placeholder={t('chooseWarehouse')}
                   />
                 )}
 
                 {npSelectedCity && deliveryPrice && (
                   <p className={styles.ibanHint}>
-                    Доставка: {deliveryPrice.shippingCost.toLocaleString()} ₴
+                    {t('deliveryPrice', {
+                      price: deliveryPrice.shippingCost.toLocaleString(),
+                    })}
                   </p>
                 )}
               </div>
             </div>
 
             <div className={styles.paymentMethods}>
-              <p className={styles.guestFormLabel}>Спосіб оплати</p>
+              <p className={styles.guestFormLabel}>{t('paymentMethodLabel')}</p>
               <div className={styles.paymentOptions}>
                 {PAYMENT_OPTIONS.map((option) => (
                   <button
@@ -329,17 +338,21 @@ export default function CartPage() {
               {paymentProvider === 'CARD_TRANSFER' && (
                 <p className={styles.ibanHint}>
                   {cardTransferIban
-                    ? `Переказ на IBAN: ${cardTransferIban}. Вкажіть номер замовлення в призначенні платежу.`
-                    : 'IBAN для переказу буде повідомлено окремо після оформлення.'}
+                    ? t('iban.withIban', { iban: cardTransferIban })
+                    : t('iban.withoutIban')}
                 </p>
               )}
 
               {paymentProvider === 'CASH_ON_DELIVERY' && (
                 <p className={styles.ibanHint}>
-                  Комісія за накладений платіж: {total <= 2000 ? '30 ₴ + 2%' : '50 ₴ + 1%'}
+                  {t('codFee.label', {
+                    fee: total <= 2000 ? '30 ₴ + 2%' : '50 ₴ + 1%',
+                  })}
                   {npSelectedCity && deliveryPrice && (
                     <InfoTooltip
-                      text={`Точна сума для цього замовлення: ${deliveryPrice.redeliveryCost.toLocaleString()} ₴`}
+                      text={t('codFee.exact', {
+                        amount: deliveryPrice.redeliveryCost.toLocaleString(),
+                      })}
                     />
                   )}
                 </p>
@@ -351,29 +364,27 @@ export default function CartPage() {
               onChange={setCallMeRequested}
               className={styles.checkboxLabel}
             >
-              Зателефонувати мені
+              {t('callMe')}
             </Checkbox>
 
             {shippingCost > 0 && (
               <div className={styles.summaryRow}>
-                <span className={styles.summaryLabel}>Доставка</span>
-                <span>{shippingCost.toLocaleString()} ₴</span>
+                <span className={styles.summaryLabel}>{t('summary.delivery')}</span>
+                <span>{formatPrice(shippingCost, locale, usdRate)}</span>
               </div>
             )}
 
             {codFee > 0 && (
               <div className={styles.summaryRow}>
-                <span className={styles.summaryLabel}>
-                  Комісія за накладений платіж
-                </span>
-                <span>{codFee.toLocaleString()} ₴</span>
+                <span className={styles.summaryLabel}>{t('summary.codFee')}</span>
+                <span>{formatPrice(codFee, locale, usdRate)}</span>
               </div>
             )}
 
             <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Разом</span>
+              <span className={styles.summaryLabel}>{t('summary.total')}</span>
               <span className={styles.summaryTotal}>
-                {grandTotal.toLocaleString()} ₴
+                {formatPrice(grandTotal, locale, usdRate)}
               </span>
             </div>
 
@@ -382,7 +393,7 @@ export default function CartPage() {
               disabled={checkout.isPending}
               className={styles.checkoutButton}
             >
-              {checkout.isPending ? 'Оформлюємо…' : 'Оформити замовлення'}
+              {checkout.isPending ? t('checkingOut') : t('checkoutButton')}
             </button>
           </div>
 
@@ -391,7 +402,7 @@ export default function CartPage() {
               <div key={item.id} className={styles.item}>
                 <img
                   src={item.painting.cardImage}
-                  alt={item.painting.title}
+                  alt={pickLocale(item.painting, 'title', locale)}
                   className={styles.itemImage}
                 />
 
@@ -400,10 +411,10 @@ export default function CartPage() {
                     to={`/painting/${item.paintingId}`}
                     className={styles.itemTitle}
                   >
-                    {item.painting.title}
+                    {pickLocale(item.painting, 'title', locale)}
                   </Link>
                   <p className={styles.itemPrice}>
-                    {Number(item.painting.price).toLocaleString()} ₴
+                    {formatPrice(Number(item.painting.price), locale, usdRate)}
                   </p>
                 </div>
 
@@ -411,7 +422,7 @@ export default function CartPage() {
                   onClick={() => handleRemove(item)}
                   className={styles.removeButton}
                 >
-                  Видалити
+                  {t('remove')}
                 </button>
               </div>
             ))}

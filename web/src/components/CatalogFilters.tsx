@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { Technique } from '../types/dictionaries.types';
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
 import styles from './CatalogFilters.module.scss';
 
 type Range = { min: number; max: number };
@@ -26,6 +29,8 @@ export default function CatalogFilters({
   priceValue,
   onApplyPrice,
 }: Props) {
+  const { t } = useTranslation('catalog');
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [draftMin, setDraftMin] = useState(priceValue.min);
   const [draftMax, setDraftMax] = useState(priceValue.max);
@@ -90,13 +95,13 @@ export default function CatalogFilters({
             strokeLinecap="round"
           />
         </svg>
-        Фільтри
+        {t('filters.trigger')}
         {isActive && <span className={styles.dot} />}
       </button>
 
       {open && (
         <div className={styles.panel}>
-          <p className={styles.panelTitle}>Техніка</p>
+          <p className={styles.panelTitle}>{t('filters.technique')}</p>
           <div className={styles.techniqueChips}>
             <button
               type="button"
@@ -107,7 +112,7 @@ export default function CatalogFilters({
                   : styles.techniqueChip
               }
             >
-              Усі
+              {t('filters.allTechniques')}
             </button>
             {techniques.map((technique) => (
               <button
@@ -120,12 +125,12 @@ export default function CatalogFilters({
                     : styles.techniqueChip
                 }
               >
-                {technique.name}
+                {pickLocale(technique, 'name', locale)}
               </button>
             ))}
           </div>
 
-          <p className={styles.panelTitle}>Ціна, ₴</p>
+          <p className={styles.panelTitle}>{t('filters.priceLabel')}</p>
 
           <div className={styles.inputsRow}>
             <input
@@ -192,14 +197,14 @@ export default function CatalogFilters({
               onClick={handleReset}
               className={styles.resetButton}
             >
-              Скинути
+              {t('filters.reset')}
             </button>
             <button
               type="button"
               onClick={handleApply}
               className={styles.applyButton}
             >
-              Застосувати
+              {t('filters.apply')}
             </button>
           </div>
         </div>

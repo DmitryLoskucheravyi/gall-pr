@@ -1,7 +1,9 @@
 export type CreatePaintingDto = {
   title: string;
+  titleEn?: string;
 
   subtitle?: string;
+  subtitleEn?: string;
 
   cardImage: string;
 
@@ -30,4 +32,5 @@ export type CreatePaintingDto = {
   weight?: number;
 
   description: string;
+  descriptionEn?: string;
 };

@@ -1,0 +1,23 @@
+{
+  "title": "My orders",
+  "empty": "No orders yet",
+  "confirmCancel": {
+    "title": "Cancel order #{{id}}?",
+    "message": "This action can't be undone.",
+    "confirmLabel": "Cancel order",
+    "cancelLabel": "Back"
+  },
+  "status": {
+    "PENDING": "Pending",
+    "CONFIRMED": "Confirmed",
+    "SHIPPED": "Shipped",
+    "CANCELLED": "Cancelled",
+    "COMPLETED": "Completed"
+  },
+  "orderNumber": "Order #{{id}}",
+  "items": { "one": "work", "other": "works" },
+  "proofSent": "✓ Payment screenshot sent, awaiting confirmation",
+  "proofUploading": "Uploading…",
+  "proofUpload": "Attach payment screenshot",
+  "cancelButton": "Cancel order"
+}

@@ -1,4 +1,6 @@
 import type { News } from '../types/news.types';
+import { useLocale } from '../hooks/useLocale';
+import { pickLocale } from '../utils/localizedField';
 import styles from './NewsBanner.module.scss';
 
 export function NewsBannerSkeleton() {
@@ -6,10 +8,12 @@ export function NewsBannerSkeleton() {
 }
 
 export default function NewsBanner({ news }: { news: News }) {
+  const locale = useLocale();
+
   return (
     <article className={styles.banner}>
-      <h2 className={styles.title}>{news.title}</h2>
-      <p className={styles.text}>{news.text}</p>
+      <h2 className={styles.title}>{pickLocale(news, 'title', locale)}</h2>
+      <p className={styles.text}>{pickLocale(news, 'text', locale)}</p>
     </article>
   );
 }

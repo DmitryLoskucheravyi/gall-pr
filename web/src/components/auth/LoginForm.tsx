@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
+import { LocalizedLink as Link } from '../ui/LocalizedLink';
+import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
 import { authService } from '../../api/auth.api';
 import { supportService } from '../../api/support.api';
 import { ordersService } from '../../api/orders.api';
@@ -11,7 +13,8 @@ import { peekGuestToken } from '../../utils/guestToken';
 import styles from './AuthPanel.module.scss';
 
 export default function LoginForm() {
-  const navigate = useNavigate();
+  const { t } = useTranslation('auth');
+  const navigate = useLocalizedNavigate();
   const dispatch = useAppDispatch();
   const mergeGuestCart = useMergeGuestCartMutation();
 
@@ -41,7 +44,7 @@ export default function LoginForm() {
 
       navigate('/');
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Не вдалося увійти');
+      setError(err?.response?.data?.message ?? t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -49,12 +52,12 @@ export default function LoginForm() {
 
   return (
     <div className={styles.panel}>
-      <p className={styles.eyebrow}>Кабінет</p>
-      <h1 className={styles.title}>Вхід</h1>
+      <p className={styles.eyebrow}>{t('login.eyebrow')}</p>
+      <h1 className={styles.title}>{t('login.title')}</h1>
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <label className={styles.field}>
-          <span className={styles.label}>Email</span>
+          <span className={styles.label}>{t('login.email')}</span>
           <input
             type="email"
             required
@@ -65,7 +68,7 @@ export default function LoginForm() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Пароль</span>
+          <span className={styles.label}>{t('login.password')}</span>
           <input
             type="password"
             required
@@ -78,14 +81,14 @@ export default function LoginForm() {
         {error && <p className={styles.error}>{error}</p>}
 
         <button type="submit" disabled={loading} className={styles.submit}>
-          {loading ? 'Зачекайте…' : 'Увійти'}
+          {loading ? t('login.wait') : t('login.submit')}
         </button>
       </form>
 
       <p className={styles.switch}>
-        Немає акаунту?{' '}
+        {t('login.switchText')}{' '}
         <Link to="/register" className={styles.switchLink}>
-          Зареєструватись
+          {t('login.switchLink')}
         </Link>
       </p>
     </div>

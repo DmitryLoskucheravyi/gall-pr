@@ -1,6 +1,8 @@
 export type FaqItem = {
   title: string;
+  titleEn?: string;
   text: string;
+  textEn?: string;
   order: number;
 };
 

@@ -18,11 +18,20 @@ export class Giveaway {
   @Column()
   title: string;
 
+  @Column({ name: 'title_en', type: 'varchar', nullable: true })
+  titleEn: string | null;
+
   @Column('text')
   description: string;
 
+  @Column({ name: 'description_en', type: 'text', nullable: true })
+  descriptionEn: string | null;
+
   @Column({ type: 'text', nullable: true })
   conditions: string | null;
+
+  @Column({ name: 'conditions_en', type: 'text', nullable: true })
+  conditionsEn: string | null;
 
   @Column({ name: 'painting_id' })
   paintingId: number;
