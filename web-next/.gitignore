@@ -32,3 +32,6 @@ next-env.d.ts
 
 # Cloudflare Pages adapter output
 .vercel/
+
+# TypeScript incremental build state
+*.tsbuildinfo

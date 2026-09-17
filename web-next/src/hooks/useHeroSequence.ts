@@ -121,13 +121,9 @@ function framePath(strip: FrameStrip, index: number): string {
 // that errors or never produces metadata downgrades itself to the strip at
 // runtime, and that is what covers the devices this list doesn't name.
 function canScrubVideo(): boolean {
-  // Decided from the device, which the server does not have. It answers "no"
-  // so the first render is the lighter frame strip for everyone; the hook
-  // re-decides on mount.
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-    return false;
-  }
-
+  // Never called during the first render any more — see the mount effect
+  // below — but the guard stays, because a function that reads `navigator`
+  // should say what it does without one rather than throw.
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return true;
   }
@@ -156,9 +152,27 @@ export function useHeroSequence({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [mode, setMode] = useState<SequenceMode>(() =>
-    sources && canScrubVideo() ? 'video' : 'frames',
-  );
+  // 'frames' on the first render, always — on the server and in the browser
+  // alike — and upgraded once mounted if this device can actually scrub video.
+  //
+  // It used to call canScrubVideo() straight from this initialiser, which is a
+  // device check the server cannot make. Under SSR that is not merely a wrong
+  // guess: mode picks between a <canvas> and a <video>, two different elements,
+  // so a server that guessed one and a client that rendered the other made
+  // React throw the server's markup away for this subtree.
+  //
+  // Starting at 'frames' is the safe half of the guess. The strip is only
+  // fetched by the effect below, which runs after the upgrade has settled, so
+  // a device that can scrub never downloads the frames it won't use.
+  const [mode, setMode] = useState<SequenceMode>('frames');
+  const modeDecided = useRef(false);
+
+  useEffect(() => {
+    if (modeDecided.current) return;
+    modeDecided.current = true;
+
+    if (sources && canScrubVideo()) setMode('video');
+  }, [sources]);
 
   const tilt = useRef({ x: 0, y: 0 });
   const tiltTarget = useRef({ x: 0, y: 0 });
@@ -200,6 +214,10 @@ export function useHeroSequence({
   // whatever went wrong the first time is unlikely to have improved and a
   // sequence that flips back and forth is worse than one that settles.
   const downgrade = useCallback(() => {
+    // Also closes the door on the mount upgrade above: whatever went wrong
+    // with the video will not have improved by the next render.
+    modeDecided.current = true;
+
     setMode((was) => {
       if (was === 'frames') return was;
       // Whatever is on the canvas now belongs to a different element.
