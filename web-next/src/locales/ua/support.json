@@ -1,0 +1,13 @@
+{
+  "title": "Підтримка",
+  "emptyText": "Напишіть нам, якщо виникли питання — ми відповімо якнайшвидше",
+  "backAria": "Назад",
+  "otherWays": "Інші способи зв'язку",
+  "otherWaysHint": "Не хочете чекати в чаті? Напишіть нам напряму:",
+  "email": "Email",
+  "phone": "Телефон",
+  "telegramLink": "Написати в Telegram",
+  "messagePlaceholder": "Повідомлення…",
+  "sendAria": "Надіслати",
+  "widgetUnreadAria": "Підтримка, {{count}} нових повідомлень"
+}

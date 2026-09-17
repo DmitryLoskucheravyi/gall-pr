@@ -1,0 +1,98 @@
+// Fills whatever box the page gives it and splits that height three ways:
+// the header and composer take what they need, the transcript takes the
+// rest and is the only part that scrolls. min-height:0 on the flex child is
+// what actually lets it shrink — without it the transcript grows to fit its
+// content and pushes the composer off the bottom of the screen.
+.thread {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  background-color: var(--color-surface);
+}
+
+.messages {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: $spacing-sm;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: $spacing-lg;
+
+  @include respond-up($breakpoint-md) {
+    padding: $spacing-xl;
+  }
+}
+
+.notice {
+  margin: auto;
+  max-width: 320px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.bubbleRow {
+  display: flex;
+
+  &.own {
+    justify-content: flex-end;
+  }
+}
+
+.bubble {
+  max-width: 78%;
+  padding: $spacing-sm $spacing-md;
+  font-size: 14px;
+  line-height: 1.4;
+  background-color: var(--color-background-alt);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.bubbleRow.own .bubble {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.composer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: $spacing-sm;
+  border-top: 1px solid var(--color-border);
+  padding: $spacing-md;
+  // Keeps the composer clear of the home indicator on phones that have one.
+  padding-bottom: max(#{$spacing-md}, env(safe-area-inset-bottom));
+}
+
+.input {
+  @include input-base;
+  min-width: 0;
+  flex: 1;
+  // 16px or larger, otherwise iOS Safari zooms the page in on focus and the
+  // layout never quite recovers.
+  font-size: 16px;
+}
+
+.sendButton {
+  @include button-primary;
+  display: flex;
+  height: 44px;
+  width: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
+}

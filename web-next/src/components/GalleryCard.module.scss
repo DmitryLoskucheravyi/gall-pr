@@ -1,0 +1,110 @@
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background-color: var(--color-background-alt);
+  transition:
+    transform 0.35s $ease-out,
+    box-shadow 0.35s $ease-out;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+.linkArea {
+  display: block;
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  transition: transform 0.6s $ease-out;
+}
+
+.imageNatural {
+  width: 100%;
+  height: auto;
+  transition: transform 0.6s $ease-out;
+}
+
+.card:hover .image,
+.card:hover .imageNatural {
+  transform: scale(1.05);
+}
+
+// Stacked, so the edition marker reads as a footnote to "Продано" rather than
+// as a second, competing claim.
+.badges {
+  position: absolute;
+  top: $spacing-md;
+  left: $spacing-md;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-xs;
+}
+
+.editionBadge {
+  border-radius: $radius-pill;
+  background-color: rgba(10, 8, 6, 0.5);
+  backdrop-filter: blur(2px);
+  padding: 2px $spacing-sm;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+// "Available as a repeat" is good news — it's the one badge here that says
+// you can still have one, so it doesn't wear the same funereal grey.
+.editionRepeatable {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.soldBadge {
+  border-radius: $radius-pill;
+  background-color: rgba(10, 8, 6, 0.65);
+  backdrop-filter: blur(2px);
+  padding: $spacing-xs $spacing-md;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: $spacing-lg;
+  background: linear-gradient(
+    to top,
+    rgba(10, 8, 6, 0.7),
+    rgba(10, 8, 6, 0) 55%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover .overlay {
+  opacity: 1;
+}
+
+.titleText {
+  font-family: $font-display;
+  font-size: 19px;
+  font-weight: 600;
+  color: #fff;
+  transform: translateY(8px);
+  transition: transform 0.3s ease;
+}
+
+.card:hover .titleText {
+  transform: translateY(0);
+}

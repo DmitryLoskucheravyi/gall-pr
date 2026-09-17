@@ -1,0 +1,264 @@
+@use 'variables' as *;
+
+@import '@fontsource/tenor-sans/400.css';
+// Mobile hero title only (see HomePage.module.scss) — Bungee-like chunky
+// display font with Cyrillic support, which Bungee itself lacks.
+@import '@fontsource/rubik/900.css';
+// Mobile hero title's italic serif accent word only (see HomePage.module.scss).
+@import '@fontsource/cormorant-garamond/600-italic.css';
+
+// The three numbers useHeroSequence publishes, declared to the engine as the
+// numbers they are.
+//
+// An unregistered custom property is a bag of tokens, not a value. Every
+// element that reads one substitutes the text and re-parses it, at each use
+// site, on every frame the value changes — and where properties are defined
+// in terms of each other the substitution nests, so a chain four deep is
+// re-parsed as one expression four levels long by every element under it.
+// The corridor is exactly that shape, and on a phone the re-parsing, rather
+// than any of the blurring, was most of the frame.
+//
+// Registering them changes nothing about what is drawn. The initial value of
+// each is the same 0 the fallbacks throughout already spell, so an element
+// outside any track resolves as it always did; what changes is that the
+// value now arrives as a computed number, once per element, instead of as
+// text to be read again at every mention. Anything too old to know the rule
+// ignores it and behaves as before.
+@property --hero-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --stage-x {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --stage-y {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+// Light theme — built on the "Porcelain Veil / Stone Moss / Warm Pebble"
+// palette. The three named colours carry the identity; every other token is
+// derived from them so the whole surface reads as one material family.
+//
+// The accent is split into three roles on purpose. Stone Moss is dark enough
+// to carry pale text on top of it, but not dark enough to be readable *as*
+// text on the page background (4.2:1, under AA) — so --color-accent is the
+// fill, --color-accent-text is a deepened cut used for links, active nav and
+// icons. The dark theme has the same split for the opposite reason, and the
+// two stay swappable because every consumer picks by role, not by shade.
+:root {
+  --color-background: #eee9e4; // Porcelain Veil
+  --color-background-alt: #e3e2d6;
+  --color-surface: #f6f6f1;
+
+  // Primary is the moss, not ink. It is the solid behind every primary button,
+  // active chip and filled surface, so this is what actually makes the palette
+  // read as green rather than as a warm grey with green trim. It doubles as a
+  // text/border colour in ~35 places, hence the deep cut: Stone Moss itself is
+  // only 4.2:1 on the page and would fail as text.
+  --color-primary: #4f5340;
+  --color-primary-soft: #dde0d2;
+  --color-on-primary: #f8f6f2;
+
+  --color-accent: #6d705a; // Stone Moss
+  --color-accent-hover: #5b5e49;
+  --color-accent-text: #545845;
+  --color-accent-soft: #d9dccb;
+  --color-on-accent: #f8f6f2;
+
+  // Body copy stays ink — a page of green text reads as a tint bug, not a brand.
+  // The secondary/muted steps lean green so the greys sit in the same family.
+  --color-text: #24231e;
+  --color-text-secondary: #5c5f50;
+  --color-text-muted: #85857a;
+
+  --color-border: #d5d7c7;
+  --color-border-strong: #c8c0b3; // Warm Pebble
+
+  --color-success: #4a7a55;
+  --color-error: #a8443a;
+  --color-warning: #8a6320;
+
+  --color-ring: rgba(79, 83, 64, 0.18);
+
+  // Text color for the mobile hero's photo background. Deliberately the same
+  // in both themes and not derived from --color-text: this copy always sits
+  // over a photograph darkened by .heroOverlay, never over the page
+  // background, so it reads as a caption on an image rather than as body
+  // text. No .dark override on purpose.
+  --hero-photo-text: #fffaf3;
+
+  // Shadows tint with the ink rather than pure black — on a warm cream ground
+  // a neutral-black shadow reads as grey dirt. Slightly deeper than the old
+  // set: the background is darker now, so the previous opacities vanished.
+  --shadow-sm: 0 1px 2px rgba(36, 35, 30, 0.06), 0 2px 8px rgba(36, 35, 30, 0.05);
+  --shadow-md:
+    0 2px 6px rgba(36, 35, 30, 0.06), 0 12px 28px -10px rgba(36, 35, 30, 0.16);
+  --shadow-lg:
+    0 4px 12px rgba(36, 35, 30, 0.08), 0 28px 56px -16px rgba(36, 35, 30, 0.24);
+  // Tighter, less-blurred shadow for product-card hover
+  --shadow-card-hover:
+    0 4px 10px -4px rgba(36, 35, 30, 0.14), 0 12px 22px -12px rgba(36, 35, 30, 0.24);
+}
+
+// Dark theme — "Obsidian Veil / Moss Shadow / Graphite Ash". Obsidian is a
+// warm graphite black rather than #000, Graphite Ash is the neutral lift for
+// elevated chrome, and the moss stays the same hue family as Stone Moss so
+// toggling themes reads as the same brand under different light.
+.dark {
+  --color-background: #1b1a17; // Obsidian Veil
+  --color-background-alt: #1f211c;
+  --color-surface: #24271f;
+
+  // Same move as the light theme, mirrored: primary carries the green. Dark
+  // primary has to be the *light* cut, because these fills take dark labels
+  // and the same token is also read as text/border straight on Obsidian.
+  --color-primary: #93a67f;
+  --color-primary-soft: #2b3524;
+  --color-on-primary: #1b1a17;
+
+  // Moss Shadow is a fill colour only — it is far too dark to sit on Obsidian
+  // as text, so links and active states use the lifted sage instead.
+  --color-accent: #333f2c; // Moss Shadow
+  --color-accent-hover: #4c5e41; // Moss Hover
+  --color-accent-text: #93a67f;
+  --color-accent-soft: #2a3522;
+  --color-on-accent: #edeae2;
+
+  --color-text: #edeae2; // Text Primary
+  --color-text-secondary: #9ba093; // Text Muted, nudged green
+  --color-text-muted: #6d7064;
+
+  --color-border: #343a2f;
+  --color-border-strong: #45423c; // Graphite Ash
+
+  --color-success: #7fa97f;
+  --color-error: #d4776a;
+  --color-warning: #c9a05a;
+
+  --color-ring: rgba(147, 166, 127, 0.22);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 28px -10px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.34), 0 28px 56px -16px rgba(0, 0, 0, 0.6);
+  --shadow-card-hover:
+    0 4px 10px -4px rgba(0, 0, 0, 0.45), 0 12px 22px -12px rgba(0, 0, 0, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: $font-sans;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  // Tenor Sans ships one weight only (400), no bold cut — every existing accent
+  // usage of it already sticks to weight 400. Suppress only synthetic bold
+  // (muddy on a font this thin); synthetic italic still kicks in for the few
+  // <em>/font-style:italic accents, since Tenor Sans has no italic face either.
+  font-synthesis: weight;
+  font-variant-numeric: lining-nums;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: $font-display;
+  font-weight: 600;
+}
+
+p,
+dl,
+dd {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+// The readable cut of the accent, not the fill: Moss Shadow against Obsidian
+// is a ~1.6:1 outline, i.e. no visible focus ring at all in dark mode.
+:focus-visible {
+  outline: 2px solid var(--color-accent-text);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+}
+
+// Theme toggle: expanding-circle reveal from the toggle button, driven by
+// the View Transition API. Coordinates are set on :root right before the
+// transition starts (see Header.tsx). Browsers without support just cut
+// straight to the new theme, no animation.
+::view-transition-group(root) {
+  animation-duration: 0.6s;
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: theme-reveal 0.6s ease-in-out;
+  clip-path: circle(0 at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%));
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(
+      0 at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%)
+    );
+  }
+  to {
+    clip-path: circle(
+      var(--theme-toggle-r, 150%) at var(--theme-toggle-x, 50%)
+        var(--theme-toggle-y, 50%)
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,26 @@
+.title {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: clamp(30px, 4vw, 40px);
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xxl;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

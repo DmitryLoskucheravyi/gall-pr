@@ -1,0 +1,119 @@
+.header {
+  margin-bottom: $spacing-xxl;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  @include rise-in;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: clamp(34px, 5vw, 52px);
+  letter-spacing: -0.015em;
+  color: var(--color-text);
+}
+
+.createButton {
+  @include button-primary;
+}
+
+.chips {
+  margin-bottom: $spacing-xxl;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.likedButton {
+  display: flex;
+  height: 38px;
+  width: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  svg {
+    height: 18px;
+    width: 18px;
+  }
+
+  &:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+}
+
+.likedButtonActive {
+  @extend .likedButton;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xxl;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  > * {
+    @include reveal(25%);
+  }
+}
+
+// The "Усі / Серії" switch, opposite the filters. A segmented control rather
+// than two loose chips: they are two states of one choice, not two filters.
+.viewSwitch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-pill;
+  background: var(--color-background-alt);
+}
+
+.viewOption,
+.viewOptionActive {
+  padding: 7px 18px;
+  border: none;
+  border-radius: $radius-pill;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background $duration-fast $ease-out,
+    color $duration-fast $ease-out;
+}
+
+.viewOption {
+  background: transparent;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.viewOptionActive {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}

@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "home": "Головна",
+    "catalog": "Каталог",
+    "gallery": "Галерея",
+    "favorites": "Улюблені",
+    "cart": "Кошик",
+    "orders": "Замовлення",
+    "profile": "Профіль",
+    "login": "Увійти",
+    "logout": "Вийти"
+  },
+  "admin": {
+    "menu": "Адмін",
+    "dictionaries": "Матеріали і техніки",
+    "users": "Користувачі",
+    "orders": "Замовлення",
+    "settings": "Налаштування",
+    "support": "Підтримка",
+    "giveaways": "Розіграш",
+    "mail": "Журнал листів",
+    "series": "Серії"
+  },
+  "themeToggle": "Перемкнути тему",
+  "languageToggle": "Змінити мову",
+  "cartAria": "Кошик",
+  "profileAria": "Профіль",
+  "logoutAria": "Вийти",
+  "supportAria": "Підтримка",
+  "supportUnread": "Підтримка, {{count}} нових звернень",
+  "menuOpen": "Відкрити меню",
+  "menuClose": "Закрити меню",
+  "adminGroupLabel": "Адмін"
+}

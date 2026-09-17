@@ -1,0 +1,533 @@
+.muted {
+  color: var(--color-text-secondary);
+}
+
+// Sits over the artwork's top-left corner rather than above it, matching
+// .navArrow's treatment — but always visible, since it's the way out of the
+// page and a touch device never triggers the hover that reveals those.
+.backButton {
+  position: absolute;
+  top: $spacing-lg;
+  left: $spacing-lg;
+  z-index: 3;
+  display: flex;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: $radius-pill;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-primary);
+    transform: scale(1.08);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-xxxxl;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: $spacing-huge;
+
+    // Info column stays in view while the artwork column scrolls
+    > div:last-child {
+      position: sticky;
+      top: 96px;
+      align-self: start;
+    }
+  }
+}
+
+// A fixed viewport for the artwork, taking up well over half the screen.
+//
+// Letting each image keep its own proportions meant the box resized to
+// whatever was in it, so moving between a portrait and a landscape shot of
+// the same painting shifted everything below — the title, the price, the
+// buy button — down or up the page mid-click. A stable frame is worth the
+// letterboxing, and the mat behind it is what makes those bars read as
+// deliberate rather than as a gap.
+.imageWrap {
+  position: relative;
+  height: 64dvh;
+  min-height: 300px;
+  overflow: hidden;
+  background-color: var(--color-background-alt);
+  // Mobile/tablet: the artwork runs the full width of the screen and sits
+  // flush under the header — no container padding, no gap above it. Desktop
+  // leaves it inside its grid column, where full-bleed would make no sense.
+  margin-inline: calc(-1 * $container-padding);
+  margin-top: calc(-1 * $spacing-xxxxl);
+
+  @include respond-up($breakpoint-lg) {
+    height: min(74dvh, 720px);
+    border-radius: $radius-md;
+    margin-inline: 0;
+    margin-top: 0;
+  }
+}
+
+// The slider proper: one shot per screenful, snapping. A native scroller
+// rather than a JS gesture handler, so a phone gets its own momentum and
+// rubber-banding for free, and a trackpad can swipe it sideways too.
+.track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  // The thumbnails already say how many there are; a scrollbar across the
+  // artwork would only be chrome.
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  cursor: zoom-in;
+}
+
+// contain, never cover: cropping a painting to fill a box is the one thing
+// this page must not do.
+.mainImage {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+// Tall and narrow, with no pill behind them: a chip floating over a painting
+// is chrome sitting on the artwork, which is the one thing this page is for.
+// The chevron carries its own legibility instead — a soft shadow keeps it
+// readable over a pale canvas as well as a dark one.
+//
+// Visibility is driven from JS (see .visible) rather than :hover, because
+// they have to fade back out on their own after a moment of stillness, and
+// because a touch device never hovers at all.
+.navArrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  width: 56px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.45s ease,
+    transform 0.25s ease;
+
+  &.visible {
+    opacity: 0.85;
+    pointer-events: auto;
+  }
+
+  &:hover {
+    opacity: 1;
+  }
+
+  svg {
+    height: 40px;
+    width: 40px;
+    // Without this the chevron disappears against a light painting. Cheaper
+    // and less intrusive than putting a box behind it.
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+  }
+}
+
+.navArrowLeft {
+  left: 0;
+
+  &:hover {
+    transform: translateX(-2px);
+  }
+}
+
+.navArrowRight {
+  right: 0;
+
+  &:hover {
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navArrow {
+    transition: none;
+  }
+}
+
+.thumbs {
+  margin-top: $spacing-lg;
+  display: flex;
+  gap: $spacing-md;
+}
+
+.thumbButton {
+  height: 64px;
+  width: 64px;
+  overflow: hidden;
+  border-radius: $radius-sm;
+  border: 2px solid transparent;
+
+  &.active {
+    border-color: var(--color-primary);
+  }
+}
+
+.thumbImage {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+// Fills the same fixed frame the artwork will, so the page doesn't jump when
+// the real thing arrives — the whole point of the frame.
+.skeletonImage {
+  height: 100%;
+  width: 100%;
+}
+
+.skeletonTitle {
+  height: 36px;
+  width: 80%;
+}
+
+.skeletonAuthor {
+  margin-top: $spacing-sm;
+  height: 18px;
+  width: 40%;
+}
+
+.skeletonPrice {
+  margin-top: $spacing-lg;
+  height: 30px;
+  width: 30%;
+}
+
+.skeletonButton {
+  margin-top: $spacing-xxl;
+  height: 48px;
+  width: 100%;
+
+  @include respond-up($breakpoint-md) {
+    width: 220px;
+  }
+}
+
+.skeletonDescription {
+  margin-top: $spacing-xl;
+  height: 90px;
+  width: 100%;
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: clamp(34px, 4.5vw, 48px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--color-text);
+}
+
+.author {
+  margin-top: $spacing-sm;
+  font-size: 18px;
+  color: var(--color-text-secondary);
+}
+
+.price {
+  margin-top: $spacing-lg;
+  font-family: $font-display;
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.buyButton {
+  @include button-primary;
+  margin-top: $spacing-xxl;
+  width: 100%;
+
+  @include respond-up($breakpoint-md) {
+    width: auto;
+    padding-inline: $spacing-xxxxl;
+  }
+}
+
+.description {
+  margin-top: $spacing-sm;
+  line-height: 1.7;
+  color: var(--color-text);
+}
+
+.specList {
+  margin-top: $spacing-sm;
+
+  > * + * {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.specRow {
+  display: flex;
+  justify-content: space-between;
+  padding: $spacing-md 0;
+}
+
+.specLabel {
+  color: var(--color-text-secondary);
+}
+
+.specValue {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sectionHeader {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: $spacing-sm;
+  text-align: left;
+}
+
+.sectionHeaderSpacedTop {
+  margin-top: $spacing-huge;
+}
+
+.sectionHeaderSpacedTopSm {
+  margin-top: $spacing-xxxl;
+}
+
+.sectionTitle {
+  font-family: $font-display;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.chevron {
+  height: 20px;
+  width: 20px;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+// Takes the buy button's place when the work is gone and won't be repeated.
+// Not a disabled button: there's nothing to press, and a greyed-out one only
+// invites the attempt.
+.soldNotice {
+  margin-top: $spacing-lg;
+  border-radius: $radius-sm;
+  border: 1px solid var(--color-border);
+  padding: $spacing-md;
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+// A fact about the work, sitting with the other facts about it.
+.edition {
+  margin-top: $spacing-lg;
+  border-left: 2px solid var(--color-border-strong);
+  padding-left: $spacing-md;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.editionRepeatable {
+  border-left-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.interior {
+  margin-top: $spacing-huge;
+  padding-top: $spacing-huge;
+}
+
+.interiorTitle {
+  font-family: $font-display;
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.interiorHint {
+  margin-top: $spacing-xs;
+  margin-bottom: $spacing-xl;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.animation3d {
+  margin-top: $spacing-huge;
+  padding-top: $spacing-huge;
+}
+
+.animation3dTitle {
+  margin-bottom: $spacing-xl;
+  font-family: $font-display;
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.related {
+  margin-top: $spacing-huge;
+}
+
+.relatedTitle {
+  margin-bottom: $spacing-xxl;
+  font-family: $font-display;
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-xxl;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  > * {
+    @include reveal(25%);
+  }
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: $spacing-xxl;
+}
+
+// Same snapping scroller as the slider on the page, so the lightbox swipes
+// the same way rather than being a dead-end full-screen image.
+.lightboxTrack {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.lightboxSlide {
+  display: flex;
+  flex: 0 0 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.lightboxImage {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: $spacing-lg;
+  right: $spacing-lg;
+  // Above the arrows, which run the full height of the screen and so cover
+  // this corner too. Same z-index left the arrow on top — it comes later in
+  // the DOM — and swallowed every click on the close button.
+  z-index: 3;
+  display: flex;
+  height: 44px;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  svg {
+    height: 24px;
+    width: 24px;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+  }
+}
+
+// Position within the set, since the thumbnails aren't visible from in here.
+.lightboxCount {
+  position: absolute;
+  bottom: $spacing-xl;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.75);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,558 @@
+// ---------- Hero: a pinned sequence the reader scrolls through ----------
+
+// Mobile hero title only — see .title below. Imported in global.scss.
+$hero-title-font: 'Rubik', sans-serif;
+// Italic serif accent word inside the mobile hero title — the editorial
+// counterpoint to Rubik's chunky uppercase. Imported in global.scss.
+$hero-title-serif: 'Cormorant Garamond', serif;
+
+// The height of the pinned stage, and the unit the track is measured in.
+$hero-stage-height: calc(
+  100dvh - var(--header-height, 64px) - var(--bottom-nav-height, 0px)
+);
+
+// The scroll track. It holds no content of its own — its only job is to be
+// several screens tall, giving .heroSticky something to stay pinned across
+// while the sequence plays. Everything after it in the document sits below
+// the track's full height, so the next section can't reach the screen until
+// the sequence has run out.
+//
+// --hero-track is set inline from useHeroSequence, so the height here and
+// the progress the hook computes are driven by the same number.
+.hero {
+  position: relative;
+  z-index: 0;
+  // Full-bleed to the screen edges. Escaping .main's padding isn't enough:
+  // .main is also capped at $container-max-width and centred, so past that
+  // width the page's own background showed down either side of the stage.
+  // 50% is half of .main's content box and 50vw half the viewport, so the
+  // difference is exactly that gap plus the padding — correct both below and
+  // above the cap. (Same breakout .pageContent uses further down.)
+  margin-inline: calc(50% - 50vw);
+  margin-top: calc(-1 * $spacing-xxxxl);
+  // The length of the sequence, and so how much scrolling it costs to get
+  // through it. 100dvh (not vh/%) accounts for mobile browser chrome
+  // correctly. Short on a phone, where scrolling is a thumb flick at a time
+  // and a long runway just reads as the page being stuck; longer where
+  // there's a wheel to turn.
+  height: calc(2 * #{$hero-stage-height});
+
+  @include respond-up($breakpoint-lg) {
+    height: calc(3.2 * #{$hero-stage-height});
+  }
+}
+
+// The stage: one screen, pinned below the header for the length of the
+// track. This is the element that stays still while the reader scrolls —
+// what moves is the sequence painted on it.
+.heroSticky {
+  position: sticky;
+  top: var(--header-height, 64px);
+  height: $hero-stage-height;
+  // The copy grows past the edge of the frame as it approaches; this is what
+  // keeps that from spilling onto the page and opening a scrollbar.
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: end;
+  // The stage is full-bleed, but its copy shouldn't be: max() holds the
+  // text to the same left edge as every section below once the viewport is
+  // wider than the container, and falls back to a plain gutter under it.
+  padding-block: $spacing-xxxl $spacing-xl;
+  padding-inline: max(
+    #{$spacing-xl},
+    calc(50vw - #{$container-max-width} / 2 + #{$spacing-xl})
+  );
+
+  @include respond-up($breakpoint-lg) {
+    padding-block: $spacing-xxxl;
+    padding-inline: max(
+      #{$spacing-huge},
+      calc(50vw - #{$container-max-width} / 2 + #{$spacing-huge})
+    );
+  }
+}
+
+// The footage layer, filling the pinned stage behind the copy.
+.heroBg {
+  // Absolute within the stage, not fixed to the window: the stage is already
+  // held in place by its own `sticky`, and a fixed layer would go on sitting
+  // there after the pin released.
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  // The vanishing point for everything inside. Deliberately long: a short
+  // perspective throws the tilt into caricature, and what's wanted here is
+  // the depth you notice only once you move the mouse.
+  perspective: 1600px;
+  perspective-origin: 50% 45%;
+}
+
+// ---------- Hero depth ----------
+//
+// The one element that actually moves. Its children each sit at a different
+// translateZ, so tilting this single box is what separates them — the
+// parallax falls out of the perspective rather than being hand-dialled
+// layer by layer, and the depths below stay readable as distances.
+//
+// --stage-x / --stage-y are written by useHeroSequence (-1..1 from the
+// centre of the viewport); --hero-progress is 0..1 across the pin. All three
+// fall back to 0, which is exactly the flat, un-tilted opening frame — so a
+// reduced-motion visitor, or any browser before the script runs, gets the
+// composition as designed and nothing jumps when it does.
+.heroStage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  // 2.2deg is the whole range, corner to corner. Past about three the
+  // footage starts to visibly keystone and the hero reads as a gimmick.
+  transform: rotateY(calc(var(--stage-x, 0) * 2.2deg))
+    rotateX(calc(var(--stage-y, 0) * -2.2deg));
+}
+
+// The footage, filling the frame. Starts 120px back — scaled by
+// (1600+120)/1600 to hold its apparent size there, plus slack for the corner
+// the tilt swings into view — and comes 260px toward the reader across the
+// pin. That approach is the "walking into it" half of the sequence: the
+// scrub advances the picture, this advances the reader through it.
+//
+// The scale rises with the same progress so the frame stays covered as the
+// plane nears: at +140px the (1600-140)/1600 shrink in apparent size would
+// otherwise pull its edges into view.
+//
+// Dimmed rather than darkened by a scrim across the whole frame: the copy
+// only occupies one corner, and the gradient in .heroOverlay handles that
+// corner. brightness alone here keeps the rest of the picture open.
+.heroWall {
+  // A canvas has no poster of its own — where one stands in for the video
+  // (touch devices) the still is set as a background from the component, and
+  // these are the rules that make it behave like one.
+  background-size: cover;
+  background-position: center;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(calc(-120px + var(--hero-progress, 0) * 260px))
+    scale(calc(1.13 + var(--hero-progress, 0) * 0.26));
+  filter: brightness(0.66) saturate(0.92);
+}
+
+// Scrim that keeps the copy legible against the wall. Darkens in both
+// themes, not just dark mode — the hero text is white either way (see
+// --hero-photo-text), so lightening the wall in light mode would leave it
+// unreadable.
+//
+// Pulled toward the bottom-left corner the copy occupies, rather than
+// straight down as it was over the old full-bleed photo: the wall is
+// already dimmed at source (see .heroWall's filter), so this only has to
+// deepen the one corner instead of weighing on the whole frame.
+//
+// It sits at the stage's own depth, so the painting — which stands 60px
+// proud of it — paints over the top and keeps its full contrast. Bled 3%
+// past every edge because the stage tilts: at z=0 the box rotates with it,
+// and a scrim flush to the viewport would swing its own hard edge into the
+// corner of the screen.
+.heroOverlay {
+  position: absolute;
+  inset: -3%;
+  z-index: 1;
+  background-image: radial-gradient(
+    120% 100% at 0% 100%,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.34) 42%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
+}
+
+// The whole copy block — travelling words and fixed links together. It
+// carries no transform of its own, so the two can move independently.
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+// Kicker, headline and lede: the part that leaves. It doesn't travel toward
+// the reader any more — it dissolves where it stands.
+//
+// The words used to grow as the scroll advanced, which read as approach but
+// cost the thing it was spent on: at any size worth noticing the headline
+// was already running off three sides of the screen, so the fade had to be
+// rushed to hide it. Softening in place has no such ceiling. It can take its
+// time, the letters stay their own size and shape to the last frame, and the
+// footage behind is left to carry the forward move on its own.
+//
+// --hold is the ramp: 1 while the copy stands, falling to 0 across 25%–55%
+// of the track. clamp() does the piecewise part — below 0.25 the middle term
+// exceeds 1 and the max wins, past 0.55 it goes negative and the min does.
+// That 0.55 and HERO_COPY_GONE in useHeroSequence are the same number and
+// have to stay that way.
+//
+// Spending its inverse on blur and a small lift is what turns a plain fade
+// into something dissolving: going out of focus as it goes, and drifting up
+// out of frame rather than simply thinning away.
+.heroText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  --hold: clamp(0, calc((0.55 - var(--hero-progress, 0)) / 0.3), 1);
+
+  opacity: var(--hold);
+  filter: blur(calc((1 - var(--hold)) * 13px));
+  transform: translateY(calc((1 - var(--hold)) * -34px));
+}
+
+// Once the copy has faded it must stop swallowing clicks: by then it has
+// grown past the edges of the frame, and it would otherwise sit invisibly
+// across the stage catching the pointer on its way to the links below.
+// The flag is set by useHeroSequence — a plain attribute rather than a style
+// query, which is still too new to rely on.
+.hero[data-past='true'] .heroText {
+  pointer-events: none;
+}
+
+// While the first painting is still decoding (see heroReady in
+// HomePage.tsx). Hiding alone isn't enough — CSS animations run regardless
+// of visibility, so the entrances would silently play out and the copy would
+// just pop in fully formed. Pausing holds every one of them at its first
+// frame instead, delays included, so they all start for real on reveal.
+// Kept mounted rather than unrendered so the hero's height doesn't shift
+// under the copy as it appears.
+.heroTextWaiting {
+  visibility: hidden;
+
+  *,
+  *::before,
+  *::after {
+    animation-play-state: paused !important;
+  }
+}
+
+// A bare editorial kicker over the photo — tiny, widely letterspaced, no
+// chrome, just the accent dot.
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-family: $font-accent;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+
+  @include respond-up($breakpoint-lg) {
+    font-size: 12px;
+  }
+
+  // The letters carry their own entrance (see .eyebrowLetter), so the accent
+  // dot is the only part that still needs animating here.
+  &::before {
+    content: '';
+    height: 6px;
+    width: 6px;
+    flex: none;
+    border-radius: $radius-pill;
+    background-color: var(--color-accent);
+    @include rise-in($delay: 0s);
+  }
+}
+
+// Wraps the split-up letters so they stay one flex item — otherwise each
+// letter would become a child of .eyebrow's flex row and pick up its gap.
+.eyebrowText {
+  display: inline-block;
+}
+
+// Each letter slides in from the left in turn, stepped by an inline
+// animation-delay set in HomePage.tsx.
+.eyebrowLetter {
+  display: inline-block;
+  // Keeps the word gaps from collapsing now that spaces are their own spans.
+  white-space: pre;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: eyebrow-letter-in $duration-slow $ease-out both;
+  }
+}
+
+@keyframes eyebrow-letter-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.5em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.title {
+  margin-top: $spacing-lg;
+  font-family: $hero-title-font;
+  // Sized against ~11.5vw so "МИСТЕЦТВО," always fills one line edge to
+  // edge on phones without wrapping; the ceiling lifts on wide screens
+  // below so it keeps that presence there too.
+  font-size: clamp(38px, 11.5vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  // Forced high-contrast color: this always sits over a photograph, and
+  // var(--color-text) alone isn't reliably legible there.
+  color: var(--hero-photo-text);
+  font-weight: 900;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  @include rise-in($delay: 0.08s);
+
+  em {
+    font-style: italic;
+    color: var(--color-accent-text);
+    // The editorial counterpoint: a bigger lowercase italic serif word set
+    // against the chunky uppercase — line-height 0 keeps the oversized word
+    // from stretching its line box out of the stack's rhythm.
+    font-family: $hero-title-serif;
+    font-weight: 600;
+    font-size: 1.32em;
+    line-height: 0;
+    text-transform: none;
+    letter-spacing: 0;
+
+  }
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: $spacing-xl;
+    font-size: clamp(64px, 6.6vw, 104px);
+  }
+}
+
+// One character of the headline while it's still cycling through glyphs
+// (see HeroTitle in HomePage.tsx). Sized by the invisible real letter inside
+// it, so the line's width is already final on the first frame and nothing
+// reflows as the scramble runs.
+.titleLetter {
+  position: relative;
+  display: inline-block;
+}
+
+.titleLetterGhost {
+  visibility: hidden;
+}
+
+// The cycling glyph, centered over the slot the real letter reserved. top:0
+// (not a flex centering) keeps it on the same baseline as settled letters.
+.titleLetterSpin {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+// Each half of the headline is its own stacked line, the second one nudged
+// right for an editorial stagger.
+.titleLine {
+  display: block;
+
+  &:last-child {
+    padding-left: clamp(20px, 8vw, 96px);
+  }
+}
+
+// A quiet aside off the loud headline — smaller, tucked behind a thin
+// vertical rule, mirroring the stagger of the title's second line.
+.subtitle {
+  margin-top: $spacing-xl;
+  max-width: 300px;
+  border-left: 1px solid
+    color-mix(in srgb, var(--hero-photo-text) 45%, transparent);
+  padding-left: $spacing-lg;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  @include rise-in($delay: 0.16s);
+
+  @include respond-up($breakpoint-lg) {
+    max-width: 420px;
+    font-size: 17px;
+  }
+}
+
+// A full-width baseline bar — hairline on top, links pushed to opposite
+// edges — closing the hero composition like a caption strip. Capped on wide
+// screens so it doesn't stretch the two links to opposite ends of a monitor.
+.actions {
+  margin-top: $spacing-xxl;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  border-top: 1px solid
+    color-mix(in srgb, var(--hero-photo-text) 35%, transparent);
+  padding-top: $spacing-lg;
+  @include rise-in($delay: 0.24s);
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: $spacing-xxxl;
+    max-width: 420px;
+  }
+}
+
+// Bare uppercase letterspaced links, no button chrome, in the forced
+// high-contrast colour the rest of the hero copy uses.
+.ctaButton,
+.ctaGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-family: $font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hero-photo-text);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: opacity $duration-fast ease;
+
+  &:hover {
+    opacity: 0.7;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    font-size: 14px;
+  }
+}
+
+.ctaButton {
+  // Primary link carries the outward arrow — the only ornament in the bar.
+  svg {
+    flex: none;
+    height: 15px;
+    width: 15px;
+  }
+
+}
+
+.ctaGhost {
+  opacity: 0.8;
+}
+
+// Everything after the hero, as one opaque sheet — this is what visually
+// slides up and covers the fixed hero backdrop (.heroBg) as the page
+// scrolls.
+.pageContent {
+  position: relative;
+  z-index: 1;
+  background-color: var(--color-background);
+  // Full-bleed to the screen edges, because the backdrop it has to cover is
+  // fixed to the viewport. Escaping .main's padding isn't enough: .main is
+  // also capped at $container-max-width and centred, so past that width the
+  // photo showed through the gap on either side.
+  //
+  // 50% here is half of .main's content box, 50vw half the viewport, so the
+  // difference is exactly that gap plus the padding — correct both below and
+  // above the cap. Padded back in by the same amount so children keep the
+  // container's alignment (.marquee's own breakout is relative to this
+  // padded box, so it's unaffected).
+  //
+  // 100vw counts the scrollbar gutter, which leaves a few pixels of
+  // overhang; .page clips that off (see Layout.module.scss).
+  margin-inline: calc(50% - 50vw);
+  padding-inline: calc(50vw - 50%);
+}
+
+// Breathing room between the last section and the closing band.
+.pageContentOpen {
+  padding-bottom: $spacing-huge * 2;
+}
+// ---------- Marquee strip ----------
+
+.marquee {
+  position: relative;
+  overflow: hidden;
+  margin-inline: calc(-1 * $container-padding);
+  border-block: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: $spacing-lg 0;
+  // Fade edges without extra elements
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  align-items: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: marquee-scroll 30s linear infinite;
+  }
+}
+
+@keyframes marquee-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marqueeItem {
+  display: inline-flex;
+  // Baseline, not center: the attribution is set much smaller than the
+  // quote, so centering the two boxes leaves their text sitting at visibly
+  // different heights. (The dot re-centers itself — see .marqueeDot.)
+  align-items: baseline;
+  gap: $spacing-xxxl;
+  padding-right: $spacing-xxxl;
+  font-family: $font-display;
+  font-size: 21px;
+  font-weight: 500;
+  font-style: italic;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+// The attribution, set apart from the quote itself: smaller, upright and
+// letterspaced against the italic display face.
+.marqueeAuthor {
+  font-family: $font-accent;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  opacity: 0.75;
+}
+
+.marqueeDot {
+  // The separator has no text of its own, so baseline alignment would drop
+  // it to sit on the line — center it against the strip instead.
+  align-self: center;
+  height: 5px;
+  width: 5px;
+  border-radius: $radius-pill;
+  background-color: var(--color-accent);
+}
+
+// ---------- Content sections ----------
+
+.section {
+  position: relative;
+  z-index: 1;
+  margin-top: $spacing-huge;
+
+  @include respond-up($breakpoint-lg) {
+    margin-top: 72px;
+  }
+}

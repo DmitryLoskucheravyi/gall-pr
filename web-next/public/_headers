@@ -1,0 +1,29 @@
+# Response headers for the static site on Cloudflare Pages.
+#
+# The API deliberately ships no Content-Security-Policy — it serves JSON, not
+# pages, and a policy there protects nothing. See the note in backend/main.ts:
+# the policy that matters belongs on whatever serves the web build. This is it.
+
+/*
+  # Nothing here is ever framed. Clickjacking on a shop means an invisible
+  # overlay on the "buy" button.
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # The app asks for none of these, so it should not be able to.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  # Vite emits real <script src> files, so no 'unsafe-inline' for scripts —
+  # except one: index.html carries an inline theme script that has to run
+  # before first paint to avoid a white flash, and 'unsafe-hashes' would not
+  # cover it. It is a fixed, known script, so it is allowed by hash.
+  #
+  # style-src needs 'unsafe-inline': React sets element styles directly in
+  # several places (the hero sequence, the corridor, the scroll-continue bar).
+  #
+  # connect-src covers the API and its websocket. Update it with the API's
+  # hostname if that ever changes.
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://www.liqpay.ua https://secure.wayforpay.com; script-src 'self' 'sha256-eC/TPWhfEUPkAHnuLvQp2jHQAgHDfS+vNJwDnzWmBCg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com; media-src 'self' https://res.cloudinary.com; font-src 'self' data:; connect-src 'self' https://api.viktorumm.com wss://api.viktorumm.com; upgrade-insecure-requests
+
+# Hashed filenames, so these can be cached for as long as anyone likes.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

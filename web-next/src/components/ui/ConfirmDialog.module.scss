@@ -1,0 +1,87 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+  background-color: rgba(12, 10, 8, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: overlay-fade 0.2s ease both;
+  }
+}
+
+@keyframes overlay-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dialog {
+  width: 100%;
+  max-width: 420px;
+  border-radius: $radius-xl;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: $spacing-xxl;
+  box-shadow: var(--shadow-lg);
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: dialog-pop 0.24s $ease-out both;
+  }
+}
+
+@keyframes dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.title {
+  font-family: $font-display;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.message {
+  margin-top: $spacing-sm;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  margin-top: $spacing-xxl;
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+}
+
+.cancel {
+  @include button-secondary;
+  padding: $spacing-sm $spacing-xl;
+}
+
+.confirm {
+  @include button-primary;
+  padding: $spacing-sm $spacing-xl;
+}
+
+.confirmDanger {
+  @include button-danger;
+  padding: $spacing-sm $spacing-xl;
+}

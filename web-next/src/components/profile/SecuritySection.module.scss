@@ -1,0 +1,191 @@
+.section {
+  margin-top: $spacing-huge;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: 22px;
+  font-weight: normal;
+  color: var(--color-text);
+}
+
+.grid {
+  display: grid;
+  gap: $spacing-lg;
+  margin-top: $spacing-xl;
+  grid-template-columns: 1fr;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.card {
+  padding: $spacing-xxl;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  background: var(--color-surface);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: $font-display;
+  font-size: 16px;
+  font-weight: normal;
+  color: var(--color-text);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin-top: $spacing-xl;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.input {
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 15px;
+  transition: border-color $duration-fast $ease-out;
+
+  &:focus {
+    outline: none;
+    border-bottom-color: var(--color-accent);
+  }
+}
+
+.hint,
+.muted,
+.since {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.hint {
+  margin: 0;
+}
+
+.error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-error);
+}
+
+.submit {
+  align-self: flex-start;
+  padding: 11px 24px;
+  border: none;
+  border-radius: $radius-pill;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background $duration-fast $ease-out;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  &:not(:disabled):hover {
+    background: var(--color-accent-hover);
+  }
+}
+
+.sessions {
+  margin: $spacing-xl 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-md 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.device {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.currentBadge {
+  padding: 2px 8px;
+  border-radius: $radius-pill;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.since {
+  margin: 2px 0 0;
+}
+
+.endButton {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: $radius-pill;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    border-color $duration-fast $ease-out,
+    color $duration-fast $ease-out;
+
+  &:hover {
+    border-color: var(--color-error);
+    color: var(--color-error);
+  }
+}
+
+.dangerButton {
+  margin-top: $spacing-xl;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-error);
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

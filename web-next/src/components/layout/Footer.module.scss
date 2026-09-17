@@ -1,0 +1,316 @@
+// Deliberately inverted (deep ink in both themes) — a grounded, modern
+// close to every page. Local literals instead of theme tokens on purpose.
+//
+// Because the ground here is always Obsidian, the accent has to be the dark
+// theme's lifted sage in *both* themes: the light theme's --color-accent-text
+// is a deepened moss meant for a cream page and drops to ~2.4:1 here. Rebinding
+// the token on .footer keeps the descendants written against roles, not hexes.
+.footer {
+  position: relative;
+  z-index: 1;
+  margin-top: $spacing-huge;
+  border-top: 1px solid rgba(237, 234, 226, 0.12);
+  background-color: #1b1a17;
+  color: #edeae2;
+  --color-accent-text: #93a67f;
+}
+
+// The footer is the last thing on the page, so it's where the fixed bottom
+// bar gets cleared. Padding .main instead only looked like it worked: the
+// footer is .main's sibling, not its child, so that padding pushed the two
+// apart and opened a gap above the footer without freeing any space under
+// it.
+//
+// Zeroed back out at $breakpoint-lg rather than trusting the variable to be
+// 0 there: a display:none element stops reporting to its ResizeObserver, so
+// --bottom-nav-height can still hold the phone height after a resize past
+// the breakpoint.
+.inner {
+  margin: 0 auto;
+  max-width: $container-max-width;
+  padding: $spacing-huge $container-padding
+    calc(#{$spacing-xxl} + var(--bottom-nav-height, 0px));
+
+  @include respond-up($breakpoint-md) {
+    padding: 72px $container-padding
+      calc(#{$spacing-xxxl} + var(--bottom-nav-height, 0px));
+  }
+
+  @include respond-up($breakpoint-lg) {
+    padding-bottom: $spacing-xxxl;
+  }
+}
+
+// ---------- Top: logo, and the way to the next page opposite it ----------
+//
+// continue is only ever here when there is somewhere to go (see
+// useScrollContinue) — the row still holds its place without it, logo alone,
+// rather than the layout shifting depending on which page this is.
+.top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-lg;
+  padding-bottom: $spacing-huge;
+  margin-bottom: $spacing-huge;
+  border-bottom: 1px solid rgba(237, 234, 226, 0.14);
+
+  @include respond-up($breakpoint-sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+// ---------- Main: brand + link columns ----------
+
+.main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-huge $spacing-xxxl;
+  padding-bottom: $spacing-huge;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr);
+    gap: $spacing-huge;
+  }
+}
+
+.brand {
+  max-width: 400px;
+}
+
+.logo {
+  line-height: 1;
+}
+
+.wordmark {
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 34px;
+  letter-spacing: 0.01em;
+  color: #f8f6f0;
+
+  &::after {
+    content: '.';
+    color: var(--color-accent-text);
+  }
+}
+
+.tagline {
+  color: rgba(237, 234, 226, 0.6);
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+// Link columns: 2-up on phones (compact, no tall single stack),
+// 3-up once there is room.
+.links {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-xxxl $spacing-lg;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-md;
+  min-width: 0;
+}
+
+.columnTitle {
+  margin-bottom: $spacing-xs;
+  font-family: $font-accent;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(237, 234, 226, 0.45);
+}
+
+.link {
+  font-size: 14px;
+  color: rgba(237, 234, 226, 0.72);
+  transition:
+    color 0.2s ease,
+    transform 0.25s $ease-out;
+
+  &:hover {
+    color: #f8f6f0;
+    transform: translateX(3px);
+  }
+
+  &.active {
+    color: var(--color-accent-text);
+  }
+}
+
+// ---------- Info strip: payment / delivery / guarantee ----------
+
+.info {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+  border-top: 1px solid rgba(237, 234, 226, 0.14);
+  padding: $spacing-xxl 0;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xxl;
+  }
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.infoLabel {
+  font-family: $font-accent;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(237, 234, 226, 0.4);
+}
+
+.infoValue {
+  font-size: 14px;
+  color: rgba(237, 234, 226, 0.85);
+}
+
+// ---------- Bottom bar ----------
+
+.bottom {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: $spacing-lg;
+  border-top: 1px solid rgba(237, 234, 226, 0.14);
+  padding-top: $spacing-xl;
+
+  @include respond-up($breakpoint-sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.copyright {
+  font-size: 13px;
+  color: rgba(237, 234, 226, 0.45);
+}
+
+.topButton {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  border-radius: $radius-pill;
+  border: 1px solid rgba(237, 234, 226, 0.25);
+  padding: $spacing-sm $spacing-lg;
+  font-family: $font-accent;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(237, 234, 226, 0.75);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.3s $ease-out;
+
+  svg {
+    height: 15px;
+    width: 15px;
+  }
+
+  &:hover {
+    color: #1b1a17;
+    border-color: #f8f6f0;
+    background-color: #f8f6f0;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// ---------- Continue ----------
+//
+// Scrolling past everything in the footer hands the reader on to the next
+// page in the walk (see useScrollContinue) — homepage into catalog, catalog
+// into the full gallery. Sat in .top, opposite the logo.
+.continue {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  color: rgba(237, 234, 226, 0.75);
+  transition: color $duration-fast ease;
+
+  &:hover {
+    color: #f8f6f0;
+  }
+
+  // Below this a phone can't reasonably be expected to scroll down to it —
+  // ContinuePrompt (see Layout.tsx) covers the same ground there instead,
+  // as a bar that rises from the bottom of the screen once the reader is
+  // actually at the bottom of the page and still going, not something
+  // sitting quietly at the top of a footer they may never scroll back to.
+  @media (max-width: $breakpoint-sm - 1px) {
+    display: none;
+  }
+}
+
+.continueLabel {
+  flex: none;
+  font-family: $font-accent;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+// Filled straight from --progress, which useScrollContinue already eases
+// frame to frame on its own clock — a transition here too would only add a
+// second, competing lag on top of that one.
+//
+// A fixed width rather than flex: 1 — .continue sizes to its own content
+// (it's a flex item in a space-between row, not the row itself), so there
+// was no free space for a flexed track to grow into and it rendered at 0.
+.continueTrack {
+  position: relative;
+  flex: none;
+  width: 140px;
+  height: 2px;
+  border-radius: $radius-pill;
+  background-color: rgba(237, 234, 226, 0.16);
+  overflow: hidden;
+}
+
+.continueFill {
+  position: absolute;
+  inset: 0;
+  width: calc(var(--progress, 0) * 100%);
+  border-radius: inherit;
+  background-color: var(--color-accent-text);
+}
+
+// Nudged toward the label as the bar fills, so the arrow reads as part of
+// the same gesture rather than a static decoration sitting beside it.
+.continueArrow {
+  flex: none;
+  height: 15px;
+  width: 15px;
+  transform: translateX(calc(var(--progress, 0) * 5px));
+  transition: transform $duration-fast ease;
+}
+
+.continue:hover .continueArrow {
+  transform: translateX(8px);
+}

@@ -1,0 +1,582 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { usePathname, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+
+import { LocalizedLink as Link, LocalizedNavLink as NavLink } from '../ui/LocalizedLink';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { logout } from '../../store/slices/authSlice';
+import { toggleTheme } from '../../store/slices/themeSlice';
+import { authService } from '../../api/auth.api';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCartCount } from '../../hooks/queries/useCart';
+import { useAdminPendingOrdersCount } from '../../hooks/queries/useOrders';
+import { useAdminUnreadSupportCount } from '../../hooks/queries/useSupport';
+import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
+import { useLocale, type Locale } from '../../hooks/useLocale';
+import { stripLocale } from '../../utils/locale';
+import styles from './Header.module.scss';
+
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `${styles.navLink} ${isActive ? styles.active : ''}`;
+
+const adminNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `${styles.adminMenuLink} ${isActive ? styles.active : ''}`;
+
+const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `${styles.mobileNavLink} ${isActive ? styles.active : ''}`;
+
+type Props = {
+  // Shorter vertical padding for AuthPage's full-bleed screen — see
+  // Layout.tsx. The height this publishes as --header-height (below)
+  // shrinks along with it, so AuthPage's own full-height math stays correct
+  // without anything there needing to know the pixel value.
+  compact?: boolean;
+};
+
+export default function Header({ compact = false }: Props) {
+  const { t } = useTranslation('header');
+  const router = useRouter();
+  // Signing out must drop every cached response — the next visitor on this
+  // browser is a different person as far as the cache is concerned.
+  const queryClient = useQueryClient();
+  const navigate = useLocalizedNavigate();
+  const pathname = usePathname();
+  const locale = useLocale();
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  // The session is re-established from the refresh cookie after the page
+  // loads, so for a moment we don't know who this is. Showing the signed-out
+  // branch during that window flashes "Увійти" on every reload for someone who
+  // is in fact signed in — better to show neither until the answer arrives.
+  const authKnown = useAppSelector((state) => state.auth.isBootstrapped);
+  const cartCount = useCartCount();
+  const pendingOrdersCount = useAdminPendingOrdersCount();
+  const unreadSupportCount = useAdminUnreadSupportCount();
+  const isDark = useAppSelector((state) => state.theme.isDark);
+
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const adminMenuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setIsAdminMenuOpen(false);
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Exposes the header's real rendered height as a CSS var — the mobile hero
+  // sticks just below it (see HomePage.module.scss), and hardcoding a pixel
+  // guess would drift the moment the header's content/padding changes.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const setHeightVar = () => {
+      document.documentElement.style.setProperty(
+        '--header-height',
+        `${el.offsetHeight}px`,
+      );
+    };
+
+    setHeightVar();
+    const observer = new ResizeObserver(setHeightVar);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isAdminMenuOpen) return;
+
+    const handleOutside = (event: MouseEvent) => {
+      if (!adminMenuRef.current?.contains(event.target as Node)) {
+        setIsAdminMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsAdminMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isAdminMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMobileMenuOpen]);
+
+  // The server has to be told: it holds the refresh cookie, and the page
+  // cannot clear an httpOnly one itself. This used to only reset Redux, which
+  // left the session alive server-side — reloading would have signed you back
+  // in. Local state is cleared either way, so a failed request still logs you
+  // out here rather than stranding you in a half-signed-in header.
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      dispatch(logout());
+      queryClient.clear();
+      navigate('/');
+    }
+  };
+
+  const handleThemeToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    if (!document.startViewTransition || prefersReducedMotion) {
+      dispatch(toggleTheme());
+      return;
+    }
+
+    const x = event.clientX;
+    const y = event.clientY;
+    const radius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    );
+
+    const root = document.documentElement;
+    root.style.setProperty('--theme-toggle-x', `${x}px`);
+    root.style.setProperty('--theme-toggle-y', `${y}px`);
+    root.style.setProperty('--theme-toggle-r', `${radius}px`);
+
+    document.startViewTransition(() => {
+      flushSync(() => {
+        dispatch(toggleTheme());
+      });
+    });
+  };
+
+  // Swaps the locale segment and keeps everything after it — switching
+  // language mid-page stays on that page, it doesn't bounce home.
+  const otherLocale: Locale = locale === 'ua' ? 'en' : 'ua';
+  const handleLanguageToggle = () => {
+    // The raw router, not the localised one: this is the one navigation that
+    // deliberately switches locale rather than staying in the current one.
+    //
+    // The query string is read here, at click time, rather than through
+    // useSearchParams during render. That hook forces every page containing
+    // this header out of static rendering and into a Suspense bailout — and
+    // the value is only ever needed the moment someone presses the switch.
+    const query = typeof window === 'undefined' ? '' : window.location.search;
+    router.push(`/${otherLocale}${stripLocale(pathname)}${query}`);
+  };
+
+  const themeIcon = isDark ? (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36-.7-.7M6.34 6.34l-.7-.7m12.72 0-.7.7M6.34 17.66l-.7.7M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
+  const profileIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M4.5 19.5c1.4-3.1 4.3-5 7.5-5s6.1 1.9 7.5 5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+
+  const favoritesIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 20.25c-.19 0-.38-.05-.55-.16-.66-.42-1.62-1.04-2.67-1.83C5.02 15.6 2.25 12.7 2.25 9.15 2.25 6.3 4.53 4 7.35 4c1.85 0 3.47.98 4.65 2.53C13.18 4.98 14.8 4 16.65 4c2.82 0 5.1 2.3 5.1 5.15 0 3.55-2.77 6.45-6.53 9.11-1.05.79-2.01 1.41-2.67 1.83-.17.11-.36.16-.55.16Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
+  const supportIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
+  const cartIcon = (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path
+        d="M3 4h2l.4 2M7 13h10l3-8H6.4M7 13 5.4 6M7 13l-1.6 3.2A1 1 0 0 0 6.3 18H17"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9" cy="21" r="1.4" fill="currentColor" />
+      <circle cx="17" cy="21" r="1.4" fill="currentColor" />
+    </svg>
+  );
+
+  return (
+    <header
+      ref={headerRef}
+      className={`${styles.header} ${compact ? styles.compact : ''}`}
+    >
+      <div className={styles.inner}>
+        <Link to="/" className={styles.logo}>
+          <span className={styles.wordmark}>Viktorumm</span>
+        </Link>
+
+        <nav className={styles.nav}>
+          <NavLink to="/" className={navLinkClass} end>
+            {t('nav.home')}
+          </NavLink>
+          <NavLink to="/catalog" className={navLinkClass}>
+            {t('nav.catalog')}
+          </NavLink>
+          <NavLink to="/gallery" className={navLinkClass}>
+            {t('nav.gallery')}
+          </NavLink>
+
+          {user?.role === 'ADMIN' && (
+            <div ref={adminMenuRef} className={styles.adminMenu}>
+              <button
+                type="button"
+                onClick={() => setIsAdminMenuOpen((prev) => !prev)}
+                className={`${styles.navLink} ${styles.adminMenuTrigger} ${
+                  isAdminMenuOpen ? styles.active : ''
+                }`}
+              >
+                {t('admin.menu')}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className={`${styles.adminMenuChevron} ${
+                    isAdminMenuOpen ? styles.open : ''
+                  }`}
+                >
+                  <path
+                    d="m6 9 6 6 6-6"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              {isAdminMenuOpen && (
+                <div className={styles.adminMenuPanel}>
+                  <NavLink to="/admin/dictionaries" className={adminNavLinkClass}>
+                    {t('admin.dictionaries')}
+                  </NavLink>
+                  <NavLink to="/admin/series" className={adminNavLinkClass}>
+                    {t('admin.series')}
+                  </NavLink>
+                  <NavLink to="/admin/users" className={adminNavLinkClass}>
+                    {t('admin.users')}
+                  </NavLink>
+                  <NavLink to="/admin/orders" className={adminNavLinkClass}>
+                    {t('admin.orders')}
+                    {pendingOrdersCount > 0 && (
+                      <span className={styles.navBadge}>{pendingOrdersCount}</span>
+                    )}
+                  </NavLink>
+                  <NavLink to="/admin/settings" className={adminNavLinkClass}>
+                    {t('admin.settings')}
+                  </NavLink>
+                  <NavLink to="/admin/support" className={adminNavLinkClass}>
+                    {t('admin.support')}
+                    {unreadSupportCount > 0 && (
+                      <span className={styles.navBadge}>{unreadSupportCount}</span>
+                    )}
+                  </NavLink>
+                  <NavLink to="/admin/giveaways" className={adminNavLinkClass}>
+                    {t('admin.giveaways')}
+                  </NavLink>
+                  <NavLink to="/admin/mail" className={adminNavLinkClass}>
+                    {t('admin.mail')}
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          )}
+
+          {user && (
+            <NavLink to="/favorites" className={navLinkClass}>
+              {t('nav.favorites')}
+            </NavLink>
+          )}
+
+          <button
+            onClick={handleThemeToggle}
+            aria-label={t('themeToggle')}
+            className={styles.themeButton}
+          >
+            {themeIcon}
+          </button>
+
+          <button
+            onClick={handleLanguageToggle}
+            aria-label={t('languageToggle')}
+            className={styles.languageButton}
+          >
+            {otherLocale.toUpperCase()}
+          </button>
+
+          <NavLink
+            to="/cart"
+            aria-label={t('cartAria')}
+            className={({ isActive }) =>
+              `${styles.cartButton} ${isActive ? styles.active : ''}`
+            }
+          >
+            {cartIcon}
+            {cartCount > 0 && (
+              <span className={styles.cartBadge}>{cartCount}</span>
+            )}
+          </NavLink>
+
+          {!authKnown ? null : user ? (
+            <div className={styles.userGroup}>
+              <NavLink
+                to="/profile"
+                aria-label={t('profileAria')}
+                className={({ isActive }) =>
+                  `${styles.profileButton} ${isActive ? styles.active : ''}`
+                }
+              >
+                {profileIcon}
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                aria-label={t('logoutAria')}
+                className={styles.logoutButton}
+              >
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M15 17v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 12h12m0 0-3.5-3.5M21 12l-3.5 3.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <NavLink to="/login" className={navLinkClass}>
+              {t('nav.login')}
+            </NavLink>
+          )}
+        </nav>
+
+        <div className={styles.mobileActions}>
+          {/* Home, catalog, cart, orders and gallery live in the bottom bar
+              at this width — what's left up here is the occasional stuff. */}
+          <button
+            onClick={handleThemeToggle}
+            aria-label={t('themeToggle')}
+            className={styles.themeButton}
+          >
+            {themeIcon}
+          </button>
+
+          <button
+            onClick={handleLanguageToggle}
+            aria-label={t('languageToggle')}
+            className={styles.languageButton}
+          >
+            {otherLocale.toUpperCase()}
+          </button>
+
+          {/* The one slot that differs by role: an admin's most-used screen
+              here is the support inbox, a customer's is their saved works. */}
+          {user?.role === 'ADMIN' && (
+            <NavLink
+              to="/admin/support"
+              aria-label={
+                unreadSupportCount > 0
+                  ? t('supportUnread', { count: unreadSupportCount })
+                  : t('supportAria')
+              }
+              className={({ isActive }) =>
+                `${styles.iconButton} ${isActive ? styles.active : ''}`
+              }
+            >
+              {supportIcon}
+              {unreadSupportCount > 0 && (
+                <span className={styles.cartBadge} aria-hidden="true">
+                  {unreadSupportCount > 9 ? '9+' : unreadSupportCount}
+                </span>
+              )}
+            </NavLink>
+          )}
+
+          {user && user.role !== 'ADMIN' && (
+            <NavLink
+              to="/favorites"
+              aria-label={t('nav.favorites')}
+              className={({ isActive }) =>
+                `${styles.iconButton} ${isActive ? styles.active : ''}`
+              }
+            >
+              {favoritesIcon}
+            </NavLink>
+          )}
+
+          {user && (
+            <NavLink
+              to="/profile"
+              aria-label={t('profileAria')}
+              className={({ isActive }) =>
+                `${styles.profileButton} ${isActive ? styles.active : ''}`
+              }
+            >
+              {profileIcon}
+            </NavLink>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            aria-label={isMobileMenuOpen ? t('menuClose') : t('menuOpen')}
+            aria-expanded={isMobileMenuOpen}
+            className={`${styles.burgerButton} ${
+              isMobileMenuOpen ? styles.burgerOpen : ''
+            }`}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+      </div>
+
+      {isMobileMenuOpen && (
+        <>
+          <div
+            className={styles.mobileBackdrop}
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <nav className={styles.mobilePanel}>
+            <NavLink to="/" className={mobileNavLinkClass} end>
+              {t('nav.home')}
+            </NavLink>
+            <NavLink to="/catalog" className={mobileNavLinkClass}>
+              {t('nav.catalog')}
+            </NavLink>
+            <NavLink to="/gallery" className={mobileNavLinkClass}>
+              {t('nav.gallery')}
+            </NavLink>
+            <NavLink to="/cart" className={mobileNavLinkClass}>
+              {t('nav.cart')}
+              {cartCount > 0 && (
+                <span className={styles.navBadge}>{cartCount}</span>
+              )}
+            </NavLink>
+            <NavLink to="/orders" className={mobileNavLinkClass}>
+              {t('nav.orders')}
+            </NavLink>
+
+            {user && (
+              <NavLink to="/favorites" className={mobileNavLinkClass}>
+                {t('nav.favorites')}
+              </NavLink>
+            )}
+
+            {user?.role === 'ADMIN' && (
+              <>
+                <div className={styles.mobileDivider} />
+                <span className={styles.mobileGroupLabel}>{t('adminGroupLabel')}</span>
+                <NavLink to="/admin/dictionaries" className={mobileNavLinkClass}>
+                  {t('admin.dictionaries')}
+                </NavLink>
+                <NavLink to="/admin/series" className={mobileNavLinkClass}>
+                  {t('admin.series')}
+                </NavLink>
+                <NavLink to="/admin/users" className={mobileNavLinkClass}>
+                  {t('admin.users')}
+                </NavLink>
+                <NavLink to="/admin/orders" className={mobileNavLinkClass}>
+                  {t('admin.orders')}
+                  {pendingOrdersCount > 0 && (
+                    <span className={styles.navBadge}>{pendingOrdersCount}</span>
+                  )}
+                </NavLink>
+                <NavLink to="/admin/settings" className={mobileNavLinkClass}>
+                  {t('admin.settings')}
+                </NavLink>
+                <NavLink to="/admin/support" className={mobileNavLinkClass}>
+                  {t('admin.support')}
+                  {unreadSupportCount > 0 && (
+                    <span className={styles.navBadge}>{unreadSupportCount}</span>
+                  )}
+                </NavLink>
+                <NavLink to="/admin/giveaways" className={mobileNavLinkClass}>
+                  {t('admin.giveaways')}
+                </NavLink>
+                <NavLink to="/admin/mail" className={mobileNavLinkClass}>
+                  {t('admin.mail')}
+                </NavLink>
+              </>
+            )}
+
+            <div className={styles.mobileDivider} />
+
+            {!authKnown ? null : user ? (
+              <button onClick={handleLogout} className={styles.mobileLogout}>
+                {t('nav.logout')}
+              </button>
+            ) : (
+              <NavLink to="/login" className={mobileNavLinkClass}>
+                {t('nav.login')}
+              </NavLink>
+            )}
+          </nav>
+        </>
+      )}
+    </header>
+  );
+}

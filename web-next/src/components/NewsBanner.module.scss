@@ -1,0 +1,30 @@
+// No card around the news any more — no panel, no border, no shadow. It
+// reads as a passage set into the page rather than a widget sitting on it.
+.banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-md;
+}
+
+.title {
+  font-family: $font-display;
+  font-size: clamp(24px, 3.4vw, 34px);
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.text {
+  width: 100%;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1.7;
+  // Keeps the paragraph breaks the admin typed.
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.skeleton {
+  height: 140px;
+  background-color: var(--color-background-alt);
+}

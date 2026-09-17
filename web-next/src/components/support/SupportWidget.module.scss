@@ -1,0 +1,77 @@
+// Position (left/top) is driven from SupportWidget.tsx — the launcher is
+// draggable and docks to either side edge, so it has no fixed corner here.
+// Keep the box size in sync with SIZE in that file.
+// Mobile-first: on phones support lives in the header and the bottom bar
+// owns this corner, so the launcher only appears from $breakpoint-lg.
+.launcher {
+  display: none;
+  position: fixed;
+  z-index: 40;
+  height: 48px;
+  width: 48px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: $radius-pill;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  // The pointer owns this gesture — without it, touch-dragging scrolls the
+  // page instead of moving the launcher.
+  touch-action: none;
+  user-select: none;
+  transition:
+    left 0.3s $ease-spring,
+    top 0.3s $ease-spring,
+    transform 0.35s $ease-spring,
+    box-shadow 0.25s ease;
+
+  @include respond-up($breakpoint-lg) {
+    display: flex;
+  }
+
+  &:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
+}
+
+// While being dragged: lifted off the page, following the finger with no
+// easing (the inline transition:none in SupportWidget.tsx) and no hover or
+// press scaling fighting the movement.
+.dragging {
+  cursor: grabbing;
+  box-shadow: var(--shadow-lg);
+
+  &:hover,
+  &:active {
+    transform: scale(1.06);
+  }
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: flex;
+  height: 20px;
+  min-width: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--color-error);
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}

@@ -1,0 +1,301 @@
+@use 'variables' as *;
+
+@mixin button-base {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate; // stacking context so the ::before fill sits below the label
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  font-family: $font-sans;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  // Hover restyles colour in place — no vertical shift. A tiny press on
+  // :active is the only movement.
+  transition:
+    color $duration-base ease,
+    background-color $duration-base ease,
+    border-color $duration-base ease,
+    box-shadow $duration-base ease,
+    transform $duration-fast ease,
+    opacity $duration-fast ease;
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+// "Fill from bottom" hover: the hover colour floods up from the bottom edge as
+// a ::before panel that scales on the Y axis (origin bottom), sitting behind the
+// label (z-index -1 inside the button's own stacking context). No vertical
+// shift — just a directional, tactile fill. Reduced-motion users get the same
+// end colour with the fill snapping in instantly.
+@mixin button-fill($fill, $on-fill) {
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-color: $fill;
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform $duration-base $ease-out;
+  }
+
+  &:hover:not(:disabled) {
+    color: $on-fill;
+
+    &::before {
+      transform: scaleY(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before {
+      transition: none;
+    }
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  padding: $spacing-md $spacing-xxl;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  @include button-fill(var(--color-accent), var(--color-on-accent));
+}
+
+@mixin button-secondary {
+  @include button-base;
+  padding: $spacing-md $spacing-xxl;
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  @include button-fill(var(--color-primary), var(--color-on-primary));
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+  }
+}
+
+@mixin button-danger {
+  @include button-base;
+  padding: $spacing-md $spacing-xxl;
+  background-color: var(--color-error);
+  color: #fff;
+  @include button-fill(color-mix(in srgb, var(--color-error) 82%, #000), #fff);
+}
+
+// Chrome/Firefox paint autofilled inputs with an opaque native background
+// (usually white or pale yellow) that ignores our own background-color and
+// breaks dark mode. Forcing a giant inset box-shadow in the surface color
+// is the standard workaround — a huge blur radius makes it fill the input
+// regardless of size, and the absurdly long transition delays the browser's
+// own background-color paint long enough that it never becomes visible.
+@mixin autofill-fix($bg: var(--color-surface)) {
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--color-text);
+    -webkit-box-shadow: 0 0 0px 1000px #{$bg} inset;
+    box-shadow: 0 0 0px 1000px #{$bg} inset;
+    caret-color: var(--color-text);
+    transition: background-color 5000s ease-in-out 0s;
+  }
+}
+
+@mixin input-base {
+  width: 100%;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: $font-sans;
+  font-size: 15px;
+  transition:
+    border-color $duration-fast ease,
+    box-shadow $duration-fast ease;
+
+  @include autofill-fix;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-ring);
+  }
+}
+
+// Shared shell for Checkbox/Radio: a hidden native input plus a visible box,
+// so the two only differ in the box's shape and its checked-state indicator.
+@mixin control-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: 14px;
+  color: var(--color-text);
+  cursor: pointer;
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+// Overlays the box exactly, kept as a real focusable input rather than
+// display:none — keyboard and screen-reader behaviour stays native, only the
+// browser's own checkbox/radio paint is invisible.
+@mixin control-input {
+  position: absolute;
+  inset: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@mixin control-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  transition:
+    border-color $duration-fast ease,
+    background-color $duration-fast ease;
+}
+
+@mixin card {
+  border-radius: $radius-lg;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+@mixin card-hover {
+  transition:
+    transform $duration-base $ease-out,
+    box-shadow $duration-base $ease-out,
+    border-color $duration-base ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+@mixin chip($active: false) {
+  position: relative;
+  padding: $spacing-sm $spacing-lg;
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border);
+  font-family: $font-sans;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color $duration-fast ease,
+    border-color $duration-fast ease,
+    color $duration-fast ease,
+    transform $duration-base $ease-out,
+    box-shadow $duration-base $ease-out;
+
+  @if $active {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: 600;
+  } @else {
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+
+    @if not $active {
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+}
+
+// Scroll-driven entrance: elements rise and fade in as they scroll into view.
+// Pure CSS (animation-timeline: view()), zero JS — browsers without support
+// (or reduced-motion users) simply render the final state. Keyframes are
+// emitted via @at-root so CSS-module scoping keeps the reference valid.
+@mixin reveal($range-end: 30%) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: reveal-rise $duration-slow $ease-out both;
+      animation-timeline: view();
+      animation-range: entry 0% entry $range-end;
+    }
+  }
+
+  @at-root {
+    @keyframes reveal-rise {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  }
+}
+
+// Time-based entrance for above-the-fold content (heroes) that should play
+// on mount rather than on scroll.
+@mixin rise-in($duration: $duration-slow, $delay: 0s) {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: mount-rise $duration $ease-out $delay both;
+  }
+
+  @at-root {
+    @keyframes mount-rise {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  }
+}
