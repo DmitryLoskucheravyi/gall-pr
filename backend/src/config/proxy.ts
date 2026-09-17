@@ -49,8 +49,13 @@ export function clientAddressOf(request: {
   socket?: { remoteAddress?: string };
 }): string {
   if (isBehindProxy()) {
-    const forwarded = request.headers?.['cf-connecting-ip'];
-    const cloudflareClient = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    const forwarded: unknown = request.headers?.['cf-connecting-ip'];
+    // Node hands a repeated header back as an array. Taking [0] off an
+    // unknown array is an unknown too, which is exactly what the string check
+    // below is for.
+    const cloudflareClient: unknown = Array.isArray(forwarded)
+      ? forwarded[0]
+      : forwarded;
 
     if (typeof cloudflareClient === 'string' && cloudflareClient.trim()) {
       return cloudflareClient.trim();

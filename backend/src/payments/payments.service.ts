@@ -10,7 +10,10 @@ import {
 } from '../orders/entities/order.entity';
 import { LiqPayGateway } from './gateways/liqpay.gateway';
 import { WayForPayGateway } from './gateways/wayforpay.gateway';
-import type { PaymentGateway, PaymentInitResult } from './gateways/payment-gateway.interface';
+import type {
+  PaymentGateway,
+  PaymentInitResult,
+} from './gateways/payment-gateway.interface';
 
 // Gateways report amounts in whole currency units, and the order total is a
 // DECIMAL(10,2) that arrives as a string — so compare in cents, and allow a
@@ -35,6 +38,18 @@ export class PaymentsService {
       [PaymentProvider.LIQPAY]: liqPayGateway,
       [PaymentProvider.WAYFORPAY]: wayForPayGateway,
     };
+  }
+
+  // Which online gateways actually have keys. The storefront asks, because
+  // offering "pay by card" and then handing back a null payment form is worse
+  // than not offering it: the customer lands on an order they cannot pay.
+  //
+  // Only says which providers are usable — never which keys are set, and
+  // certainly not their values.
+  availableProviders(): PaymentProvider[] {
+    return (Object.keys(this.gateways) as PaymentProvider[]).filter(
+      (provider) => this.gateways[provider]?.isConfigured(),
+    );
   }
 
   createPayment(order: Order): PaymentInitResult | null {
@@ -71,7 +86,9 @@ export class PaymentsService {
     const result = gateway.verifyCallback(payload);
 
     if (!result) {
-      this.logger.warn(`Rejected ${provider} callback: signature did not verify`);
+      this.logger.warn(
+        `Rejected ${provider} callback: signature did not verify`,
+      );
       return null;
     }
 
@@ -135,7 +152,9 @@ export class PaymentsService {
     await this.ordersRepository.update(
       { id: order.id },
       {
-        paymentStatus: result.success ? PaymentStatus.PAID : PaymentStatus.FAILED,
+        paymentStatus: result.success
+          ? PaymentStatus.PAID
+          : PaymentStatus.FAILED,
         paymentTransactionId: result.transactionId,
       },
     );

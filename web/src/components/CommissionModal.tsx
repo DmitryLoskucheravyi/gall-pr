@@ -14,6 +14,7 @@ import NovaPoshtaCityPicker from './ui/NovaPoshtaCityPicker';
 import Select from './ui/Select';
 import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './CommissionModal.module.scss';
+import { apiErrorMessage } from '../utils/apiError';
 
 const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
   | string
@@ -89,8 +90,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
   // Blocks the submit and shows why, rather than letting the request go and
   // come back rejected — the server enforces the same floor, but finding out
   // after a round trip is a worse way to learn it.
-  const belowOriginal =
-    amount.trim() !== '' && Number(amount) < originalPrice;
+  const belowOriginal = amount.trim() !== '' && Number(amount) < originalPrice;
 
   // Straight to the bot, carrying which painting this is about, so neither
   // side has to explain it: one tap on Start and the artist gets a message
@@ -124,14 +124,17 @@ export default function CommissionModal({ painting, onClose }: Props) {
         // Sent as a pair or not at all — a city without a branch is not an
         // address, and the server resolves the names from these refs.
         ...(city && warehouseRef
-          ? { novaPoshtaCityRef: city.ref, novaPoshtaWarehouseRef: warehouseRef }
+          ? {
+              novaPoshtaCityRef: city.ref,
+              novaPoshtaWarehouseRef: warehouseRef,
+            }
           : {}),
         comment: comment.trim() || undefined,
       });
 
       setSent(true);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? t('commission.genericError'));
+    } catch (err) {
+      setError(apiErrorMessage(err, t('commission.genericError')));
     } finally {
       setSending(false);
     }
@@ -208,7 +211,9 @@ export default function CommissionModal({ painting, onClose }: Props) {
                 className={styles.input}
               />
 
-              <span className={styles.optional}>{t('commission.amountLabel')}</span>
+              <span className={styles.optional}>
+                {t('commission.amountLabel')}
+              </span>
 
               <div className={styles.amountRow}>
                 <input
@@ -243,7 +248,9 @@ export default function CommissionModal({ painting, onClose }: Props) {
                 )}
               </p>
 
-              <span className={styles.optional}>{t('commission.deliveryLabel')}</span>
+              <span className={styles.optional}>
+                {t('commission.deliveryLabel')}
+              </span>
 
               <NovaPoshtaCityPicker
                 value={city}

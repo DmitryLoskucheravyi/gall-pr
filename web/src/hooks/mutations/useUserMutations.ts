@@ -5,6 +5,7 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import { setUser } from '../../store/slices/authSlice';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export function useTelegramLinkMutation() {
   return useMutation({
@@ -27,10 +28,10 @@ export function useRedeemTelegramLinkCodeMutation() {
       store.dispatch(setUser(user));
       store.dispatch(showToast({ message: 'Telegram підключено!' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Невірний або застарілий код',
+          message: apiErrorMessage(error, 'Невірний або застарілий код'),
           variant: 'error',
         }),
       );
@@ -47,7 +48,10 @@ export function useResetTelegramLinkMutation() {
     },
     onError: () => {
       store.dispatch(
-        showToast({ message: 'Не вдалося скинути прив\'язку', variant: 'error' }),
+        showToast({
+          message: "Не вдалося скинути прив'язку",
+          variant: 'error',
+        }),
       );
     },
   });
@@ -62,11 +66,10 @@ export function useDeleteUserMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       store.dispatch(showToast({ message: 'Користувача видалено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося видалити користувача',
+          message: apiErrorMessage(error, 'Не вдалося видалити користувача'),
           variant: 'error',
         }),
       );

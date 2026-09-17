@@ -1,17 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { Technique } from '../types/dictionaries.types';
-import { useLocale } from '../hooks/useLocale';
-import { pickLocale } from '../utils/localizedField';
+import type { PaintingSort } from '../lib/queryKeys';
 import styles from './CatalogFilters.module.scss';
 
 type Range = { min: number; max: number };
 
+// Ordered as the panel reads them, newest first — the catalogue's own default.
+const SORTS: PaintingSort[] = [
+  'newest',
+  'oldest',
+  'priceAsc',
+  'priceDesc',
+  'popular',
+];
+
+// Technique and material were offered here as chip rows and have been taken
+// out: the dictionaries behind them are the artist's own working vocabulary,
+// not a distinction a buyer shops by. Both remain on the painting itself and
+// still drive "related works" — they simply aren't a way to narrow the
+// catalogue any more. The API still accepts techniqueId/materialId, so
+// bringing either back is a UI change alone.
 type Props = {
-  techniques: Technique[];
-  selectedTechniqueId: number | null;
-  onSelectTechnique: (id: number | null) => void;
+  sort: PaintingSort;
+  onSelectSort: (sort: PaintingSort) => void;
   priceBounds: Range;
   priceValue: Range;
   onApplyPrice: (value: Range) => void;
@@ -22,15 +34,13 @@ function clamp(value: number, lo: number, hi: number) {
 }
 
 export default function CatalogFilters({
-  techniques,
-  selectedTechniqueId,
-  onSelectTechnique,
+  sort,
+  onSelectSort,
   priceBounds,
   priceValue,
   onApplyPrice,
 }: Props) {
   const { t } = useTranslation('catalog');
-  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [draftMin, setDraftMin] = useState(priceValue.min);
   const [draftMax, setDraftMax] = useState(priceValue.max);
@@ -61,7 +71,7 @@ export default function CatalogFilters({
 
   const isPriceActive =
     priceValue.min !== priceBounds.min || priceValue.max !== priceBounds.max;
-  const isActive = selectedTechniqueId !== null || isPriceActive;
+  const isActive = sort !== 'newest' || isPriceActive;
 
   const span = priceBounds.max - priceBounds.min || 1;
   const minPercent = ((draftMin - priceBounds.min) / span) * 100;
@@ -73,7 +83,7 @@ export default function CatalogFilters({
   };
 
   const handleReset = () => {
-    onSelectTechnique(null);
+    onSelectSort('newest');
     setDraftMin(priceBounds.min);
     setDraftMax(priceBounds.max);
     onApplyPrice(priceBounds);
@@ -101,31 +111,20 @@ export default function CatalogFilters({
 
       {open && (
         <div className={styles.panel}>
-          <p className={styles.panelTitle}>{t('filters.technique')}</p>
-          <div className={styles.techniqueChips}>
-            <button
-              type="button"
-              onClick={() => onSelectTechnique(null)}
-              className={
-                selectedTechniqueId === null
-                  ? styles.techniqueChipActive
-                  : styles.techniqueChip
-              }
-            >
-              {t('filters.allTechniques')}
-            </button>
-            {techniques.map((technique) => (
+          <p className={styles.panelTitle}>{t('filters.sort')}</p>
+          <div className={styles.chips}>
+            {SORTS.map((option) => (
               <button
-                key={technique.id}
+                key={option}
                 type="button"
-                onClick={() => onSelectTechnique(technique.id)}
+                onClick={() => onSelectSort(option)}
                 className={
-                  selectedTechniqueId === technique.id
-                    ? styles.techniqueChipActive
-                    : styles.techniqueChip
+                  sort === option
+                    ? styles.chipActive
+                    : styles.chip
                 }
               >
-                {pickLocale(technique, 'name', locale)}
+                {t(`filters.sorts.${option}`)}
               </button>
             ))}
           </div>

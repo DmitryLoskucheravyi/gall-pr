@@ -70,7 +70,11 @@
       "galleryUploadFailed": "Couldn't upload {{failed}} of {{total}} photos. The rest were saved — please try again.",
       "interiorUploadFailed": "Couldn't upload {{failed}} of {{total}} room photos. The rest were saved — please try again.",
       "saveFailed": "Couldn't save the painting"
-    }
+    },
+    "amountPlaceholder": "Copies in stock",
+    "available": "On sale",
+    "seriesPlaceholder": "Series",
+    "seriesNone": "Not in a series"
   },
   "supportPage": {
     "title": "Support",
@@ -170,6 +174,11 @@
       "title": "Remove order #{{id}} from view?",
       "message": "It will disappear from the active list, but stay available under the \"Completed\" tab.",
       "confirmLabel": "Remove from view"
+    },
+    "pager": {
+      "previous": "Back",
+      "next": "Next",
+      "position": "Page {{page}} of {{totalPages}}"
     }
   },
   "giveawaysPage": {
@@ -345,5 +354,35 @@
     "loading": "Loading…",
     "closeAria": "Close",
     "letterTitle": "Letter"
+  },
+  "seriesPage": {
+    "title": "Series",
+    "lead": "A series is a body of work. A painting belongs to at most one; deleting a series never deletes its paintings — they simply leave it.",
+    "empty": "No series yet.",
+    "count": "{{count}} works",
+    "order": "order {{order}}",
+    "hidden": "hidden",
+    "edit": "Edit",
+    "delete": "Delete",
+    "form": {
+      "createTitle": "New series",
+      "editTitle": "Edit series",
+      "name": "Name",
+      "nameEn": "Name in English",
+      "description": "Description",
+      "descriptionEn": "Description in English",
+      "coverImage": "Cover image (URL)",
+      "sortOrder": "Order",
+      "published": "Show on the site",
+      "create": "Create",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel"
+    },
+    "confirmDelete": {
+      "title": "Delete the series “{{name}}”?",
+      "message": "No paintings will be deleted — {{count}} works simply leave the series and stay in the catalogue.",
+      "confirmLabel": "Delete series"
+    }
   }
 }

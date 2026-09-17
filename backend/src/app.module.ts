@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { User } from './users/entities/user.entity';
 import { Painting } from './paintings/entities/painting.entity';
 import { Material } from './materials/entities/material.entity';
+import { Series } from './series/entities/series.entity';
 import { Technique } from './techniques/entities/technique.entity';
 import { CartItem } from './cart/entities/cart-item.entity';
 import { Order } from './orders/entities/order.entity';
@@ -20,6 +21,8 @@ import { GiveawayParticipant } from './giveaways/entities/giveaway-participant.e
 import { News } from './news/entities/news.entity';
 import { TelegramPendingLink } from './telegram/entities/telegram-pending-link.entity';
 import { MailOutbox } from './mail/entities/mail-outbox.entity';
+import { RefreshSession } from './auth/entities/refresh-session.entity';
+import { PasswordReset } from './auth/entities/password-reset.entity';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -27,6 +30,7 @@ import { UploadsModule } from './uploads/uploads.module';
 
 import { PaintingsModule } from './paintings/paintings.module';
 import { MaterialsModule } from './materials/materials.module';
+import { SeriesModule } from './series/series.module';
 import { TechniquesModule } from './techniques/techniques.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
@@ -52,9 +56,7 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
     // login, register, the Telegram code, guest-cart claims — carry their own
     // stricter @Throttle. Generous enough that ordinary browsing (a catalogue
     // page fires a burst of requests) never trips it.
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60_000, limit: 120 },
-    ]),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST,
@@ -67,6 +69,7 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
         User,
         Painting,
         Material,
+        Series,
         Technique,
         CartItem,
         Order,
@@ -80,6 +83,8 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
         News,
         TelegramPendingLink,
         MailOutbox,
+        RefreshSession,
+        PasswordReset,
       ],
 
       synchronize: false,
@@ -93,6 +98,8 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
     PaintingsModule,
 
     MaterialsModule,
+
+    SeriesModule,
 
     TechniquesModule,
 

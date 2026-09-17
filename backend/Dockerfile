@@ -1,11 +1,23 @@
 FROM node:24-slim AS build
 WORKDIR /app
 
-# npm install rather than npm ci: the lock file is generated on Windows,
-# which doesn't record the Linux-only optional native-binding variants some
-# deps ship (npm ci refuses to run unless the lock file lists every platform
-# variant). npm install resolves whatever the current platform actually
-# needs instead of enforcing lock-file completeness across platforms.
+# npm install rather than npm ci, and the reason is specific enough to write
+# down so nobody "fixes" it again.
+#
+# The lock file is generated on Windows. npm records only the optional native
+# dependencies the generating platform needs, so the Linux build is missing
+# transitive ones — @emnapi/core and @emnapi/runtime, pulled in by the wasm and
+# musl variants of @unrs/resolver-binding. `npm ci` refuses outright when the
+# lock file and package.json disagree like that:
+#
+#   npm error Missing: @emnapi/core@1.11.3 from lock file
+#
+# `npm ci --dry-run` passes on Windows, which makes this easy to get wrong —
+# it only proves the lock file is complete for *this* platform.
+#
+# The proper fix, if reproducible builds become worth it, is to generate the
+# lock file on Linux (run `npm install --package-lock-only` inside a
+# node:24-slim container) and then switch both stages to `npm ci`.
 COPY package.json package-lock.json ./
 RUN npm install
 

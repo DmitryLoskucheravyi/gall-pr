@@ -14,7 +14,13 @@ import { TelegramService } from '../telegram/telegram.service';
 // 1 min, 5 min, 15 min, 1 h, 6 h — five attempts spread over ~7 hours, which
 // outlasts any SMTP outage worth waiting through. Run out of them and the mail
 // is declared dead rather than retried forever.
-const BACKOFF_MS = [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000, 6 * 60 * 60_000];
+const BACKOFF_MS = [
+  60_000,
+  5 * 60_000,
+  15 * 60_000,
+  60 * 60_000,
+  6 * 60 * 60_000,
+];
 
 const TICK_MS = 60_000;
 const BATCH_SIZE = 20;
@@ -38,7 +44,10 @@ export class MailDispatcher implements OnModuleInit, OnModuleDestroy {
     private readonly telegramService: TelegramService,
   ) {}
 
-  async onModuleInit() {
+  // Not async: nothing in here is awaited. bot.start()/drain() are both
+  // deliberately fire-and-forget — awaiting either would hold Nest's bootstrap
+  // open for the life of the process.
+  onModuleInit() {
     if (!this.isConfigured()) {
       this.logger.warn(
         '[MAIL NOT CONFIGURED] SMTP_* unset — letters will be recorded as skipped',

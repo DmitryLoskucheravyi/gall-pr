@@ -6,6 +6,7 @@ import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import { useAppSelector } from '../../store/hooks';
 import type { Giveaway } from '../../types/giveaway.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export function useGiveawayJoinMutation() {
   const queryClient = useQueryClient();
@@ -16,22 +17,26 @@ export function useGiveawayJoinMutation() {
     onSuccess: (result, giveawayId) => {
       queryClient.setQueryData<Giveaway>(
         queryKeys.giveaways.detail(giveawayId),
-        (old) => (old ? { ...old, participantsCount: result.participantsCount } : old),
+        (old) =>
+          old ? { ...old, participantsCount: result.participantsCount } : old,
       );
 
       if (userId) {
-        queryClient.setQueryData(queryKeys.giveaways.myStatus(giveawayId, userId), {
-          joined: true,
-        });
+        queryClient.setQueryData(
+          queryKeys.giveaways.myStatus(giveawayId, userId),
+          {
+            joined: true,
+          },
+        );
       }
 
       queryClient.invalidateQueries({ queryKey: queryKeys.giveaways.lists() });
       store.dispatch(showToast({ message: 'Ви берете участь у розіграші!' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося приєднатись',
+          message: apiErrorMessage(error, 'Не вдалося приєднатись'),
           variant: 'error',
         }),
       );

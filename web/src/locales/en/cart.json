@@ -3,7 +3,9 @@
   "empty": "Your cart is empty",
   "payment": {
     "cod": "Cash on delivery",
-    "cardTransfer": "Card transfer"
+    "cardTransfer": "Card transfer",
+    "liqpay": "Card online (LiqPay)",
+    "wayforpay": "Card online (WayForPay)"
   },
   "toasts": {
     "guestFieldsRequired": "Please enter your name, phone and email to place the order",

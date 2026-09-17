@@ -7,6 +7,7 @@ import BottomNav from './BottomNav';
 import ContinuePrompt from './ContinuePrompt';
 import ScrollToTop from './ScrollToTop';
 import SupportWidget from '../support/SupportWidget';
+import ErrorBoundary from '../ErrorBoundary';
 import { useAppSelector } from '../../store/hooks';
 import { useScrollContinue } from '../../hooks/useScrollContinue';
 import { stripLocale } from '../../utils/locale';
@@ -16,7 +17,12 @@ import styles from './Layout.module.scss';
 // nothing else. The ordinary chrome below (footer, the support launcher)
 // belongs to the rest of the site, not to that moment. Compared against the
 // locale-stripped path, so this stays a plain, unprefixed lookup.
-const CHROME_FREE_PATHS = new Set(['/login', '/register']);
+const CHROME_FREE_PATHS = new Set([
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+]);
 
 export default function Layout() {
   const userRole = useAppSelector((state) => state.auth.user?.role);
@@ -32,11 +38,19 @@ export default function Layout() {
       <ScrollToTop />
       <Header compact={!showChrome} />
       <main className={styles.main}>
-        <Suspense fallback={null}>
-          <Outlet />
-        </Suspense>
+        {/* A second boundary, inside the chrome: a page that throws should
+            leave the header, the footer and the nav standing so the visitor
+            can go somewhere else. Keyed by pathname so navigating away clears
+            the error rather than staying stuck on it. */}
+        <ErrorBoundary key={pathname}>
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
-      {showChrome && <Footer continueTo={nextPath} continueProgress={progress} />}
+      {showChrome && (
+        <Footer continueTo={nextPath} continueProgress={progress} />
+      )}
       {showChrome && <BottomNav />}
       {/* Footer's own continue row hides itself on a phone — this is what
           takes over there. See ContinuePrompt for why. */}

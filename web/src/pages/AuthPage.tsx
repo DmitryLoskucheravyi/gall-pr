@@ -3,19 +3,35 @@ import { useLocation } from 'react-router-dom';
 
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
+import ForgotPasswordForm from '../components/auth/ForgotPasswordForm';
+import ResetPasswordForm from '../components/auth/ResetPasswordForm';
 import { useAlternatingVideo } from '../hooks/useAlternatingVideo';
 import { stripLocale } from '../utils/locale';
 import styles from './AuthPage.module.scss';
 
-// One page for both routes, but only ever one form: /login shows the login
-// form docked to the right edge, /register shows the register form docked
-// to the left, both over the same full-bleed video. Switching — the link at
-// the foot of either form — is a normal route change: React swaps which
-// form mounts, it never shows both at once.
+// One page for four routes, but only ever one form: /login docks to the right
+// edge, /register to the left, both over the same full-bleed video. Switching
+// — the link at the foot of any form — is a normal route change: React swaps
+// which form mounts, it never shows two at once.
+//
+// Password recovery lives here rather than on a page of its own so that losing
+// a password doesn't drop the visitor out of the scene and into bare chrome.
+// It sides with login, which is where it came from and where it goes back to.
+const FORMS = {
+  '/register': RegisterForm,
+  '/forgot-password': ForgotPasswordForm,
+  '/reset-password': ResetPasswordForm,
+  '/login': LoginForm,
+} as const;
+
+type AuthRoute = keyof typeof FORMS;
+
 export default function AuthPage() {
   const { pathname } = useLocation();
-  const active = stripLocale(pathname) === '/register' ? 'register' : 'login';
-  const side = active === 'register' ? 'left' : 'right';
+  const path = stripLocale(pathname);
+  const active: AuthRoute = path in FORMS ? (path as AuthRoute) : '/login';
+  const ActiveForm = FORMS[active];
+  const side = active === '/register' ? 'left' : 'right';
 
   // Matched once, not watched — a visitor who changes the OS setting mid
   // visit gets the new value on their next navigation, same as every other
@@ -78,7 +94,7 @@ export default function AuthPage() {
       <div className={styles.tint} aria-hidden="true" />
 
       <div className={styles.dock} data-side={side}>
-        {active === 'login' ? <LoginForm /> : <RegisterForm />}
+        <ActiveForm />
       </div>
     </div>
   );

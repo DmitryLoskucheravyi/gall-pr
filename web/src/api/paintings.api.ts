@@ -1,21 +1,17 @@
 import { api } from './client';
 import type { Painting, PaintingsResponse } from '../types/painting.types';
 import type { CreatePaintingDto } from '../types/create-painting.types';
+import type { PaintingListFilters } from '../lib/queryKeys';
 
 class PaintingsService {
+  // Takes the filter object rather than seven positional arguments: the list
+  // had grown to the point where adding `materialId` in the middle would have
+  // silently re-bound every call site's `minPrice` to it.
   async getPaintings(
-    page = 1,
-    limit = 12,
-    techniqueId?: number,
-    isAvailable?: boolean,
-    minPrice?: number,
-    maxPrice?: number,
+    filters: PaintingListFilters,
     signal?: AbortSignal,
   ): Promise<PaintingsResponse> {
-    const response = await api.get('/paintings', {
-      params: { page, limit, techniqueId, isAvailable, minPrice, maxPrice },
-      signal,
-    });
+    const response = await api.get('/paintings', { params: filters, signal });
     return response.data;
   }
 

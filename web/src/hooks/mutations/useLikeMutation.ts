@@ -6,8 +6,13 @@ import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import { useAppSelector } from '../../store/hooks';
 import type { Painting, PaintingsResponse } from '../../types/painting.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
-function patchLikes(painting: Painting, paintingId: number, delta: number): Painting {
+function patchLikes(
+  painting: Painting,
+  paintingId: number,
+  delta: number,
+): Painting {
   if (painting.id !== paintingId) return painting;
   return { ...painting, likesCount: Math.max(0, painting.likesCount + delta) };
 }
@@ -55,10 +60,15 @@ export function useLikeMutation() {
       );
 
       if (userId) {
-        queryClient.setQueryData<number[]>(queryKeys.likes.mine(userId), (old) => {
-          const ids = old ?? [];
-          return wasLiked ? ids.filter((id) => id !== paintingId) : [...ids, paintingId];
-        });
+        queryClient.setQueryData<number[]>(
+          queryKeys.likes.mine(userId),
+          (old) => {
+            const ids = old ?? [];
+            return wasLiked
+              ? ids.filter((id) => id !== paintingId)
+              : [...ids, paintingId];
+          },
+        );
       }
 
       return { listSnapshots, detailSnapshot, likedIdsSnapshot, paintingId };
@@ -74,13 +84,16 @@ export function useLikeMutation() {
           context.detailSnapshot,
         );
         if (userId && context.likedIdsSnapshot !== undefined) {
-          queryClient.setQueryData(queryKeys.likes.mine(userId), context.likedIdsSnapshot);
+          queryClient.setQueryData(
+            queryKeys.likes.mine(userId),
+            context.likedIdsSnapshot,
+          );
         }
       }
 
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося оновити лайк',
+          message: apiErrorMessage(error, 'Не вдалося оновити лайк'),
           variant: 'error',
         }),
       );

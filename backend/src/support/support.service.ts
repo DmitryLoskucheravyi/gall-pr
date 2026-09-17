@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 
 import { SupportChat } from './entities/support-chat.entity';
 import { SupportMessage } from './entities/support-message.entity';
@@ -70,21 +70,21 @@ export class SupportService {
     const guestChat = await this.chatsRepository.findOne({
       where: { guestToken },
     });
-    if (!guestChat) return { message: 'Nothing to claim' };
+    if (!guestChat) return { message: 'Немає що перенести' };
 
     const ownChat = await this.chatsRepository.findOne({ where: { userId } });
-    if (ownChat) return { message: 'Chat already exists' };
+    if (ownChat) return { message: 'У вас уже є розмова з підтримкою' };
 
     guestChat.userId = userId;
     guestChat.guestToken = null;
     await this.chatsRepository.save(guestChat);
 
-    return { message: 'Chat claimed' };
+    return { message: 'Розмову перенесено в акаунт' };
   }
 
   async getChatById(chatId: number): Promise<SupportChat> {
     const chat = await this.chatsRepository.findOne({ where: { id: chatId } });
-    if (!chat) throw new NotFoundException('Chat not found');
+    if (!chat) throw new NotFoundException('Розмову не знайдено');
     return chat;
   }
 
@@ -105,18 +105,38 @@ export class SupportService {
       order: { lastMessageAt: 'DESC' },
     });
 
-    const lastMessages = await Promise.all(
-      chats.map((chat) =>
-        this.messagesRepository.findOne({
-          where: { chatId: chat.id },
-          order: { createdAt: 'DESC' },
-        }),
-      ),
+    // One query for every thread's latest message instead of one query per
+    // thread. The inbox is the admin's landing page and it grows with the
+    // shop, so a round trip per row is the wrong shape from the start.
+    const lastMessages = await this.latestMessagePerChat(
+      chats.map((chat) => chat.id),
     );
 
-    return chats.map((chat, index) =>
-      this.toChatSummary(chat, lastMessages[index] ?? null),
+    return chats.map((chat) =>
+      this.toChatSummary(chat, lastMessages.get(chat.id) ?? null),
     );
+  }
+
+  // The newest message of each of the given chats, in one pass. Ordered
+  // oldest-first and written into the map as it goes, so the last write for
+  // any chat is that chat's newest message.
+  private async latestMessagePerChat(
+    chatIds: number[],
+  ): Promise<Map<number, SupportMessage>> {
+    if (chatIds.length === 0) return new Map();
+
+    const messages = await this.messagesRepository.find({
+      where: { chatId: In(chatIds) },
+      order: { createdAt: 'ASC', id: 'ASC' },
+    });
+
+    const latest = new Map<number, SupportMessage>();
+
+    for (const message of messages) {
+      latest.set(message.chatId, message);
+    }
+
+    return latest;
   }
 
   toChatSummary(chat: SupportChat, lastMessage: SupportMessage | null) {

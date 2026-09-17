@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Request,
   UploadedFile,
   UseGuards,
@@ -16,7 +17,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 
-import { OrdersService } from './orders.service';
+import { ADMIN_ORDERS_PAGE_SIZE, OrdersService } from './orders.service';
+import type { AdminOrderTab } from './orders.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { CheckoutDto } from './dto/checkout.dto';
@@ -84,19 +86,46 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('all')
-  findAllAdmin() {
-    return this.ordersService.findAllAdmin();
+  findAllAdmin(
+    @Query('tab') tab?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    // Clamped rather than rejected, for the same reason the catalogue clamps
+    // its paging: a stale link in someone's bookmarks shouldn't be an error.
+    const parsedPage = Math.max(1, Math.trunc(Number(page)) || 1);
+    const parsedLimit = Math.min(
+      100,
+      Math.max(1, Math.trunc(Number(limit)) || ADMIN_ORDERS_PAGE_SIZE),
+    );
+
+    // Anything that isn't the completed tab is the active one — an unknown
+    // value in a bookmarked URL falls back rather than erroring.
+    const resolvedTab: AdminOrderTab =
+      tab === 'completed' ? 'completed' : 'active';
+
+    return this.ordersService.findAllAdmin(
+      resolvedTab,
+      parsedPage,
+      parsedLimit,
+    );
   }
 
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  findOne(@Request() req: OptionalAuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  findOne(
+    @Request() req: OptionalAuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     return this.ordersService.findOne(resolveIdentity(req), id);
   }
 
   @UseGuards(OptionalJwtAuthGuard)
   @Patch(':id/cancel')
-  cancel(@Request() req: OptionalAuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  cancel(
+    @Request() req: OptionalAuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     return this.ordersService.cancel(resolveIdentity(req), id);
   }
 
@@ -145,10 +174,7 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePaymentStatusDto,
   ) {
-    return this.ordersService.updatePaymentStatusAdmin(
-      id,
-      dto.paymentStatus,
-    );
+    return this.ordersService.updatePaymentStatusAdmin(id, dto.paymentStatus);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

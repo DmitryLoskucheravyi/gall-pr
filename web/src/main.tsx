@@ -6,6 +6,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import './styles/global.scss';
 import './i18n';
 import App from './App.tsx';
+import ErrorBoundary from './components/ErrorBoundary';
 import { store } from './store';
 import { queryClient } from './lib/queryClient';
 import { bootstrapAuth } from './auth/bootstrap';
@@ -18,10 +19,15 @@ void bootstrapAuth();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <Provider store={store}>
-        <App />
-      </Provider>
-    </QueryClientProvider>
+    {/* Outermost, so a throw anywhere below it — including in a provider or
+        the router itself — lands on a page that explains itself rather than
+        unmounting the tree and leaving a white screen. */}
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Provider store={store}>
+          <App />
+        </Provider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

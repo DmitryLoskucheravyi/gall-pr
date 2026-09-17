@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../api/client';
 import { store } from '../store';
 import { setAuth, bootstrapped } from '../store/slices/authSlice';
+import { removeStored } from '../utils/safeStorage';
 
 // Re-establishes the session on page load.
 //
@@ -24,11 +25,7 @@ import { setAuth, bootstrapped } from '../store/slices/authSlice';
 // exact thing this change exists to get rid of — so clear it on the way past.
 // Safe to keep indefinitely; it's a no-op once nobody has one.
 function dropLegacyPersistedSession(): void {
-  try {
-    localStorage.removeItem('gall_auth');
-  } catch {
-    // Private mode: nothing was persisted there to begin with.
-  }
+  removeStored('gall_auth');
 }
 
 export async function bootstrapAuth(): Promise<void> {

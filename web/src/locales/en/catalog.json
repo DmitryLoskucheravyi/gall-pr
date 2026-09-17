@@ -12,10 +12,25 @@
   },
   "filters": {
     "trigger": "Filters",
-    "technique": "Technique",
-    "allTechniques": "All",
     "priceLabel": "Price, ₴",
     "reset": "Reset",
-    "apply": "Apply"
+    "apply": "Apply",
+    "sort": "Sort",
+    "sorts": {
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "priceAsc": "Lowest price",
+      "priceDesc": "Highest price",
+      "popular": "Most liked"
+    }
+  },
+  "view": {
+    "all": "All",
+    "series": "Series"
+  },
+  "series": {
+    "empty": "No series yet — the works are waiting to be gathered into bodies of work.",
+    "count": "{{count}} works",
+    "more": "{{count}} more"
   }
 }

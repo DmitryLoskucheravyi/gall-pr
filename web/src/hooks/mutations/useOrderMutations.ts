@@ -5,6 +5,7 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import type { OrderStatus, PaymentStatus } from '../../types/order.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export function useCancelOrderMutation() {
   const queryClient = useQueryClient();
@@ -15,11 +16,10 @@ export function useCancelOrderMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       store.dispatch(showToast({ message: 'Замовлення скасовано' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося скасувати замовлення',
+          message: apiErrorMessage(error, 'Не вдалося скасувати замовлення'),
           variant: 'error',
         }),
       );
@@ -44,10 +44,10 @@ export function useUpdateOrderStatusMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       store.dispatch(showToast({ message: 'Статус оновлено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося змінити статус',
+          message: apiErrorMessage(error, 'Не вдалося змінити статус'),
           variant: 'error',
         }),
       );
@@ -59,17 +59,21 @@ export function useUpdatePaymentStatusMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, paymentStatus }: { id: number; paymentStatus: PaymentStatus }) =>
-      ordersService.updatePaymentStatus(id, paymentStatus),
+    mutationFn: ({
+      id,
+      paymentStatus,
+    }: {
+      id: number;
+      paymentStatus: PaymentStatus;
+    }) => ordersService.updatePaymentStatus(id, paymentStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       store.dispatch(showToast({ message: 'Статус оплати оновлено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося змінити статус оплати',
+          message: apiErrorMessage(error, 'Не вдалося змінити статус оплати'),
           variant: 'error',
         }),
       );
@@ -89,10 +93,10 @@ export function useSendStatusMailMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.mail.all });
       store.dispatch(showToast({ message }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося надіслати лист',
+          message: apiErrorMessage(error, 'Не вдалося надіслати лист'),
           variant: 'error',
         }),
       );
@@ -109,10 +113,10 @@ export function useSendApologyMailMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.mail.all });
       store.dispatch(showToast({ message }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося надіслати лист',
+          message: apiErrorMessage(error, 'Не вдалося надіслати лист'),
           variant: 'error',
         }),
       );
@@ -129,14 +133,15 @@ export function useUploadPaymentProofMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       store.dispatch(
-        showToast({ message: 'Скрін оплати надіслано, очікуйте підтвердження' }),
+        showToast({
+          message: 'Скрін оплати надіслано, очікуйте підтвердження',
+        }),
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося надіслати скрін оплати',
+          message: apiErrorMessage(error, 'Не вдалося надіслати скрін оплати'),
           variant: 'error',
         }),
       );
@@ -153,11 +158,10 @@ export function useArchiveOrderMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       store.dispatch(showToast({ message: 'Прибрано з активного перегляду' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося прибрати замовлення',
+          message: apiErrorMessage(error, 'Не вдалося прибрати замовлення'),
           variant: 'error',
         }),
       );
@@ -174,11 +178,10 @@ export function useDeleteOrderMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       store.dispatch(showToast({ message: 'Замовлення видалено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося видалити замовлення',
+          message: apiErrorMessage(error, 'Не вдалося видалити замовлення'),
           variant: 'error',
         }),
       );

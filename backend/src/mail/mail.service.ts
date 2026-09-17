@@ -3,13 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
 import { MailDispatcher } from './mail.dispatcher';
-import { MailKind, MailOutbox, MailStatus } from './entities/mail-outbox.entity';
+import {
+  MailKind,
+  MailOutbox,
+  MailStatus,
+} from './entities/mail-outbox.entity';
 
-export type OrderMailItem = {
-  title: string;
-  quantity: number;
-  price: number;
-};
+export type OrderMailItem = { title: string; quantity: number; price: number };
 
 // `force` sends the letter even when this order has already had one of the
 // same kind — the admin asking for it by hand.
@@ -64,10 +64,7 @@ export class MailService {
 
   // Has this order already had this letter? Anything queued, in flight or
   // delivered counts; a failed or skipped one does not, since nobody read it.
-  private async alreadySent(
-    kind: MailKind,
-    orderId: number,
-  ): Promise<boolean> {
+  private async alreadySent(kind: MailKind, orderId: number): Promise<boolean> {
     const existing = await this.outboxRepository.findOne({
       where: {
         kind,
@@ -130,7 +127,10 @@ export class MailService {
         }),
       );
     } catch (error) {
-      this.logger.error(`Failed to queue "${subject}" for ${to}`, error as Error);
+      this.logger.error(
+        `Failed to queue "${subject}" for ${to}`,
+        error as Error,
+      );
       return;
     }
 
@@ -565,6 +565,53 @@ export class MailService {
       this.layout(heading, body),
       orderId,
       // Always by hand, and sometimes twice — never deduplicated.
+      { force: true },
+    );
+  }
+
+  // Not an order mail, which is why it passes null for the order id and
+  // force: true — the dedupe key is (kind, orderId), so without either of
+  // those a second reset request in the life of the shop would be silently
+  // swallowed as "already sent".
+  //
+  // The link is the whole letter, so it is also the whole of the plain-text
+  // part: a client that strips HTML must still leave something usable.
+  async sendPasswordReset(
+    to: string,
+    name: string | null,
+    link: string,
+    minutes: number,
+  ): Promise<void> {
+    const heading = name
+      ? `${escapeHtml(name)}, змінімо пароль`
+      : 'Зміна пароля';
+
+    const body = `
+      <p style="font-size:15px;line-height:1.7;color:${INK};">
+        Хтось — сподіваємось, ви — попросив змінити пароль до акаунта ${escapeHtml(to)}.
+        Посилання нижче діє ${minutes} хв і спрацює один раз.
+      </p>
+      <p style="margin:28px 0;">
+        <a href="${escapeHtml(link)}"
+           style="display:inline-block;padding:14px 28px;background:${ACCENT};color:#fff;text-decoration:none;font-size:15px;letter-spacing:.04em;">
+          Встановити новий пароль
+        </a>
+      </p>
+      <p style="font-size:13px;line-height:1.7;color:${MUTED};word-break:break-all;">
+        Якщо кнопка не відкривається, скопіюйте це посилання:<br/>${escapeHtml(link)}
+      </p>
+      <p style="font-size:15px;line-height:1.7;color:${INK};">
+        Якщо ви цього не робили — просто не відкривайте посилання. Поточний пароль
+        залишиться чинним, і ніхто нічого не дізнається.
+      </p>`;
+
+    await this.send(
+      MailKind.PASSWORD_RESET,
+      to,
+      `Зміна пароля — ${BRAND}`,
+      `Щоб встановити новий пароль, відкрийте посилання (діє ${minutes} хв, спрацює один раз):\n${link}\n\nЯкщо ви цього не робили — проігноруйте цей лист, пароль залишиться незмінним.`,
+      this.layout(heading, body),
+      null,
       { force: true },
     );
   }

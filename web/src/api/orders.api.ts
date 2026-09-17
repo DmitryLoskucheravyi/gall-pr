@@ -1,11 +1,13 @@
 import { api } from './client';
 import type {
+  AdminOrderTab,
+  AdminOrdersPage,
   CheckoutDto,
   CheckoutResponse,
+  CreateCommissionDto,
   Order,
   OrderStatus,
   PaymentStatus,
-  CreateCommissionDto,
 } from '../types/order.types';
 
 class OrdersService {
@@ -36,8 +38,14 @@ class OrdersService {
     return response.data;
   }
 
-  async getAllOrders(): Promise<Order[]> {
-    const response = await api.get('/orders/all');
+  async getAllOrders(
+    tab: AdminOrderTab = 'active',
+    page = 1,
+    limit = 25,
+  ): Promise<AdminOrdersPage> {
+    const response = await api.get('/orders/all', {
+      params: { tab, page, limit },
+    });
     return response.data;
   }
 

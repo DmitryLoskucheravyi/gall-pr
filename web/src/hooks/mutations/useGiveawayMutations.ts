@@ -5,11 +5,12 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import type { CreateGiveawayDto } from '../../types/giveaway.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
-function onSaveError(error: any) {
+function onSaveError(error: unknown) {
   store.dispatch(
     showToast({
-      message: error?.response?.data?.message ?? 'Не вдалося зберегти',
+      message: apiErrorMessage(error, 'Не вдалося зберегти'),
       variant: 'error',
     }),
   );
@@ -19,7 +20,8 @@ export function useCreateGiveawayMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dto: CreateGiveawayDto) => giveawaysService.createGiveaway(dto),
+    mutationFn: (dto: CreateGiveawayDto) =>
+      giveawaysService.createGiveaway(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.giveaways.lists() });
       store.dispatch(showToast({ message: 'Збережено' }));
@@ -32,8 +34,13 @@ export function useUpdateGiveawayMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, dto }: { id: number; dto: Partial<CreateGiveawayDto> }) =>
-      giveawaysService.updateGiveaway(id, dto),
+    mutationFn: ({
+      id,
+      dto,
+    }: {
+      id: number;
+      dto: Partial<CreateGiveawayDto>;
+    }) => giveawaysService.updateGiveaway(id, dto),
     onSuccess: (giveaway) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.giveaways.lists() });
       queryClient.invalidateQueries({
@@ -54,10 +61,10 @@ export function useDeleteGiveawayMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.giveaways.lists() });
       store.dispatch(showToast({ message: 'Розіграш видалено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося видалити',
+          message: apiErrorMessage(error, 'Не вдалося видалити'),
           variant: 'error',
         }),
       );

@@ -5,7 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  FindOptionsWhere,
+  IsNull,
+  Repository,
+} from 'typeorm';
 import { readFile, unlink } from 'fs/promises';
 
 import {
@@ -23,12 +29,19 @@ import { CreateCommissionDto } from './dto/create-commission.dto';
 import { Identity } from '../common/identity.util';
 import { PaymentsService } from '../payments/payments.service';
 import { NovaPoshtaService } from '../nova-poshta/nova-poshta.service';
+import { UpstreamError } from '../common/http.util';
 import { UsersService } from '../users/users.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { UploadsService } from '../uploads/uploads.service';
 import { MailService, type OrderMailData } from '../mail/mail.service';
 import { SettingsService } from '../settings/settings.service';
 import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
+
+// Which slice of the order book the admin is looking at. Filtering happens
+// on the server now, so the page it asks for is the page it gets.
+export type AdminOrderTab = 'active' | 'completed';
+
+export const ADMIN_ORDERS_PAGE_SIZE = 25;
 
 const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
   [PaymentProvider.LIQPAY]: 'LiqPay',
@@ -41,7 +54,8 @@ const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
 const ORDER_STATUS_MESSAGE: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]: 'очікує на обробку',
   [OrderStatus.CONFIRMED]: 'підтверджено. Ми готуємо його до відправки',
-  [OrderStatus.SHIPPED]: 'відправлено! Перевірте статус посилки в застосунку Нової пошти',
+  [OrderStatus.SHIPPED]:
+    'відправлено! Перевірте статус посилки в застосунку Нової пошти',
   [OrderStatus.CANCELLED]: 'скасовано',
   [OrderStatus.COMPLETED]: 'виконано. Дякуємо за покупку!',
 };
@@ -104,6 +118,22 @@ export class OrdersService {
     private readonly settingsService: SettingsService,
   ) {}
 
+  // Nova Poshta's client throws UpstreamError when the API is unreachable,
+  // misconfigured or answering nonsense. On the checkout path that has to
+  // become a 503 the customer can read, never a 500 and never a silent zero.
+  private async callNovaPoshta<T>(work: () => Promise<T>): Promise<T> {
+    try {
+      return await work();
+    } catch (error) {
+      if (error instanceof UpstreamError) {
+        this.logger.error(error.message);
+        NovaPoshtaService.unavailable();
+      }
+
+      throw error;
+    }
+  }
+
   async checkout(
     identity: Identity,
     dto: CheckoutDto,
@@ -113,7 +143,9 @@ export class OrdersService {
     // Email carries every update a guest will get about this order, so it's
     // as required as the name and phone.
     if (isGuest && !dto.guestEmail?.trim()) {
-      throw new BadRequestException('Вкажіть email — надішлемо туди замовлення');
+      throw new BadRequestException(
+        'Вкажіть email — надішлемо туди замовлення',
+      );
     }
 
     if (isGuest && (!dto.guestName?.trim() || !dto.guestPhone?.trim())) {
@@ -137,13 +169,19 @@ export class OrdersService {
     let deliveryAddress: { city: string; warehouse: string } | null = null;
 
     if (dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA) {
-      const [city, warehouse] = await Promise.all([
-        this.novaPoshtaService.getCityByRef(dto.novaPoshtaCityRef!),
-        this.novaPoshtaService.getWarehouseByRef(
-          dto.novaPoshtaCityRef!,
-          dto.novaPoshtaWarehouseRef!,
-        ),
-      ]);
+      // Nova Poshta being unreachable and the customer having picked a bad
+      // warehouse are different problems with different answers, so they no
+      // longer share one message: an upstream failure is a 503 that says to
+      // try again, a bad ref is a 400 that says to pick again.
+      const [city, warehouse] = await this.callNovaPoshta(() =>
+        Promise.all([
+          this.novaPoshtaService.getCityByRef(dto.novaPoshtaCityRef!),
+          this.novaPoshtaService.getWarehouseByRef(
+            dto.novaPoshtaCityRef!,
+            dto.novaPoshtaWarehouseRef!,
+          ),
+        ]),
+      );
 
       if (!city || !warehouse) {
         throw new BadRequestException(
@@ -158,7 +196,7 @@ export class OrdersService {
     const cartItems = await this.cartRepository.find({ where: cartWhere });
 
     if (cartItems.length === 0) {
-      throw new BadRequestException('Cart is empty');
+      throw new BadRequestException('Кошик порожній');
     }
 
     // Delivery/COD price is always computed here, server-side, from the
@@ -167,17 +205,28 @@ export class OrdersService {
     let deliveryCost = 0;
     let codFee = 0;
 
-    if (dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA && dto.novaPoshtaCityRef) {
-      const price = await this.novaPoshtaService.calculateDeliveryPriceForCartItems(
-        cartItems,
-        dto.novaPoshtaCityRef,
-        dto.paymentProvider === PaymentProvider.CASH_ON_DELIVERY,
+    if (
+      dto.deliveryMethod === DeliveryMethod.NOVA_POSHTA &&
+      dto.novaPoshtaCityRef
+    ) {
+      const price = await this.callNovaPoshta(() =>
+        this.novaPoshtaService.calculateDeliveryPriceForCartItems(
+          cartItems,
+          dto.novaPoshtaCityRef!,
+          dto.paymentProvider === PaymentProvider.CASH_ON_DELIVERY,
+        ),
       );
 
-      if (price) {
-        deliveryCost = price.shippingCost;
-        codFee = price.redeliveryCost;
+      // `if (price)` used to be the whole of this, with no else — so an
+      // unpriced shipment fell through with deliveryCost still 0 and the order
+      // was placed with free delivery. The cart is known non-empty here, so
+      // there is no legitimate way to reach this without a quote.
+      if (!price) {
+        NovaPoshtaService.unavailable();
       }
+
+      deliveryCost = price.shippingCost;
+      codFee = price.redeliveryCost;
     }
 
     const savedOrder = await this.dataSource.transaction(async (manager) => {
@@ -237,8 +286,8 @@ export class OrdersService {
       const total = totalCents / 100;
 
       const order = manager.create(Order, {
-        userId: isGuest ? null : (identity as { userId: number }).userId,
-        guestToken: isGuest ? (identity as { guestToken: string }).guestToken : null,
+        userId: isGuest ? null : identity.userId,
+        guestToken: isGuest ? identity.guestToken : null,
         guestName: isGuest ? dto.guestName : null,
         guestEmail: isGuest ? dto.guestEmail : null,
         guestPhone: isGuest ? dto.guestPhone : null,
@@ -317,7 +366,9 @@ export class OrdersService {
   // Every mail is fire-and-forget: an order is placed, paid or shipped
   // whether or not its notification leaves the building.
   private async emailOrderPlaced(orderId: number) {
-    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) return;
 
     const recipient = await this.recipientOf(order);
@@ -345,7 +396,9 @@ export class OrdersService {
   }
 
   private async notifyAdminOfNewOrder(orderId: number) {
-    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) return;
 
     let buyer: string;
@@ -367,7 +420,9 @@ export class OrdersService {
     const itemsList = order.items
       .map((item) => {
         const title = item.painting?.title ?? `Картина #${item.paintingId}`;
-        const lineTotal = (Number(item.price) * item.quantity).toLocaleString('uk-UA');
+        const lineTotal = (Number(item.price) * item.quantity).toLocaleString(
+          'uk-UA',
+        );
         return `• ${title} × ${item.quantity} — ${lineTotal} ₴`;
       })
       .join('\n');
@@ -400,7 +455,9 @@ export class OrdersService {
       itemsList,
       '',
       `Доставка: ${deliveryLine}`,
-      deliveryCost > 0 ? `Вартість доставки: ${deliveryCost.toLocaleString('uk-UA')} ₴` : null,
+      deliveryCost > 0
+        ? `Вартість доставки: ${deliveryCost.toLocaleString('uk-UA')} ₴`
+        : null,
       codFee > 0
         ? `Комісія за накладений платіж: ${codFee.toLocaleString('uk-UA')} ₴`
         : null,
@@ -427,21 +484,98 @@ export class OrdersService {
     await this.telegramService.notifyAdmin(lines.join('\n'));
   }
 
+  // A commission never took anything off the shelf — createCommission
+  // deliberately skips every stock step, because the painting being ordered
+  // doesn't exist yet. So neither cancelling one nor bringing one back may
+  // touch stock: doing so invented a copy of a sold-out work out of nothing
+  // and put it back up for sale, and un-cancelling took a real copy away to
+  // pay for it.
+  private movesStock(order: Order): boolean {
+    return !order.isCommission;
+  }
+
+  // Putting a cancelled order's quantities back on the shelf.
+  //
+  // Restoring stock is the same read-modify-write as taking it, so it needs
+  // the same lock: two orders cancelled at once, both holding the same
+  // painting, would otherwise read the same amount and one of the two
+  // increments would be lost. Locked in id order, as in checkout().
+  private async restoreStock(
+    manager: EntityManager,
+    order: Order,
+  ): Promise<void> {
+    if (!this.movesStock(order)) return;
+
+    for (const item of stockOrder(order.items)) {
+      const painting = await manager.findOne(Painting, {
+        where: { id: item.paintingId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (painting) {
+        painting.amount += item.quantity;
+        painting.isAvailable = true;
+        await manager.save(painting);
+      }
+    }
+  }
+
+  // Un-cancelling takes the stock back, so it races exactly as checkout does —
+  // an admin restoring an order while a customer buys the last copy. The
+  // two-pass shape (check everything, then decrement) is what keeps a partial
+  // failure from leaving stock half-taken; the lock is what makes the checks
+  // still true by the time the writes happen.
+  private async takeStockBack(
+    manager: EntityManager,
+    order: Order,
+  ): Promise<void> {
+    if (!this.movesStock(order)) return;
+
+    const paintings = new Map<number, Painting>();
+
+    for (const item of stockOrder(order.items)) {
+      const painting = await manager.findOne(Painting, {
+        where: { id: item.paintingId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!painting || painting.amount < item.quantity) {
+        throw new BadRequestException(
+          `"${painting?.title ?? 'Картина'}" більше недоступна в потрібній кількості`,
+        );
+      }
+
+      paintings.set(item.paintingId, painting);
+    }
+
+    for (const item of order.items) {
+      const painting = paintings.get(item.paintingId)!;
+
+      painting.amount -= item.quantity;
+      if (painting.amount <= 0) {
+        painting.amount = 0;
+        painting.isAvailable = false;
+      }
+
+      await manager.save(painting);
+    }
+  }
+
   async cancel(identity: Identity, id: number): Promise<Order> {
     const order = await this.ordersRepository.findOne({
       where: { id, ...identityWhere(identity) },
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     if (order.status === OrderStatus.CANCELLED) {
-      throw new BadRequestException('Order is already cancelled');
+      throw new BadRequestException('Замовлення вже скасовано');
     }
 
     if (order.status === OrderStatus.COMPLETED) {
-      throw new BadRequestException('Completed orders cannot be cancelled');
+      throw new BadRequestException('Виконане замовлення скасувати не можна');
     }
 
     // Once it's with the courier the painting is physically gone, but the
@@ -456,22 +590,7 @@ export class OrdersService {
     }
 
     const updated = await this.dataSource.transaction(async (manager) => {
-      // Restoring stock is the same read-modify-write as taking it, so it
-      // needs the same lock: two orders cancelled at once, both holding the
-      // same painting, would otherwise read the same amount and one of the two
-      // increments would be lost. Locked in id order, as in checkout().
-      for (const item of stockOrder(order.items)) {
-        const painting = await manager.findOne(Painting, {
-          where: { id: item.paintingId },
-          lock: { mode: 'pessimistic_write' },
-        });
-
-        if (painting) {
-          painting.amount += item.quantity;
-          painting.isAvailable = true;
-          await manager.save(painting);
-        }
-      }
+      await this.restoreStock(manager, order);
 
       order.status = OrderStatus.CANCELLED;
 
@@ -502,7 +621,7 @@ export class OrdersService {
 
     if (!order) {
       await this.discardTempFile(file);
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     if (order.paymentProvider !== PaymentProvider.CARD_TRANSFER) {
@@ -528,7 +647,8 @@ export class OrdersService {
     const updated = await this.ordersRepository.save(order);
 
     const buyer = order.userId
-      ? (await this.usersService.findById(order.userId))?.email ?? `Користувач #${order.userId}`
+      ? ((await this.usersService.findById(order.userId))?.email ??
+        `Користувач #${order.userId}`)
       : `${order.guestName} (гість)`;
 
     this.telegramService
@@ -572,7 +692,7 @@ export class OrdersService {
       .findOne({ where: { id: dto.paintingId } });
 
     if (!painting) {
-      throw new NotFoundException('Painting not found');
+      throw new NotFoundException('Картину не знайдено');
     }
 
     // Checked server-side rather than trusted from the page that offered the
@@ -602,12 +722,16 @@ export class OrdersService {
     // doesn't know yet where it should go — that gets settled along with the
     // price and the timing.
     if (dto.novaPoshtaCityRef?.trim() && dto.novaPoshtaWarehouseRef?.trim()) {
+      // Genuinely optional here: a commission has no delivery fee to price, so
+      // an unreachable Nova Poshta costs the address on the record and nothing
+      // else. Losing the whole enquiry over it would be the wrong trade.
       const [city, warehouse] = await Promise.all([
-        this.novaPoshtaService.getCityByRef(dto.novaPoshtaCityRef),
-        this.novaPoshtaService.getWarehouseByRef(
-          dto.novaPoshtaCityRef,
-          dto.novaPoshtaWarehouseRef,
-        ),
+        this.novaPoshtaService
+          .getCityByRef(dto.novaPoshtaCityRef)
+          .catch(() => null),
+        this.novaPoshtaService
+          .getWarehouseByRef(dto.novaPoshtaCityRef, dto.novaPoshtaWarehouseRef)
+          .catch(() => null),
       ]);
 
       if (city && warehouse) {
@@ -616,8 +740,8 @@ export class OrdersService {
     }
 
     const order = this.ordersRepository.create({
-      userId: isGuest ? null : (identity as { userId: number }).userId,
-      guestToken: isGuest ? (identity as { guestToken: string }).guestToken : null,
+      userId: isGuest ? null : identity.userId,
+      guestToken: isGuest ? identity.guestToken : null,
       // Stored for every commission, account or not: these are the details
       // the customer gave for this particular conversation.
       guestName: dto.name.trim(),
@@ -665,7 +789,9 @@ export class OrdersService {
     title: string,
     originalPrice: number,
   ) {
-    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) return;
 
     const recipient = await this.recipientOf(order);
@@ -715,20 +841,66 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     return order;
   }
 
-  async findAllAdmin() {
-    const orders = await this.ordersRepository.find({
-      relations: { user: true },
-      order: { createdAt: 'DESC' },
-    });
+  // Paginated, and filtered on the server.
+  //
+  // This used to return every order the shop had ever taken, with eager items
+  // and their paintings, so the admin page could filter the lot in the browser.
+  // That is one query whose cost grows with the business, on the screen its
+  // owner opens most often.
+  async findAllAdmin(
+    tab: AdminOrderTab = 'active',
+    page = 1,
+    limit = ADMIN_ORDERS_PAGE_SIZE,
+  ) {
+    const where: FindOptionsWhere<Order> =
+      tab === 'completed'
+        ? { status: OrderStatus.COMPLETED }
+        : // "Active" is everything not tidied away — archiving is only
+          // offered on completed orders, so this is the working list.
+          { isArchived: false };
 
-    return orders.map((order) => ({
-      ...order,
+    const [[orders, total], pendingTotal] = await Promise.all([
+      this.ordersRepository.findAndCount({
+        where,
+        relations: { user: true },
+        // id as the tiebreaker: created_at is second-granular, and two orders
+        // placed in the same second would otherwise be free to swap pages.
+        order: { createdAt: 'DESC', id: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      // Counted across the whole table, not the page. The nav badge says how
+      // many orders are waiting, and once the list is paginated the page can't
+      // answer that — it only knows about twenty-five of them.
+      this.ordersRepository.count({ where: { status: OrderStatus.PENDING } }),
+    ]);
+
+    return {
+      data: orders.map((order) => this.toAdminOrder(order)),
+      total,
+      pendingTotal,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  // The admin's view of an order. `guestToken` is deliberately stripped: it is
+  // a bearer credential for that guest's cart and order history, and there is
+  // no screen that needs it — putting it in a JSON response is putting it in a
+  // browser cache and a devtools log.
+  private toAdminOrder(order: Order) {
+    const rest: Partial<Order> = { ...order };
+    delete rest.guestToken;
+
+    return {
+      ...rest,
       user: order.user
         ? {
             id: order.user.id,
@@ -738,7 +910,7 @@ export class OrdersService {
             phone: order.user.phone,
           }
         : null,
-    }));
+    };
   }
 
   async updatePaymentStatusAdmin(
@@ -748,7 +920,7 @@ export class OrdersService {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     order.paymentStatus = paymentStatus;
@@ -785,7 +957,7 @@ export class OrdersService {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     if (order.status === status) {
@@ -809,18 +981,7 @@ export class OrdersService {
 
     if (!wasCancelled && willBeCancelled) {
       const updated = await this.dataSource.transaction(async (manager) => {
-        for (const item of stockOrder(order.items)) {
-          const painting = await manager.findOne(Painting, {
-            where: { id: item.paintingId },
-            lock: { mode: 'pessimistic_write' },
-          });
-
-          if (painting) {
-            painting.amount += item.quantity;
-            painting.isAvailable = true;
-            await manager.save(painting);
-          }
-        }
+        await this.restoreStock(manager, order);
 
         order.status = status;
 
@@ -834,39 +995,7 @@ export class OrdersService {
 
     if (wasCancelled && !willBeCancelled) {
       const updated = await this.dataSource.transaction(async (manager) => {
-        const paintings = new Map<number, Painting>();
-
-        // Un-cancelling takes the stock back, so it races exactly as checkout
-        // does — an admin restoring an order while a customer buys the last
-        // copy. The two-pass shape (check everything, then decrement) is what
-        // keeps a partial failure from leaving stock half-taken; the lock is
-        // what makes the checks still true by the time the writes happen.
-        for (const item of stockOrder(order.items)) {
-          const painting = await manager.findOne(Painting, {
-            where: { id: item.paintingId },
-            lock: { mode: 'pessimistic_write' },
-          });
-
-          if (!painting || painting.amount < item.quantity) {
-            throw new BadRequestException(
-              `"${painting?.title ?? 'Картина'}" більше недоступна в потрібній кількості`,
-            );
-          }
-
-          paintings.set(item.paintingId, painting);
-        }
-
-        for (const item of order.items) {
-          const painting = paintings.get(item.paintingId)!;
-
-          painting.amount -= item.quantity;
-          if (painting.amount <= 0) {
-            painting.amount = 0;
-            painting.isAvailable = false;
-          }
-
-          await manager.save(painting);
-        }
+        await this.takeStockBack(manager, order);
 
         order.status = status;
 
@@ -932,7 +1061,7 @@ export class OrdersService {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     const recipient = await this.recipientOf(order);
@@ -951,9 +1080,12 @@ export class OrdersService {
             ? (await this.settingsService.get()).cardTransferIban || null
             : null;
 
-        await this.mailService.sendOrderPlaced(recipient.email, mailData, iban, {
-          force: true,
-        });
+        await this.mailService.sendOrderPlaced(
+          recipient.email,
+          mailData,
+          iban,
+          { force: true },
+        );
         break;
       }
 
@@ -989,9 +1121,7 @@ export class OrdersService {
       // CONFIRMED has no letter of its own: it lands minutes after the receipt
       // and would only repeat it.
       default:
-        throw new BadRequestException(
-          'Для цього статусу листа не передбачено',
-        );
+        throw new BadRequestException('Для цього статусу листа не передбачено');
     }
 
     return { message: `Лист надіслано на ${recipient.email}` };
@@ -1001,7 +1131,7 @@ export class OrdersService {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     const recipient = await this.recipientOf(order);
@@ -1029,16 +1159,16 @@ export class OrdersService {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     if (order.status !== OrderStatus.CANCELLED) {
-      throw new BadRequestException('Only cancelled orders can be deleted');
+      throw new BadRequestException('Видалити можна лише скасоване замовлення');
     }
 
     await this.ordersRepository.remove(order);
 
-    return { message: 'Order deleted' };
+    return { message: 'Замовлення видалено' };
   }
 
   // "Delete from view" for completed orders — hides it from the admin's
@@ -1048,11 +1178,13 @@ export class OrdersService {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     if (order.status !== OrderStatus.COMPLETED) {
-      throw new BadRequestException('Тільки виконані замовлення можна прибрати з перегляду');
+      throw new BadRequestException(
+        'Тільки виконані замовлення можна прибрати з перегляду',
+      );
     }
 
     order.isArchived = true;

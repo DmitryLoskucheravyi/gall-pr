@@ -12,6 +12,7 @@ import {
   useUpdatePaymentStatusMutation,
 } from '../../hooks/mutations/useOrderMutations';
 import type {
+  AdminOrderTab,
   DeliveryMethod,
   Order,
   OrderStatus,
@@ -39,12 +40,31 @@ function formatDateTime(value: string, locale: string) {
   });
 }
 
-type Tab = 'active' | 'completed';
+// Kept as a re-export of the shared type so the tab, the query key and the
+// query string can never drift apart.
+type Tab = AdminOrderTab;
 
 export default function AdminOrdersPage() {
   const { t } = useTranslation('admin');
   const locale = useLocale();
-  const { data: orders = [], isLoading: loading } = useAdminOrders();
+  const [tab, setTab] = useState<Tab>('active');
+  const [page, setPage] = useState(1);
+
+  // Filtered and paged on the server. This page used to ask for every order
+  // the shop had ever taken — with eager items and their paintings — and sort
+  // it out in the browser, which is one query whose cost grows with the
+  // business, on the screen its owner opens most often.
+  const { data: ordersPage, isLoading: loading } = useAdminOrders(tab, page);
+
+  const visibleOrders = ordersPage?.data ?? [];
+  const totalPages = ordersPage?.totalPages ?? 1;
+  const total = ordersPage?.total ?? 0;
+
+  const switchTab = (next: Tab) => {
+    setTab(next);
+    // Page 3 of the active list is not page 3 of the completed one.
+    setPage(1);
+  };
   const updateStatus = useUpdateOrderStatusMutation();
   // Which order is mid-shipping, and the waybill being typed for it.
   const [shippingOrderId, setShippingOrderId] = useState<number | null>(null);
@@ -55,11 +75,6 @@ export default function AdminOrdersPage() {
   const sendStatusMail = useSendStatusMailMutation();
   const sendApologyMail = useSendApologyMailMutation();
   const confirm = useConfirm();
-  const [tab, setTab] = useState<Tab>('active');
-
-  const activeOrders = orders.filter((order) => !order.isArchived);
-  const completedOrders = orders.filter((order) => order.status === 'COMPLETED');
-  const visibleOrders = tab === 'active' ? activeOrders : completedOrders;
 
   const handleStatusChange = (order: Order, status: OrderStatus) => {
     if (status === order.status) return;
@@ -181,23 +196,25 @@ export default function AdminOrdersPage() {
       <div className={styles.tabs}>
         <button
           type="button"
-          onClick={() => setTab('active')}
+          onClick={() => switchTab('active')}
           className={tab === 'active' ? styles.tabActive : styles.tab}
         >
-          {t('ordersPage.tabs.active', { count: activeOrders.length })}
+          {t('ordersPage.tabs.active', {
+            count: tab === 'active' ? total : 0,
+          })}
         </button>
         <button
           type="button"
-          onClick={() => setTab('completed')}
+          onClick={() => switchTab('completed')}
           className={tab === 'completed' ? styles.tabActive : styles.tab}
         >
-          {t('ordersPage.tabs.completed', { count: completedOrders.length })}
+          {t('ordersPage.tabs.completed', {
+            count: tab === 'completed' ? total : 0,
+          })}
         </button>
       </div>
 
-      {orders.length === 0 ? (
-        <p className={styles.muted}>{t('ordersPage.empty')}</p>
-      ) : visibleOrders.length === 0 ? (
+      {visibleOrders.length === 0 ? (
         <p className={styles.muted}>
           {tab === 'active'
             ? t('ordersPage.emptyActive')
@@ -484,6 +501,34 @@ export default function AdminOrdersPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className={styles.pager}>
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page <= 1}
+            className={styles.pagerButton}
+          >
+            {t('ordersPage.pager.previous')}
+          </button>
+
+          <span className={styles.pagerLabel}>
+            {t('ordersPage.pager.position', { page, totalPages })}
+          </span>
+
+          <button
+            type="button"
+            onClick={() =>
+              setPage((current) => Math.min(totalPages, current + 1))
+            }
+            disabled={page >= totalPages}
+            className={styles.pagerButton}
+          >
+            {t('ordersPage.pager.next')}
+          </button>
         </div>
       )}
     </div>

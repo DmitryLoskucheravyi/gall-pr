@@ -12,7 +12,15 @@ export function useRelatedPaintings(painting: Painting | undefined) {
   const sameTechniqueQuery = useQuery({
     queryKey: [...baseKey, 'same-technique'],
     queryFn: ({ signal }) =>
-      paintingsService.getPaintings(1, 8, techniqueId as number, true, undefined, undefined, signal),
+      paintingsService.getPaintings(
+        {
+          page: 1,
+          limit: 8,
+          techniqueId: techniqueId as number,
+          isAvailable: true,
+        },
+        signal,
+      ),
     enabled: !!paintingId && !!techniqueId,
   });
 
@@ -27,7 +35,7 @@ export function useRelatedPaintings(painting: Painting | undefined) {
   const fallbackQuery = useQuery({
     queryKey: [...baseKey, 'fallback'],
     queryFn: ({ signal }) =>
-      paintingsService.getPaintings(1, 8, undefined, true, undefined, undefined, signal),
+      paintingsService.getPaintings({ page: 1, limit: 8, isAvailable: true }, signal),
     enabled: needsFallback,
   });
 

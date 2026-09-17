@@ -11,6 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import { Throttle } from '@nestjs/throttler';
+
 import { GiveawaysService } from './giveaways.service';
 import { CreateGiveawayDto } from './dto/create-giveaway.dto';
 import { UpdateGiveawayDto } from './dto/update-giveaway.dto';
@@ -42,9 +44,15 @@ export class GiveawaysController {
     return this.giveawaysService.hasJoined(id, req.user.id);
   }
 
+  // Writes a row and pings Telegram, so it gets a ceiling of its own rather
+  // than sharing the generous browsing allowance.
+  @Throttle({ default: { ttl: 3_600_000, limit: 20 } })
   @UseGuards(JwtAuthGuard)
   @Post(':id/join')
-  join(@Request() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  join(
+    @Request() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     return this.giveawaysService.join(id, req.user.id);
   }
 
@@ -58,7 +66,10 @@ export class GiveawaysController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateGiveawayDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateGiveawayDto,
+  ) {
     return this.giveawaysService.update(id, dto);
   }
 

@@ -291,6 +291,9 @@ export default function Header({ compact = false }: Props) {
                   <NavLink to="/admin/dictionaries" className={adminNavLinkClass}>
                     {t('admin.dictionaries')}
                   </NavLink>
+                  <NavLink to="/admin/series" className={adminNavLinkClass}>
+                    {t('admin.series')}
+                  </NavLink>
                   <NavLink to="/admin/users" className={adminNavLinkClass}>
                     {t('admin.users')}
                   </NavLink>
@@ -516,6 +519,9 @@ export default function Header({ compact = false }: Props) {
                 <span className={styles.mobileGroupLabel}>{t('adminGroupLabel')}</span>
                 <NavLink to="/admin/dictionaries" className={mobileNavLinkClass}>
                   {t('admin.dictionaries')}
+                </NavLink>
+                <NavLink to="/admin/series" className={mobileNavLinkClass}>
+                  {t('admin.series')}
                 </NavLink>
                 <NavLink to="/admin/users" className={mobileNavLinkClass}>
                   {t('admin.users')}

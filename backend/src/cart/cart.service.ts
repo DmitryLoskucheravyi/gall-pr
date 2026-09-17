@@ -47,11 +47,19 @@ export class CartService {
     });
 
     if (!painting) {
-      throw new NotFoundException('Painting not found');
+      throw new NotFoundException('Картину не знайдено');
     }
 
     if (!painting.isAvailable) {
-      throw new BadRequestException('Painting is not available');
+      throw new BadRequestException('Картина зараз недоступна');
+    }
+
+    // isAvailable and amount are meant to agree, and PaintingsService keeps
+    // them that way — but if they ever drift, Math.min below would happily
+    // write a cart row with quantity 0, which then reads as a line in the cart
+    // that costs nothing and blocks checkout for no visible reason.
+    if (painting.amount <= 0) {
+      throw new BadRequestException('Картина зараз недоступна');
     }
 
     const quantity = dto.quantity ?? 1;
@@ -84,17 +92,17 @@ export class CartService {
     });
 
     if (!item) {
-      throw new NotFoundException('Cart item not found');
+      throw new NotFoundException('Цієї позиції немає у кошику');
     }
 
     // addItem checks this too. Without it here, a painting withdrawn from sale
     // while it sat in someone's cart could still have its quantity raised.
     if (!item.painting.isAvailable) {
-      throw new BadRequestException('Painting is not available');
+      throw new BadRequestException('Картина зараз недоступна');
     }
 
     if (quantity > item.painting.amount) {
-      throw new BadRequestException('Not enough stock');
+      throw new BadRequestException('Стільки примірників немає в наявності');
     }
 
     item.quantity = quantity;
@@ -108,18 +116,18 @@ export class CartService {
     });
 
     if (!item) {
-      throw new NotFoundException('Cart item not found');
+      throw new NotFoundException('Цієї позиції немає у кошику');
     }
 
     await this.cartRepository.remove(item);
 
-    return { message: 'Item removed' };
+    return { message: 'Позицію видалено' };
   }
 
   async clearCart(identity: Identity) {
     await this.cartRepository.delete(identityWhere(identity));
 
-    return { message: 'Cart cleared' };
+    return { message: 'Кошик очищено' };
   }
 
   async mergeGuestCart(userId: number, guestToken: string) {
@@ -146,6 +154,6 @@ export class CartService {
       }
     }
 
-    return { message: 'Cart merged' };
+    return { message: 'Кошик обʼєднано' };
   }
 }

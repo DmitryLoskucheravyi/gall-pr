@@ -3,6 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import toastReducer from './slices/toastSlice';
 import themeReducer, { THEME_STORAGE_KEY } from './slices/themeSlice';
+import { writeStored } from '../utils/safeStorage';
 
 export const store = configureStore({
   reducer: {
@@ -17,7 +18,7 @@ export const store = configureStore({
 // lives in an httpOnly cookie and is re-established on startup instead.
 store.subscribe(() => {
   const { theme } = store.getState();
-  localStorage.setItem(THEME_STORAGE_KEY, theme.isDark ? 'dark' : 'light');
+  writeStored(THEME_STORAGE_KEY, theme.isDark ? 'dark' : 'light');
 });
 
 export type RootState = ReturnType<typeof store.getState>;

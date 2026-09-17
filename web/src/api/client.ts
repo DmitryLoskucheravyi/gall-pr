@@ -71,6 +71,9 @@ api.interceptors.response.use(
     // request then has no identity at all and gets a hard 400 "Guest token
     // required". Treat it the same as an expired token: refresh if we can,
     // otherwise log out and retry once more so the retry goes out as guest.
+    // The string is a sentinel the server keeps in English for exactly this
+    // comparison — see resolveIdentity in backend/src/common/identity.util.ts.
+    // Change it there and this branch stops firing, silently.
     const isStaleTokenGuestFallback =
       error.response?.status === 400 &&
       error.response?.data?.message === 'Guest token required' &&

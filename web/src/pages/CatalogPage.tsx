@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import type { Painting } from '../types/painting.types';
 import { useLocale } from '../hooks/useLocale';
 import { pickLocale } from '../utils/localizedField';
-import { useTechniques } from '../hooks/queries/useTechniques';
 import { usePriceRange } from '../hooks/queries/usePriceRange';
 import { usePaintings } from '../hooks/queries/usePaintings';
 import { useDeletePaintingMutation } from '../hooks/mutations/usePaintingMutations';
@@ -13,10 +12,12 @@ import PaintingCard from '../components/PaintingCard';
 import PaintingCardSkeleton from '../components/PaintingCardSkeleton';
 import CreatePaintingForm from '../components/admin/CreatePaintingForm';
 import CatalogFilters from '../components/CatalogFilters';
+import SeriesShowcase from '../components/SeriesShowcase';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useAppSelector } from '../store/hooks';
+import type { PaintingSort } from '../lib/queryKeys';
 import styles from './CatalogPage.module.scss';
 
 type PriceRange = { min: number; max: number };
@@ -32,17 +33,17 @@ export default function CatalogPage() {
   const { data: likedIds = [] } = useLikedIds();
   const confirm = useConfirm();
 
-  const [selectedTechniqueId, setSelectedTechniqueId] = useState<
-    number | null
-  >(null);
+  const [sort, setSort] = useState<PaintingSort>('newest');
   const [showLikedOnly, setShowLikedOnly] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPainting, setEditingPainting] = useState<Painting | null>(
     null,
   );
   const [priceFilter, setPriceFilter] = useState<PriceRange | null>(null);
+  // Two ways to read the catalogue: every work at once, or the same works
+  // grouped under the series they belong to.
+  const [view, setView] = useState<'all' | 'series'>('all');
 
-  const { data: techniques = [] } = useTechniques();
   const { data: priceBounds = null } = usePriceRange();
 
   useEffect(() => {
@@ -52,10 +53,10 @@ export default function CatalogPage() {
   const { data: paintingsResponse, isLoading: loading } = usePaintings({
     page: 1,
     limit: 24,
-    techniqueId: selectedTechniqueId ?? undefined,
     isAvailable: true,
     minPrice: priceFilter?.min,
     maxPrice: priceFilter?.max,
+    sort,
   });
 
   const paintings = paintingsResponse?.data ?? [];
@@ -94,7 +95,33 @@ export default function CatalogPage() {
       </div>
 
       <div className={styles.chips}>
-        {user && (
+        {/* Opposite the filters: the two ways of reading the catalogue. The
+            filters and the liked toggle belong to the flat list, so they step
+            aside while the series view is open. */}
+        <div className={styles.viewSwitch} role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'all'}
+            onClick={() => setView('all')}
+            className={view === 'all' ? styles.viewOptionActive : styles.viewOption}
+          >
+            {t('view.all')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'series'}
+            onClick={() => setView('series')}
+            className={
+              view === 'series' ? styles.viewOptionActive : styles.viewOption
+            }
+          >
+            {t('view.series')}
+          </button>
+        </div>
+
+        {view === 'all' && user && (
           <button
             onClick={() => setShowLikedOnly((prev) => !prev)}
             aria-label={t('likedOnlyAria')}
@@ -114,11 +141,12 @@ export default function CatalogPage() {
           </button>
         )}
 
-        {priceBounds && (priceBounds.min > 0 || priceBounds.max > 0) && (
+        {view === 'all' &&
+          priceBounds &&
+          (priceBounds.min > 0 || priceBounds.max > 0) && (
           <CatalogFilters
-            techniques={techniques}
-            selectedTechniqueId={selectedTechniqueId}
-            onSelectTechnique={setSelectedTechniqueId}
+            sort={sort}
+            onSelectSort={setSort}
             priceBounds={priceBounds}
             priceValue={priceFilter ?? priceBounds}
             onApplyPrice={setPriceFilter}
@@ -126,7 +154,14 @@ export default function CatalogPage() {
         )}
       </div>
 
-      {loading ? (
+      {view === 'series' ? (
+        <SeriesShowcase
+          isAdmin={user?.role === 'ADMIN'}
+          onBuy={(painting) => addToCart.mutate(painting)}
+          onEdit={setEditingPainting}
+          onDelete={handleDelete}
+        />
+      ) : loading ? (
         <div className={styles.grid}>
           {Array.from({ length: 8 }).map((_, index) => (
             <PaintingCardSkeleton key={index} />

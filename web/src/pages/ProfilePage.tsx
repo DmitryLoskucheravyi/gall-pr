@@ -13,10 +13,12 @@ import { useEscapeKey } from '../hooks/useEscapeKey';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import OrderPreviewCard from '../components/OrderPreviewCard';
+import SecuritySection from '../components/profile/SecuritySection';
 import Skeleton from '../components/ui/Skeleton';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useAppSelector } from '../store/hooks';
 import styles from './ProfilePage.module.scss';
+import { apiErrorMessage } from '../utils/apiError';
 
 const FAVORITES_PREVIEW_LIMIT = 6;
 const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
@@ -26,7 +28,8 @@ const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
 export default function ProfilePage() {
   const { t } = useTranslation('profile');
   const user = useAppSelector((state) => state.auth.user);
-  const { data: likedPaintings = [], isLoading: likedLoading } = useLikedPaintings();
+  const { data: likedPaintings = [], isLoading: likedLoading } =
+    useLikedPaintings();
   const { data: orders = [], isLoading: ordersLoading } = useMyOrders();
   const telegramLink = useTelegramLinkMutation();
   const redeemCode = useRedeemTelegramLinkCodeMutation();
@@ -88,7 +91,8 @@ export default function ProfilePage() {
 
   const lastOrder = orders[0] ?? null;
 
-  const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
+  const initials =
+    `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
 
   return (
     <div className={styles.wrap}>
@@ -125,7 +129,9 @@ export default function ProfilePage() {
               <p className={styles.infoLabel}>{t('stats.telegram')}</p>
               {user.telegramLinked ? (
                 <div className={styles.telegramLinkedRow}>
-                  <p className={styles.telegramLinked}>{t('telegram.linked')}</p>
+                  <p className={styles.telegramLinked}>
+                    {t('telegram.linked')}
+                  </p>
                   <button
                     type="button"
                     onClick={handleResetTelegramLink}
@@ -153,7 +159,9 @@ export default function ProfilePage() {
                         : t('telegram.link')}
                   </button>
                   {linkOpened && (
-                    <p className={styles.telegramHint}>{t('telegram.startHint')}</p>
+                    <p className={styles.telegramHint}>
+                      {t('telegram.startHint')}
+                    </p>
                   )}
 
                   <button
@@ -206,16 +214,25 @@ export default function ProfilePage() {
             <p className={styles.favoritesEmpty}>{t('favorites.empty')}</p>
           ) : (
             <div className={styles.favoritesGrid}>
-              {likedPaintings.slice(0, FAVORITES_PREVIEW_LIMIT).map((painting) => (
-                <GalleryCard key={painting.id} painting={painting} />
-              ))}
+              {likedPaintings
+                .slice(0, FAVORITES_PREVIEW_LIMIT)
+                .map((painting) => (
+                  <GalleryCard key={painting.id} painting={painting} />
+                ))}
             </div>
           )}
         </section>
       </div>
 
+      {/* Changing a password and seeing where you are signed in — neither had
+          anywhere to live before sessions became rows on the server. */}
+      <SecuritySection />
+
       {codeModalOpen && (
-        <div className={styles.codeModalOverlay} onClick={() => setCodeModalOpen(false)}>
+        <div
+          className={styles.codeModalOverlay}
+          onClick={() => setCodeModalOpen(false)}
+        >
           <div
             className={styles.codeModalDialog}
             role="dialog"
@@ -247,15 +264,19 @@ export default function ProfilePage() {
                 maxLength={6}
                 placeholder="000000"
                 value={pendingCode}
-                onChange={(e) => setPendingCode(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) =>
+                  setPendingCode(e.target.value.replace(/\D/g, ''))
+                }
                 className={styles.codeModalInput}
                 autoFocus
               />
 
               {redeemCode.isError && (
                 <p className={styles.codeModalError}>
-                  {(redeemCode.error as any)?.response?.data?.message ??
-                    t('codeModal.invalidCode')}
+                  {apiErrorMessage(
+                    redeemCode.error,
+                    t('codeModal.invalidCode'),
+                  )}
                 </p>
               )}
 
@@ -272,7 +293,9 @@ export default function ProfilePage() {
                   disabled={redeemCode.isPending || pendingCode.length !== 6}
                   className={styles.codeModalSubmit}
                 >
-                  {redeemCode.isPending ? t('codeModal.checking') : t('codeModal.confirm')}
+                  {redeemCode.isPending
+                    ? t('codeModal.checking')
+                    : t('codeModal.confirm')}
                 </button>
               </div>
             </form>

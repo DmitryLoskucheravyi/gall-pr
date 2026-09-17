@@ -11,6 +11,7 @@ import { useAppDispatch } from '../../store/hooks';
 import { setAuth } from '../../store/slices/authSlice';
 import { peekGuestToken } from '../../utils/guestToken';
 import styles from './AuthPanel.module.scss';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export default function LoginForm() {
   const { t } = useTranslation('auth');
@@ -43,8 +44,8 @@ export default function LoginForm() {
       }
 
       navigate('/');
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? t('login.error'));
+    } catch (err) {
+      setError(apiErrorMessage(err, t('login.error')));
     } finally {
       setLoading(false);
     }
@@ -61,6 +62,7 @@ export default function LoginForm() {
           <input
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={styles.input}
@@ -72,6 +74,7 @@ export default function LoginForm() {
           <input
             type="password"
             required
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={styles.input}
@@ -84,6 +87,12 @@ export default function LoginForm() {
           {loading ? t('login.wait') : t('login.submit')}
         </button>
       </form>
+
+      <p className={styles.switch}>
+        <Link to="/forgot-password" className={styles.switchLink}>
+          {t('login.forgotLink')}
+        </Link>
+      </p>
 
       <p className={styles.switch}>
         {t('login.switchText')}{' '}

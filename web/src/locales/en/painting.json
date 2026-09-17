@@ -62,5 +62,16 @@
     "or": "or write to us directly",
     "instagram": "Instagram Direct",
     "telegram": "Telegram"
+  },
+  "series": {
+    "title": "Series",
+    "adminOnly": "admin only",
+    "none": "Not in a series",
+    "create": "Create new",
+    "namePlaceholder": "Name of the new series",
+    "save": "Create and add",
+    "saving": "Creating…",
+    "cancel": "Cancel",
+    "hint": "A work belongs to at most one series. A new series is created with this work already in it."
   }
 }

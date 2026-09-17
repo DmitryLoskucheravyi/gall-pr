@@ -10,6 +10,7 @@ import PaintingCard from '../components/PaintingCard';
 import Painting3DViewer from '../components/Painting3DViewer';
 import InteriorCarousel from '../components/InteriorCarousel';
 import CommissionModal from '../components/CommissionModal';
+import PaintingSeriesControl from '../components/admin/PaintingSeriesControl';
 import LikeButton from '../components/ui/LikeButton';
 import Skeleton from '../components/ui/Skeleton';
 import { usePainting } from '../hooks/queries/usePainting';
@@ -18,6 +19,7 @@ import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import { useAuthorName } from '../hooks/queries/useSettings';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useAppSelector } from '../store/hooks';
 import { safeJsonLd } from '../utils/safeUrl';
 import { cdnImage } from '../utils/imageUrl';
 import styles from './PaintingPage.module.scss';
@@ -25,6 +27,9 @@ import styles from './PaintingPage.module.scss';
 export default function PaintingPage() {
   const { t } = useTranslation('painting');
   const locale = useLocale();
+  // Only the admin sees the series control below — everything else on this
+  // page is the same for everyone.
+  const user = useAppSelector((state) => state.auth.user);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const addToCart = useAddToCart();
@@ -503,6 +508,11 @@ export default function PaintingPage() {
           </p>
         </div>
       </div>
+
+      {/* Admin-only, and placed here on purpose: a series is usually noticed
+          while looking at one painting, so the control belongs next to the
+          work rather than three screens away in the admin panel. */}
+      {user?.role === 'ADMIN' && <PaintingSeriesControl painting={painting} />}
 
       {interiorImages.length > 0 && (
         <section className={styles.interior}>

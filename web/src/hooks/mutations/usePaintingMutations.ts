@@ -6,6 +6,7 @@ import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import type { Painting } from '../../types/painting.types';
 import type { CreatePaintingDto } from '../../types/create-painting.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
 const isRelatedKey = (query: { queryKey: readonly unknown[] }) =>
   query.queryKey[1] === 'related';
@@ -14,7 +15,8 @@ export function useCreatePaintingMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreatePaintingDto) => paintingsService.createPainting(data),
+    mutationFn: (data: CreatePaintingDto) =>
+      paintingsService.createPainting(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.paintings.lists() });
     },
@@ -28,8 +30,13 @@ export function useUpdatePaintingMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreatePaintingDto> }) =>
-      paintingsService.updatePainting(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<CreatePaintingDto>;
+    }) => paintingsService.updatePainting(id, data),
     onSuccess: (painting) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.paintings.lists() });
       queryClient.invalidateQueries({
@@ -54,10 +61,10 @@ export function useDeletePaintingMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.paintings.lists() });
       store.dispatch(showToast({ message: 'Картину видалено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося видалити картину',
+          message: apiErrorMessage(error, 'Не вдалося видалити картину'),
           variant: 'error',
         }),
       );

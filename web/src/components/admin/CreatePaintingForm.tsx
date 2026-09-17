@@ -7,6 +7,7 @@ import { uploadImage } from '../../api/uploads.api';
 import type { Painting } from '../../types/painting.types';
 import { useTechniques } from '../../hooks/queries/useTechniques';
 import { useMaterials } from '../../hooks/queries/useMaterials';
+import { useSeries } from '../../hooks/queries/useSeries';
 import {
   useCreatePaintingMutation,
   useUpdatePaintingMutation,
@@ -16,6 +17,7 @@ import Select from '../ui/Select';
 import Checkbox from '../ui/Checkbox';
 import Radio from '../ui/Radio';
 import styles from './CreatePaintingForm.module.scss';
+import { apiErrorMessage } from '../../utils/apiError';
 
 type Props = {
   painting?: Painting;
@@ -49,10 +51,17 @@ export default function CreatePaintingForm({
   const [title, setTitle] = useState(painting?.title ?? '');
   const [titleEn, setTitleEn] = useState(painting?.titleEn ?? '');
   const [description, setDescription] = useState(painting?.description ?? '');
-  const [descriptionEn, setDescriptionEn] = useState(painting?.descriptionEn ?? '');
+  const [descriptionEn, setDescriptionEn] = useState(
+    painting?.descriptionEn ?? '',
+  );
   const [price, setPrice] = useState(painting?.price?.toString() ?? '');
   const [techniqueId, setTechniqueId] = useState(
     painting?.techniqueId?.toString() ?? '',
+  );
+  // The series this work belongs to. '' means none — a painting outside every
+  // series is the ordinary case.
+  const [seriesId, setSeriesId] = useState(
+    painting?.seriesId ? String(painting.seriesId) : '',
   );
   const [materialId, setMaterialId] = useState(
     painting?.materialId?.toString() ?? '',
@@ -61,6 +70,14 @@ export default function CreatePaintingForm({
   const [height, setHeight] = useState(painting?.height?.toString() ?? '');
   const [year, setYear] = useState(painting?.year?.toString() ?? '');
   const [weight, setWeight] = useState(painting?.weight?.toString() ?? '0.5');
+  // Stock, and whether the work is on sale at all. Neither could be set from
+  // anywhere before: create() hard-coded amount to 1 and isAvailable to true,
+  // and the update DTO had no field for either — so a sold-out painting could
+  // only come back by cancelling a customer's order.
+  const [amount, setAmount] = useState(painting?.amount?.toString() ?? '1');
+  const [isAvailable, setIsAvailable] = useState(
+    painting?.isAvailable ?? true,
+  );
   const [isFeatured, setIsFeatured] = useState(painting?.isFeatured ?? false);
   // Unique unless said otherwise — promising a repeat that isn't on offer is
   // worse than staying quiet about one that is.
@@ -73,9 +90,9 @@ export default function CreatePaintingForm({
   );
   const [coverImage, setCoverImage] = useState<PendingImage | null>(null);
 
-  const [existingGalleryImages, setExistingGalleryImages] = useState<
-    string[]
-  >((painting?.images ?? []).filter((url) => url !== painting?.cardImage));
+  const [existingGalleryImages, setExistingGalleryImages] = useState<string[]>(
+    (painting?.images ?? []).filter((url) => url !== painting?.cardImage),
+  );
   const [galleryImages, setGalleryImages] = useState<PendingImage[]>([]);
 
   const [existingInteriorImages, setExistingInteriorImages] = useState<
@@ -92,6 +109,7 @@ export default function CreatePaintingForm({
 
   const { data: techniques = [] } = useTechniques();
   const { data: materials = [] } = useMaterials();
+  const { data: allSeries = [] } = useSeries();
   const createPainting = useCreatePaintingMutation();
   const updatePainting = useUpdatePaintingMutation();
   const [saving, setSaving] = useState(false);
@@ -149,9 +167,20 @@ export default function CreatePaintingForm({
       label: pickLocale(tech, 'name', locale),
     })),
   ];
+  const seriesOptions = [
+    { value: '', label: t('paintingForm.seriesNone') },
+    ...allSeries.map((entry) => ({
+      value: String(entry.id),
+      label: pickLocale(entry, 'name', locale),
+    })),
+  ];
+
   const materialOptions = [
     { value: '', label: t('paintingForm.notSet') },
-    ...materials.map((m) => ({ value: String(m.id), label: pickLocale(m, 'name', locale) })),
+    ...materials.map((m) => ({
+      value: String(m.id),
+      label: pickLocale(m, 'name', locale),
+    })),
   ];
 
   const handleCoverSelected = (fileList: FileList | null) => {
@@ -196,7 +225,8 @@ export default function CreatePaintingForm({
   const handleInteriorFilesSelected = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
 
-    const room = INTERIOR_MAX - existingInteriorImages.length - interiorImages.length;
+    const room =
+      INTERIOR_MAX - existingInteriorImages.length - interiorImages.length;
     if (room <= 0) {
       if (interiorFileInputRef.current) interiorFileInputRef.current.value = '';
       return;
@@ -244,8 +274,7 @@ export default function CreatePaintingForm({
     }
 
     // Checked before anything is uploaded, so a wrong count costs nothing.
-    const interiorCount =
-      existingInteriorImages.length + interiorImages.length;
+    const interiorCount = existingInteriorImages.length + interiorImages.length;
     if (interiorCount > 0 && interiorCount < INTERIOR_MIN) {
       setError(t('paintingForm.errors.interiorCount', { min: INTERIOR_MIN }));
       return;
@@ -339,6 +368,9 @@ export default function CreatePaintingForm({
         interiorImages: interior,
         animation3dImage: animationImageUrl ?? undefined,
         price: Number(price),
+        seriesId: seriesId ? Number(seriesId) : null,
+        amount: Number(amount) || 0,
+        isAvailable,
         isFeatured,
         isRepeatable,
         techniqueId: techniqueId ? Number(techniqueId) : undefined,
@@ -356,8 +388,8 @@ export default function CreatePaintingForm({
       }
 
       onSaved();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? t('paintingForm.errors.saveFailed'));
+    } catch (err) {
+      setError(apiErrorMessage(err, t('paintingForm.errors.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -369,9 +401,14 @@ export default function CreatePaintingForm({
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
+      <div
+        className={styles.modal}
+        onClick={(event) => event.stopPropagation()}
+      >
         <h2 className={styles.title}>
-          {painting ? t('paintingForm.editTitle') : t('paintingForm.createTitle')}
+          {painting
+            ? t('paintingForm.editTitle')
+            : t('paintingForm.createTitle')}
         </h2>
 
         <form onSubmit={handleSubmit} className={styles.form}>
@@ -412,7 +449,9 @@ export default function CreatePaintingForm({
             </button>
           )}
 
-          <span className={styles.fileLabel}>{t('paintingForm.otherPhotos')}</span>
+          <span className={styles.fileLabel}>
+            {t('paintingForm.otherPhotos')}
+          </span>
 
           <input
             ref={galleryFileInputRef}
@@ -614,6 +653,16 @@ export default function CreatePaintingForm({
             className={styles.input}
           />
 
+          <input
+            type="number"
+            min={0}
+            step="1"
+            placeholder={t('paintingForm.amountPlaceholder')}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className={styles.input}
+          />
+
           <Select
             value={techniqueId}
             onChange={setTechniqueId}
@@ -626,6 +675,13 @@ export default function CreatePaintingForm({
             onChange={setMaterialId}
             options={materialOptions}
             placeholder={t('paintingForm.materialPlaceholder')}
+          />
+
+          <Select
+            value={seriesId}
+            onChange={setSeriesId}
+            options={seriesOptions}
+            placeholder={t('paintingForm.seriesPlaceholder')}
           />
 
           <div className={styles.row3}>
@@ -668,6 +724,17 @@ export default function CreatePaintingForm({
             className={styles.textarea}
           />
 
+          {/* Withdraw a work from the catalogue without deleting it, or put it
+              back. The server refuses to mark anything available while its
+              stock is zero, so this can't promise a copy that isn't there. */}
+          <Checkbox
+            checked={isAvailable}
+            onChange={setIsAvailable}
+            disabled={Number(amount) <= 0}
+          >
+            {t('paintingForm.available')}
+          </Checkbox>
+
           <Checkbox checked={isFeatured} onChange={setIsFeatured}>
             {t('paintingForm.featured')}
           </Checkbox>
@@ -678,7 +745,10 @@ export default function CreatePaintingForm({
               made deliberately for every work. */}
           <span className={styles.fileLabel}>
             {t('paintingForm.editionLabel')}
-            <span className={styles.fileHint}> {t('paintingForm.editionHint')}</span>
+            <span className={styles.fileHint}>
+              {' '}
+              {t('paintingForm.editionHint')}
+            </span>
           </span>
 
           <div className={styles.editionChoice}>
@@ -702,10 +772,18 @@ export default function CreatePaintingForm({
           {error && <p className={styles.error}>{error}</p>}
 
           <div className={styles.actions}>
-            <button type="button" onClick={onClose} className={styles.cancelButton}>
+            <button
+              type="button"
+              onClick={onClose}
+              className={styles.cancelButton}
+            >
               {t('paintingForm.cancel')}
             </button>
-            <button type="submit" disabled={saving} className={styles.saveButton}>
+            <button
+              type="submit"
+              disabled={saving}
+              className={styles.saveButton}
+            >
               {saving
                 ? t('paintingForm.saving')
                 : painting

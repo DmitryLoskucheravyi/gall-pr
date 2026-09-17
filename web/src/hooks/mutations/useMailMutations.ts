@@ -4,6 +4,7 @@ import { mailService } from '../../api/mail.api';
 import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export function useRetryMailMutation() {
   const queryClient = useQueryClient();
@@ -14,11 +15,10 @@ export function useRetryMailMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.mail.all });
       store.dispatch(showToast({ message: 'Лист поставлено в чергу' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message:
-            error?.response?.data?.message ?? 'Не вдалося поставити лист у чергу',
+          message: apiErrorMessage(error, 'Не вдалося поставити лист у чергу'),
           variant: 'error',
         }),
       );

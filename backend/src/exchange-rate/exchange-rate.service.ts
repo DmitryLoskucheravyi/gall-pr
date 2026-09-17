@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { fetchJson } from '../common/http.util';
+
 const NBU_URL =
   'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=USD&json';
 
@@ -27,10 +29,7 @@ export class ExchangeRateService {
     this.lastAttemptAt = now;
 
     try {
-      const response = await fetch(NBU_URL);
-      if (!response.ok) throw new Error(`NBU responded ${response.status}`);
-
-      const data = (await response.json()) as NbuResponse;
+      const data = await fetchJson<NbuResponse>('NBU', NBU_URL);
       const rate = data[0]?.rate;
       if (!rate || rate <= 0) throw new Error('NBU response missing a rate');
 

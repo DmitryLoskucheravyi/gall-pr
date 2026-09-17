@@ -1,10 +1,21 @@
+// Mirrors the server's GetPaintingsDto. `sort` is a closed set there too — an
+// unknown value is rejected rather than silently ignored.
+export type PaintingSort =
+  | 'newest'
+  | 'oldest'
+  | 'priceAsc'
+  | 'priceDesc'
+  | 'popular';
+
 export type PaintingListFilters = {
   page: number;
   limit: number;
   techniqueId?: number;
+  materialId?: number;
   isAvailable?: boolean;
   minPrice?: number;
   maxPrice?: number;
+  sort?: PaintingSort;
 };
 
 function buildPaintingFilters(
@@ -13,9 +24,11 @@ function buildPaintingFilters(
   const result: PaintingListFilters = { page: filters.page, limit: filters.limit };
 
   if (filters.techniqueId !== undefined) result.techniqueId = filters.techniqueId;
+  if (filters.materialId !== undefined) result.materialId = filters.materialId;
   if (filters.isAvailable !== undefined) result.isAvailable = filters.isAvailable;
   if (filters.minPrice !== undefined) result.minPrice = filters.minPrice;
   if (filters.maxPrice !== undefined) result.maxPrice = filters.maxPrice;
+  if (filters.sort !== undefined) result.sort = filters.sort;
 
   return result;
 }
@@ -35,6 +48,12 @@ export const queryKeys = {
   techniques: {
     all: ['techniques'] as const,
     list: () => [...queryKeys.techniques.all, 'list'] as const,
+  },
+  series: {
+    all: ['series'] as const,
+    list: () => [...queryKeys.series.all, 'list'] as const,
+    showcase: () => [...queryKeys.series.all, 'showcase'] as const,
+    admin: () => [...queryKeys.series.all, 'admin'] as const,
   },
   materials: {
     all: ['materials'] as const,
@@ -66,7 +85,10 @@ export const queryKeys = {
     all: ['orders'] as const,
     mine: (identity: number | 'guest') =>
       [...queryKeys.orders.all, 'mine', identity] as const,
-    admin: () => [...queryKeys.orders.all, 'admin'] as const,
+    admin: (tab: string, page: number) =>
+      [...queryKeys.orders.all, 'admin', tab, page] as const,
+    adminPendingCount: () =>
+      [...queryKeys.orders.all, 'admin', 'pending-count'] as const,
   },
   users: {
     all: ['users'] as const,

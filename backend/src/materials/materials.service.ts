@@ -36,9 +36,7 @@ export class MaterialsService {
   }
 
   async findOne(id: number): Promise<Material> {
-    const material = await this.materialsRepository.findOne({
-      where: { id },
-    });
+    const material = await this.materialsRepository.findOne({ where: { id } });
 
     if (!material) {
       throw new NotFoundException('Material not found');

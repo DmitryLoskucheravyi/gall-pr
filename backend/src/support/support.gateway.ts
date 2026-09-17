@@ -58,7 +58,9 @@ type SocketData = {
   cors: { origin: corsOriginDelegate },
   namespace: '/support',
 })
-export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class SupportGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -86,7 +88,9 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
   private async identify(client: Socket) {
     try {
       const token = client.handshake.auth?.token as string | undefined;
-      const guestToken = client.handshake.auth?.guestToken as string | undefined;
+      const guestToken = client.handshake.auth?.guestToken as
+        | string
+        | undefined;
       const data = client.data as SocketData;
 
       if (token) {
@@ -145,9 +149,7 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
     await client.join(`chat:${chatId}`);
 
     this.presence.markOnline(chatId);
-    this.server
-      .to('admins')
-      .emit('support:presence', { chatId, online: true });
+    this.server.to('admins').emit('support:presence', { chatId, online: true });
   }
 
   handleDisconnect(client: Socket) {
@@ -248,11 +250,15 @@ export class SupportGateway implements OnGatewayConnection, OnGatewayDisconnect 
     this.server.to(`chat:${chatId}`).emit('support:message', message);
     this.server
       .to('admins')
-      .emit('support:chatUpdate', this.supportService.toChatSummary(chat, message));
+      .emit(
+        'support:chatUpdate',
+        this.supportService.toChatSummary(chat, message),
+      );
 
     if (data.role === UserRole.USER) {
       const senderName = chat.user
-        ? `${chat.user.firstName} ${chat.user.lastName}`.trim() || chat.user.email
+        ? `${chat.user.firstName} ${chat.user.lastName}`.trim() ||
+          chat.user.email
         : `Гість #${chat.id}`;
       this.telegramService
         .notifyAdmin(`💬 ${senderName} у підтримці:\n${content}`)

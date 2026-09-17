@@ -17,7 +17,7 @@ export class NewsService {
     const news = await this.newsRepository.findOne({ where: { id } });
 
     if (!news) {
-      throw new NotFoundException('News not found');
+      throw new NotFoundException('Новину не знайдено');
     }
 
     return news;

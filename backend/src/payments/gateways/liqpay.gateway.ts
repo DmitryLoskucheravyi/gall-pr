@@ -55,13 +55,12 @@ export class LiqPayGateway implements PaymentGateway {
     const data = Buffer.from(JSON.stringify(payload)).toString('base64');
     const signature = this.sign(data, this.privateKey!);
 
-    return {
-      actionUrl: CHECKOUT_URL,
-      fields: { data, signature },
-    };
+    return { actionUrl: CHECKOUT_URL, fields: { data, signature } };
   }
 
-  verifyCallback(payload: Record<string, unknown>): PaymentCallbackResult | null {
+  verifyCallback(
+    payload: Record<string, unknown>,
+  ): PaymentCallbackResult | null {
     const privateKey = this.privateKey;
 
     // Without a key there is no signature to check, so there is no such thing
@@ -93,7 +92,11 @@ export class LiqPayGateway implements PaymentGateway {
     };
 
     try {
-      decoded = JSON.parse(Buffer.from(data, 'base64').toString());
+      // JSON.parse is typed `any`; the shape above is what we intend to read
+      // out of it, and every field is `unknown` until it has been checked.
+      decoded = JSON.parse(
+        Buffer.from(data, 'base64').toString(),
+      ) as typeof decoded;
     } catch {
       return null;
     }
@@ -110,9 +113,16 @@ export class LiqPayGateway implements PaymentGateway {
 
     const amount = Number(decoded.amount);
 
+    // Read, not coerced: String() on whatever arrived would happily turn an
+    // object into "[object Object]" and record that as the payment's id.
+    const paymentId = decoded.payment_id;
+
     return {
       orderId,
-      transactionId: String(decoded.payment_id ?? ''),
+      transactionId:
+        typeof paymentId === 'string' || typeof paymentId === 'number'
+          ? String(paymentId)
+          : '',
       success: decoded.status === 'success' || decoded.status === 'sandbox',
       amount: Number.isFinite(amount) ? amount : null,
       currency: typeof decoded.currency === 'string' ? decoded.currency : null,

@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 
 import { Material } from '../../materials/entities/material.entity';
+import { Series } from '../../series/entities/series.entity';
 import { Technique } from '../../techniques/entities/technique.entity';
 
 @Entity('paintings')
@@ -62,7 +63,12 @@ export class Painting {
 
   // Reserved for a future 3D-animation feature; intentionally not exposed
   // anywhere in the public UI yet, just persisted as the admin sets it.
-  @Column({ name: 'animation_3d_image', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'animation_3d_image',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   animation3dImage: string | null;
 
   @Column('decimal', { precision: 10, scale: 2 })
@@ -93,6 +99,24 @@ export class Painting {
   @ManyToOne(() => Material, { nullable: true, eager: true })
   @JoinColumn({ name: 'material_id' })
   material: Material | null;
+
+  // The "many" side of the series relation — one series holds many paintings,
+  // so the foreign key lives here. Nullable: a work that belongs to no series
+  // is the ordinary case.
+  //
+  // Eager, like technique and material: the painting page and every card name
+  // the series it came from, so loading it separately would be a query per
+  // card. The inverse side (Series.paintings) is deliberately lazy.
+  @Column({ name: 'series_id', type: 'int', nullable: true })
+  seriesId: number | null;
+
+  @ManyToOne(() => Series, (series) => series.paintings, {
+    nullable: true,
+    eager: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'series_id' })
+  series: Series | null;
 
   @Column({ nullable: true })
   width: number;

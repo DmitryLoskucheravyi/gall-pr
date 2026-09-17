@@ -1,0 +1,227 @@
+.title {
+  font-family: $font-display;
+  font-size: 26px;
+  font-weight: normal;
+  color: var(--color-text);
+}
+
+.lead,
+.muted {
+  margin: $spacing-md 0 0;
+  max-width: 64ch;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin: $spacing-xxxl 0;
+  padding: $spacing-xxl;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  background: var(--color-surface);
+}
+
+.formTitle {
+  margin: 0;
+  font-family: $font-display;
+  font-size: 17px;
+  font-weight: normal;
+  color: var(--color-text);
+}
+
+.row2 {
+  display: grid;
+  gap: $spacing-lg;
+  grid-template-columns: 1fr;
+
+  @include respond-up($breakpoint-md) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: $radius-md;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+}
+
+.textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.formActions {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.submit,
+.cancel {
+  padding: 10px 24px;
+  border-radius: $radius-pill;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background $duration-fast $ease-out,
+    border-color $duration-fast $ease-out,
+    color $duration-fast $ease-out;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+
+.submit {
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+
+  &:not(:disabled):hover {
+    background: var(--color-accent-hover);
+  }
+}
+
+.cancel {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    border-color: var(--color-text-secondary);
+    color: var(--color-text);
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.rowSkeleton {
+  height: 96px;
+  border-radius: $radius-lg;
+}
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  padding: $spacing-xl;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+
+.cardMain {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.cardName {
+  margin: 0;
+  font-family: $font-display;
+  font-size: 17px;
+  font-weight: normal;
+  color: var(--color-text);
+}
+
+.hiddenBadge {
+  padding: 2px 9px;
+  border-radius: $radius-pill;
+  background: var(--color-background-alt);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cardNameEn {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.cardMeta {
+  margin: $spacing-sm 0 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.cardDescription {
+  margin: $spacing-sm 0 0;
+  max-width: 68ch;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+
+.cardActions {
+  display: flex;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.editButton,
+.deleteButton {
+  padding: 7px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: $radius-pill;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color $duration-fast $ease-out,
+    color $duration-fast $ease-out;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.editButton {
+  color: var(--color-text-secondary);
+
+  &:hover {
+    border-color: var(--color-text-secondary);
+    color: var(--color-text);
+  }
+}
+
+.deleteButton {
+  color: var(--color-error);
+
+  &:not(:disabled):hover {
+    border-color: var(--color-error);
+  }
+}

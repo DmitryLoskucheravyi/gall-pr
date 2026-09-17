@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, MoreThan, Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
@@ -8,6 +12,9 @@ import { Order } from '../orders/entities/order.entity';
 import { PaintingLike } from '../likes/entities/painting-like.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { SupportChat } from '../support/entities/support-chat.entity';
+import { RefreshSession } from '../auth/entities/refresh-session.entity';
+import { PasswordReset } from '../auth/entities/password-reset.entity';
+import { Painting } from '../paintings/entities/painting.entity';
 import { SupportMessage } from '../support/entities/support-message.entity';
 import { GiveawayParticipant } from '../giveaways/entities/giveaway-participant.entity';
 import { TelegramPendingLink } from '../telegram/entities/telegram-pending-link.entity';
@@ -39,13 +46,6 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
-  async updateRefreshToken(
-    userId: number,
-    refreshToken: string | null,
-  ): Promise<void> {
-    await this.usersRepository.update(userId, { refreshToken });
-  }
-
   async update(userId: number, data: Partial<User>): Promise<void> {
     await this.usersRepository.update(userId, data);
   }
@@ -69,7 +69,10 @@ export class UsersService {
 
   async findByTelegramLinkCode(code: string): Promise<User | null> {
     return this.usersRepository.findOne({
-      where: { telegramLinkCode: code, telegramLinkCodeExpiresAt: MoreThan(new Date()) },
+      where: {
+        telegramLinkCode: code,
+        telegramLinkCodeExpiresAt: MoreThan(new Date()),
+      },
     });
   }
 
@@ -89,7 +92,22 @@ export class UsersService {
       throw new BadRequestException('Код недійсний або застарів');
     }
 
-    await this.usersRepository.update(userId, { telegramChatId: pending.chatId });
+    // One chat, one account. Without this two users could both redeem codes
+    // for the same Telegram chat and both believe it was theirs — and every
+    // notification for either of them would land in the same conversation.
+    const alreadyLinked = await this.findByTelegramChatId(pending.chatId);
+
+    if (alreadyLinked && alreadyLinked.id !== userId) {
+      await this.telegramPendingLinkRepository.delete({ id: pending.id });
+
+      throw new BadRequestException(
+        'Цей Telegram уже привʼязаний до іншого акаунта',
+      );
+    }
+
+    await this.usersRepository.update(userId, {
+      telegramChatId: pending.chatId,
+    });
     await this.telegramPendingLinkRepository.delete({ id: pending.id });
   }
 
@@ -133,9 +151,28 @@ export class UsersService {
 
     await this.dataSource.transaction(async (manager) => {
       await manager.update(Order, { userId: id }, { userId: null });
+
+      // paintings.likes_count is a denormalised counter maintained by
+      // LikesService, so deleting the like rows underneath it left the count
+      // permanently too high — every deleted account inflated the number shown
+      // on its favourites forever. Decrement what this user actually liked
+      // before the rows go.
+      const likes = await manager.find(PaintingLike, { where: { userId: id } });
+
+      for (const like of likes) {
+        await manager.decrement(
+          Painting,
+          { id: like.paintingId },
+          'likesCount',
+          1,
+        );
+      }
+
       await manager.delete(PaintingLike, { userId: id });
       await manager.delete(CartItem, { userId: id });
       await manager.delete(GiveawayParticipant, { userId: id });
+      await manager.delete(RefreshSession, { userId: id });
+      await manager.delete(PasswordReset, { userId: id });
 
       const chats = await manager.find(SupportChat, { where: { userId: id } });
       const chatIds = chats.map((c) => c.id);

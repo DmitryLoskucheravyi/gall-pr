@@ -25,22 +25,18 @@ export class GiveawaysService {
   ) {}
 
   private async getEntityOrThrow(id: number): Promise<Giveaway> {
-    const giveaway = await this.giveawaysRepository.findOne({
-      where: { id },
-    });
+    const giveaway = await this.giveawaysRepository.findOne({ where: { id } });
 
     if (!giveaway) {
-      throw new NotFoundException('Giveaway not found');
+      throw new NotFoundException('Розіграш не знайдено');
     }
 
     return giveaway;
   }
 
-  private async toSummary(giveaway: Giveaway) {
-    const participantsCount = await this.participantsRepository.count({
-      where: { giveawayId: giveaway.id },
-    });
-
+  // Takes the count rather than fetching one, so a list of giveaways is one
+  // grouped query instead of a COUNT(*) per row — see countParticipants().
+  private toSummary(giveaway: Giveaway, participantsCount: number) {
     return {
       id: giveaway.id,
       title: giveaway.title,
@@ -53,6 +49,33 @@ export class GiveawaysService {
       createdAt: giveaway.createdAt,
       updatedAt: giveaway.updatedAt,
     };
+  }
+
+  // One grouped query for however many giveaways are on the page. findAll()
+  // used to call count() once per row, which is fine at three giveaways and
+  // silly at thirty — and it was the same shape of N+1 as the support inbox.
+  private async countParticipants(
+    giveawayIds: number[],
+  ): Promise<Map<number, number>> {
+    if (giveawayIds.length === 0) return new Map();
+
+    const rows = await this.participantsRepository
+      .createQueryBuilder('participant')
+      .select('participant.giveawayId', 'giveawayId')
+      .addSelect('COUNT(*)', 'count')
+      .where('participant.giveawayId IN (:...giveawayIds)', { giveawayIds })
+      .groupBy('participant.giveawayId')
+      .getRawMany<{ giveawayId: number; count: string }>();
+
+    return new Map(
+      rows.map((row) => [Number(row.giveawayId), Number(row.count)]),
+    );
+  }
+
+  private async summarise(giveaway: Giveaway) {
+    const counts = await this.countParticipants([giveaway.id]);
+
+    return this.toSummary(giveaway, counts.get(giveaway.id) ?? 0);
   }
 
   async create(dto: CreateGiveawayDto) {
@@ -68,7 +91,7 @@ export class GiveawaysService {
     });
 
     const saved = await this.giveawaysRepository.save(giveaway);
-    return this.toSummary(await this.getEntityOrThrow(saved.id));
+    return this.summarise(await this.getEntityOrThrow(saved.id));
   }
 
   async update(id: number, dto: UpdateGiveawayDto) {
@@ -78,7 +101,8 @@ export class GiveawaysService {
     if (dto.title !== undefined) patch.title = dto.title;
     if (dto.titleEn !== undefined) patch.titleEn = dto.titleEn;
     if (dto.description !== undefined) patch.description = dto.description;
-    if (dto.descriptionEn !== undefined) patch.descriptionEn = dto.descriptionEn;
+    if (dto.descriptionEn !== undefined)
+      patch.descriptionEn = dto.descriptionEn;
     if (dto.conditions !== undefined) patch.conditions = dto.conditions;
     if (dto.conditionsEn !== undefined) patch.conditionsEn = dto.conditionsEn;
     if (dto.paintingId !== undefined) patch.paintingId = dto.paintingId;
@@ -88,13 +112,13 @@ export class GiveawaysService {
       await this.giveawaysRepository.update(id, patch);
     }
 
-    return this.toSummary(await this.getEntityOrThrow(id));
+    return this.summarise(await this.getEntityOrThrow(id));
   }
 
   async remove(id: number) {
     const giveaway = await this.getEntityOrThrow(id);
     await this.giveawaysRepository.remove(giveaway);
-    return { message: 'Giveaway deleted' };
+    return { message: 'Розіграш видалено' };
   }
 
   async findAll() {
@@ -102,12 +126,15 @@ export class GiveawaysService {
       order: { deadline: 'DESC' },
     });
 
-    return Promise.all(giveaways.map((g) => this.toSummary(g)));
+    const counts = await this.countParticipants(giveaways.map((g) => g.id));
+
+    return giveaways.map((giveaway) =>
+      this.toSummary(giveaway, counts.get(giveaway.id) ?? 0),
+    );
   }
 
   async findOne(id: number) {
-    const giveaway = await this.getEntityOrThrow(id);
-    return this.toSummary(giveaway);
+    return this.summarise(await this.getEntityOrThrow(id));
   }
 
   async hasJoined(giveawayId: number, userId: number) {
@@ -133,9 +160,23 @@ export class GiveawaysService {
       throw new BadRequestException('Ви вже берете участь у цьому розіграші');
     }
 
-    await this.participantsRepository.save(
-      this.participantsRepository.create({ giveawayId, userId }),
-    );
+    // Check-then-insert races with itself — a double-clicked button is two
+    // requests that both see nothing. giveaway_participants has a unique index
+    // on (giveaway_id, user_id), so the loser is caught here and answered the
+    // same way as the ordinary "already joined" case rather than as a 500.
+    try {
+      await this.participantsRepository.save(
+        this.participantsRepository.create({ giveawayId, userId }),
+      );
+    } catch (error) {
+      const alreadyIn = await this.participantsRepository.findOne({
+        where: { giveawayId, userId },
+      });
+
+      if (!alreadyIn) throw error;
+
+      throw new BadRequestException('Ви вже берете участь у цьому розіграші');
+    }
 
     const participantsCount = await this.participantsRepository.count({
       where: { giveawayId },

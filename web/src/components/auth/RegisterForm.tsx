@@ -11,6 +11,7 @@ import { useAppDispatch } from '../../store/hooks';
 import { setAuth } from '../../store/slices/authSlice';
 import { peekGuestToken } from '../../utils/guestToken';
 import styles from './AuthPanel.module.scss';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export default function RegisterForm() {
   const { t } = useTranslation('auth');
@@ -52,8 +53,8 @@ export default function RegisterForm() {
       }
 
       navigate('/');
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? t('register.error'));
+    } catch (err) {
+      setError(apiErrorMessage(err, t('register.error')));
     } finally {
       setLoading(false);
     }

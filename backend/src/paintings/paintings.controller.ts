@@ -72,6 +72,10 @@ export class PaintingsController {
       ? Number(query.techniqueId)
       : undefined;
 
+    const materialId = query.materialId ? Number(query.materialId) : undefined;
+
+    const seriesId = query.seriesId ? Number(query.seriesId) : undefined;
+
     const isAvailable =
       query.isAvailable === undefined
         ? undefined
@@ -89,6 +93,9 @@ export class PaintingsController {
       isAvailable,
       minPrice,
       maxPrice,
+      materialId,
+      query.sort ?? 'newest',
+      seriesId,
     );
   }
 

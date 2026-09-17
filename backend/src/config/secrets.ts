@@ -15,7 +15,9 @@ function requireSecret(name: string): string {
 
   // Long enough that brute-forcing the HMAC key is not the weakest link.
   if (value.length < 32) {
-    throw new Error(`${name} is too short (${value.length} chars) — use at least 32.`);
+    throw new Error(
+      `${name} is too short (${value.length} chars) — use at least 32.`,
+    );
   }
 
   return value;

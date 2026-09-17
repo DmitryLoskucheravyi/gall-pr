@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import Layout from '../components/layout/Layout';
 import LocaleLayout from './LocaleLayout';
-import NotFoundRedirect from './NotFoundRedirect';
+
 import ProtectedRoute from './ProtectedRoute';
 
 const HomePage = lazy(() => import('../pages/HomePage'));
@@ -25,6 +25,8 @@ const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'))
 const AdminSupportPage = lazy(() => import('../pages/admin/AdminSupportPage'));
 const AdminGiveawaysPage = lazy(() => import('../pages/admin/AdminGiveawaysPage'));
 const AdminMailPage = lazy(() => import('../pages/admin/AdminMailPage'));
+const AdminSeriesPage = lazy(() => import('../pages/admin/AdminSeriesPage'));
+const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 export const router = createBrowserRouter([
   // The bare root has no language of its own — send it to the default.
@@ -47,6 +49,10 @@ export const router = createBrowserRouter([
           // route just says which side leads.
           { path: 'login', element: <AuthPage /> },
           { path: 'register', element: <AuthPage /> },
+          // Recovery shares the same scene — see AuthPage. Open to anyone:
+          // somebody who can't sign in is exactly who needs these.
+          { path: 'forgot-password', element: <AuthPage /> },
+          { path: 'reset-password', element: <AuthPage /> },
           { path: 'cart', element: <CartPage /> },
           { path: 'orders', element: <OrdersPage /> },
           { path: 'support', element: <FaqPage /> },
@@ -64,6 +70,7 @@ export const router = createBrowserRouter([
             element: <ProtectedRoute adminOnly />,
             children: [
               { path: 'admin/dictionaries', element: <DictionariesPage /> },
+              { path: 'admin/series', element: <AdminSeriesPage /> },
               { path: 'admin/users', element: <AdminUsersPage /> },
               { path: 'admin/orders', element: <AdminOrdersPage /> },
               { path: 'admin/settings', element: <AdminSettingsPage /> },
@@ -72,7 +79,9 @@ export const router = createBrowserRouter([
               { path: 'admin/mail', element: <AdminMailPage /> },
             ],
           },
-          { path: '*', element: <NotFoundRedirect /> },
+          // A page that says so, rather than a silent bounce to the home
+          // page — see NotFoundPage.
+          { path: '*', element: <NotFoundPage /> },
         ],
       },
     ],

@@ -1,9 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+import { readStored } from '../../utils/safeStorage';
+
 const STORAGE_KEY = 'gall_theme';
 
 function loadInitialIsDark(): boolean {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = readStored(STORAGE_KEY);
   if (stored) return stored === 'dark';
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
 }

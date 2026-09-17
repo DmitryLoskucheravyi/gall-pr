@@ -31,7 +31,9 @@ export class WayForPayGateway implements PaymentGateway {
   }
 
   private hmacMd5(fields: (string | number)[]): string {
-    return createHmac('md5', this.secretKey!).update(fields.join(';')).digest('hex');
+    return createHmac('md5', this.secretKey!)
+      .update(fields.join(';'))
+      .digest('hex');
   }
 
   createPayment(order: Order): PaymentInitResult {
@@ -76,13 +78,41 @@ export class WayForPayGateway implements PaymentGateway {
     };
   }
 
-  verifyCallback(payload: Record<string, unknown>): PaymentCallbackResult | null {
+  verifyCallback(
+    payload: Record<string, unknown>,
+  ): PaymentCallbackResult | null {
     // No secret, no verifiable callback — see the same guard in LiqPayGateway.
     if (!this.isConfigured()) {
       return null;
     }
 
-    const {
+    // Read one field at a time rather than destructuring a blanket
+    // `as Record<string, string>`: the body is whatever arrived over the wire,
+    // and a repeated query parameter arrives as an array. Casting the lot and
+    // then joining arrays into the signature string is how a forged callback
+    // gets a second shape to try.
+    const field = (name: string): string => {
+      const value = payload[name];
+      return typeof value === 'string' || typeof value === 'number'
+        ? String(value)
+        : '';
+    };
+
+    const orderReference = field('orderReference');
+    const amount = field('amount');
+    const currency = field('currency');
+    const authCode = field('authCode');
+    const cardPan = field('cardPan');
+    const transactionStatus = field('transactionStatus');
+    const reasonCode = field('reasonCode');
+    const merchantSignature = field('merchantSignature');
+
+    if (!orderReference || !merchantSignature) {
+      return null;
+    }
+
+    const expected = this.hmacMd5([
+      this.merchantAccount!,
       orderReference,
       amount,
       currency,
@@ -90,22 +120,6 @@ export class WayForPayGateway implements PaymentGateway {
       cardPan,
       transactionStatus,
       reasonCode,
-      merchantSignature,
-    } = payload as Record<string, string>;
-
-    if (typeof orderReference !== 'string' || typeof merchantSignature !== 'string') {
-      return null;
-    }
-
-    const expected = this.hmacMd5([
-      this.merchantAccount!,
-      orderReference,
-      amount ?? '',
-      currency ?? '',
-      authCode ?? '',
-      cardPan ?? '',
-      transactionStatus ?? '',
-      reasonCode ?? '',
     ]);
 
     if (!signaturesMatch(expected, merchantSignature)) {
@@ -120,17 +134,38 @@ export class WayForPayGateway implements PaymentGateway {
 
     const paidAmount = Number(amount);
 
+    // The identifier of the *payment*, not of the order.
+    //
+    // This used to be `orderReference` — i.e. "order-42", the same value on
+    // every callback for that order. PaymentsService treats a repeat of the
+    // same (order, transaction) pair as a settled duplicate and ignores it, so
+    // with the order reference standing in for a transaction id every later
+    // callback on a paid order was discarded: a refund or a reversal could
+    // never be recorded. It also left nothing in the database to reconcile
+    // against the acquirer's own statement.
+    //
+    // WayForPay identifies the transaction by authCode, falling back to the
+    // reference only when the gateway sent none (a decline usually has no auth
+    // code) so the field is never empty.
+    const transactionId = authCode
+      ? `wfp-${authCode}`
+      : `${orderReference}-${transactionStatus || 'unknown'}`;
+
     return {
       orderId,
-      transactionId: orderReference,
+      transactionId,
       success: transactionStatus === 'Approved',
       amount: Number.isFinite(paidAmount) ? paidAmount : null,
-      currency: typeof currency === 'string' ? currency : null,
+      currency: currency || null,
     };
   }
 
   buildCallbackAck(payload: Record<string, unknown>): Record<string, unknown> {
-    const orderReference = String(payload.orderReference ?? '');
+    // Read, not coerced. String() on whatever arrived would happily turn an
+    // object into "[object Object]" and sign that as the acknowledged order.
+    const raw = payload.orderReference;
+    const orderReference =
+      typeof raw === 'string' || typeof raw === 'number' ? String(raw) : '';
     const time = Math.floor(Date.now() / 1000);
     const signature = this.hmacMd5([orderReference, 'accept', time]);
 

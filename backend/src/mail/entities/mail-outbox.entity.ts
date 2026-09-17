@@ -30,6 +30,9 @@ export enum MailKind {
   // Hand-sent only: the catch-all for when something went wrong in a way no
   // status covers.
   ORDER_APOLOGY = 'order_apology',
+  // The only letter here that isn't about an order — and the only way back
+  // into an account whose password has been forgotten.
+  PASSWORD_RESET = 'password_reset',
 }
 
 // One row per letter the shop wants to send. Writing the mail down before

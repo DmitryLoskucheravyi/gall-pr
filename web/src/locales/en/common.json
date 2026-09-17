@@ -22,5 +22,11 @@
   "unlike": "Unlike",
   "confirm": "Confirm",
   "selectPlaceholder": "Select…",
-  "cityPlaceholder": "Start typing a city name"
+  "cityPlaceholder": "Start typing a city name",
+  "notFound": {
+    "title": "Page not found",
+    "text": "The link may be out of date, or the address slightly off. The paintings are all still here — start from the catalogue.",
+    "home": "Home",
+    "catalog": "Catalogue"
+  }
 }

@@ -9,6 +9,12 @@ import {
 
 import { PaintingLike } from '../../likes/entities/painting-like.entity';
 
+// `refresh_token` used to live here as a single column, which made being
+// signed in a property of the account rather than of a device: a second login
+// overwrote the first and silently ended it. Sessions are rows now — see
+// auth/entities/refresh-session.entity.ts — and the old column is dropped by
+// temp/2026-09-fixes.sql.
+
 export enum UserRole {
   USER = 'USER',
   ADMIN = 'ADMIN',
@@ -19,7 +25,9 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  // Unique in the database. Stored lower-cased (AuthService normalises on the
+  // way in) so two accounts can't differ only by the case of the address.
+  @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
   @Column({ name: 'password_hash' })
@@ -43,14 +51,15 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'phone' })
+  @Column({ name: 'phone', type: 'varchar', length: 20 })
   phone: string;
 
-  @Column({ name: 'addres', nullable: true })
-  addres: string;
-
-  @Column({ name: 'refresh_token', nullable: true, type: 'text' })
-  refreshToken: string | null;
+  // The column is spelled `addres` in the database, and renaming it is a
+  // migration for a field nothing reads — so the typo is quarantined here, at
+  // the mapping, rather than repeated through the code. See
+  // temp/2026-09-fixes.sql if it is ever worth renaming for real.
+  @Column({ name: 'addres', type: 'varchar', length: 255, nullable: true })
+  address: string | null;
 
   // Telegram bot linkage. Stored as varchar (not bigint) — sidesteps any
   // precision edge cases with Telegram's chat ids and keeps TypeORM/MySQL

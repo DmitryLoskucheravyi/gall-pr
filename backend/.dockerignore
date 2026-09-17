@@ -5,7 +5,19 @@ coverage
 .git
 .env
 .env.*
-temp/*.sql
 *.log
 .vscode
 .idea
+
+# The TLS private key.
+#
+# The runtime stage only copies ./dist, so the key never reached the published
+# image — but `COPY . .` in the build stage put it in an intermediate layer,
+# which is a private key sitting in the build cache and in anything derived
+# from that stage. The Dockerfile says in as many words that the key must not
+# become an image layer; this is what makes that true.
+cert
+
+# multer stages uploads here on their way to Cloudinary. Whatever happens to be
+# mid-flight when an image is built is not part of the image.
+temp

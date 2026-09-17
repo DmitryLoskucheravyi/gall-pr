@@ -5,11 +5,12 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import type { CreateNewsDto } from '../../types/news.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
-function onSaveError(error: any) {
+function onSaveError(error: unknown) {
   store.dispatch(
     showToast({
-      message: error?.response?.data?.message ?? 'Не вдалося зберегти',
+      message: apiErrorMessage(error, 'Не вдалося зберегти'),
       variant: 'error',
     }),
   );
@@ -51,10 +52,10 @@ export function useDeleteNewsMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.news.list() });
       store.dispatch(showToast({ message: 'Новину видалено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося видалити',
+          message: apiErrorMessage(error, 'Не вдалося видалити'),
           variant: 'error',
         }),
       );

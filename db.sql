@@ -6,6 +6,14 @@
 -- repository could stand a database up from nothing.
 --
 -- Schema only, no rows. Regenerate after a schema change so this stays true.
+--
+-- It stopped being true once: the bilingual *_en columns were added to the
+-- live database in September by scripts/add-bilingual-columns.ts and never
+-- reached this file, so a database built from it was missing every column the
+-- entities select — which is to say, unusable. Both those columns and the
+-- September fix pass (backend/temp/2026-09-fixes.sql) are folded in below.
+-- Anything applied to the live database from now on belongs in a file under
+-- backend/temp/ *and* here.
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -13,6 +21,7 @@ DROP TABLE IF EXISTS `app_settings`;
 CREATE TABLE `app_settings` (
   `id` int NOT NULL AUTO_INCREMENT,
   `author_name` varchar(255) NOT NULL DEFAULT '',
+  `author_name_en` varchar(255) DEFAULT NULL,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `card_transfer_iban` varchar(255) NOT NULL DEFAULT '',
   `nova_poshta_sender_city_ref` varchar(255) NOT NULL DEFAULT '',
@@ -34,7 +43,7 @@ CREATE TABLE `app_settings` (
 DROP TABLE IF EXISTS `cart_items`;
 CREATE TABLE `cart_items` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int DEFAULT NULL,
+  `user_id` bigint DEFAULT NULL,
   `guest_token` varchar(64) DEFAULT NULL,
   `painting_id` int NOT NULL,
   `quantity` int NOT NULL DEFAULT '1',
@@ -42,7 +51,8 @@ CREATE TABLE `cart_items` (
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
   UNIQUE KEY `uniq_cart_user_painting` (`user_id`,`painting_id`),
-  UNIQUE KEY `uniq_cart_items_guest_painting` (`guest_token`,`painting_id`)
+  UNIQUE KEY `uniq_cart_items_guest_painting` (`guest_token`,`painting_id`),
+  KEY `idx_cart_items_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 DROP TABLE IF EXISTS `giveaway_participants`;
@@ -62,8 +72,11 @@ DROP TABLE IF EXISTS `giveaways`;
 CREATE TABLE `giveaways` (
   `id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
+  `title_en` varchar(255) DEFAULT NULL,
   `description` text NOT NULL,
+  `description_en` text DEFAULT NULL,
   `conditions` text DEFAULT NULL,
+  `conditions_en` text DEFAULT NULL,
   `painting_id` int NOT NULL,
   `deadline` datetime NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -110,6 +123,7 @@ DROP TABLE IF EXISTS `materials`;
 CREATE TABLE `materials` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `name_en` varchar(255) DEFAULT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
@@ -120,7 +134,9 @@ DROP TABLE IF EXISTS `news`;
 CREATE TABLE `news` (
   `id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
+  `title_en` varchar(255) DEFAULT NULL,
   `text` text NOT NULL,
+  `text_en` text DEFAULT NULL,
   `image_url` varchar(500) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -145,7 +161,7 @@ CREATE TABLE `order_items` (
 DROP TABLE IF EXISTS `orders`;
 CREATE TABLE `orders` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int DEFAULT NULL,
+  `user_id` bigint DEFAULT NULL,
   `guest_token` varchar(64) DEFAULT NULL,
   `guest_name` varchar(255) DEFAULT NULL,
   `guest_email` varchar(255) DEFAULT NULL,
@@ -170,14 +186,21 @@ CREATE TABLE `orders` (
   `tracking_number` varchar(64) DEFAULT NULL,
   `is_commission` tinyint(1) NOT NULL DEFAULT '0',
   `contact_handle` varchar(120) DEFAULT NULL,
-  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+  KEY `idx_orders_user` (`user_id`),
+  KEY `idx_orders_guest_token` (`guest_token`),
+  KEY `idx_orders_created_at` (`created_at`),
+  KEY `idx_orders_archived_created` (`is_archived`,`created_at`),
+  KEY `idx_orders_status_created` (`status`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 DROP TABLE IF EXISTS `paintings`;
 CREATE TABLE `paintings` (
   `id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(255) COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `title_en` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `subtitle` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `subtitle_en` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `card_image` varchar(500) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `images` json NOT NULL,
   `price` decimal(10,2) NOT NULL,
@@ -188,10 +211,12 @@ CREATE TABLE `paintings` (
   `height` int DEFAULT NULL,
   `year` int DEFAULT NULL,
   `description` text COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `description_en` text COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `material_id` int DEFAULT NULL,
   `technique_id` int DEFAULT NULL,
+  `series_id` int DEFAULT NULL,
   `likes_count` int NOT NULL DEFAULT '0',
   `animation_3d_image` varchar(500) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `weight` decimal(6,2) DEFAULT NULL,
@@ -201,8 +226,12 @@ CREATE TABLE `paintings` (
   UNIQUE KEY `title` (`title`),
   KEY `fk_paintings_material` (`material_id`),
   KEY `fk_paintings_technique` (`technique_id`),
+  KEY `idx_paintings_available_created` (`is_available`,`created_at`),
+  KEY `idx_paintings_price` (`price`),
+  KEY `idx_paintings_series` (`series_id`),
   CONSTRAINT `fk_paintings_material` FOREIGN KEY (`material_id`) REFERENCES `materials` (`id`),
-  CONSTRAINT `fk_paintings_technique` FOREIGN KEY (`technique_id`) REFERENCES `techniques` (`id`)
+  CONSTRAINT `fk_paintings_technique` FOREIGN KEY (`technique_id`) REFERENCES `techniques` (`id`),
+  CONSTRAINT `fk_paintings_series` FOREIGN KEY (`series_id`) REFERENCES `series` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 DROP TABLE IF EXISTS `support_chats`;
@@ -217,7 +246,7 @@ CREATE TABLE `support_chats` (
   `guest_token` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
   UNIQUE KEY `uniq_support_chats_user` (`user_id`),
-  KEY `idx_guest_token` (`guest_token`),
+  UNIQUE KEY `uniq_support_chats_guest` (`guest_token`),
   CONSTRAINT `fk_support_chats_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
@@ -240,6 +269,7 @@ DROP TABLE IF EXISTS `techniques`;
 CREATE TABLE `techniques` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `name_en` varchar(255) DEFAULT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
@@ -270,12 +300,56 @@ CREATE TABLE `users` (
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `phone` varchar(20) COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `addres` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `refresh_token` text COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `telegram_chat_id` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `telegram_link_code` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `telegram_link_code_expires_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
   UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+DROP TABLE IF EXISTS `refresh_sessions`;
+CREATE TABLE `refresh_sessions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+  UNIQUE KEY `uniq_refresh_sessions_token` (`token_hash`),
+  KEY `idx_refresh_sessions_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+DROP TABLE IF EXISTS `password_resets`;
+CREATE TABLE `password_resets` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+  UNIQUE KEY `uniq_password_resets_token` (`token_hash`),
+  KEY `idx_password_resets_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+DROP TABLE IF EXISTS `series`;
+CREATE TABLE `series` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `name_en` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `description_en` text COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `cover_image` varchar(500) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `is_published` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+  UNIQUE KEY `uniq_series_name` (`name`),
+  KEY `idx_series_published_order` (`is_published`,`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -5,6 +5,7 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import type { Painting } from '../../types/painting.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export function useAddToCart() {
   const queryClient = useQueryClient();
@@ -13,12 +14,14 @@ export function useAddToCart() {
     mutationFn: (painting: Painting) => cartService.addItem(painting.id),
     onSuccess: (_data, painting) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
-      store.dispatch(showToast({ message: `Додано в кошик: ${painting.title}` }));
+      store.dispatch(
+        showToast({ message: `Додано в кошик: ${painting.title}` }),
+      );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося додати в кошик',
+          message: apiErrorMessage(error, 'Не вдалося додати в кошик'),
           variant: 'error',
         }),
       );

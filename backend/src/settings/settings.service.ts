@@ -5,7 +5,11 @@ import { randomUUID, randomBytes, timingSafeEqual } from 'crypto';
 
 import { AppSettings, FaqMap } from './entities/app-settings.entity';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
-import { CreateFaqItemDto, UpdateFaqItemDto } from './dto/faq-item.dto';
+import {
+  CreateFaqItemDto,
+  FaqOrderEntryDto,
+  UpdateFaqItemDto,
+} from './dto/faq-item.dto';
 
 const ADMIN_LINK_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
 
@@ -148,7 +152,10 @@ export class SettingsService {
   // linking: generates a one-time code embedded in a t.me deep link. The
   // bot's /start handler resolves it straight to adminTelegramChatId — the
   // admin never needs to see or paste a raw chat id.
-  async generateAdminTelegramLinkCode(): Promise<{ code: string; expiresAt: Date }> {
+  async generateAdminTelegramLinkCode(): Promise<{
+    code: string;
+    expiresAt: Date;
+  }> {
     const settings = await this.get();
     const code = randomBytes(6).toString('hex');
     const expiresAt = new Date(Date.now() + ADMIN_LINK_CODE_TTL_MS);
@@ -170,7 +177,10 @@ export class SettingsService {
     return this.settingsRepository.save(settings);
   }
 
-  async redeemAdminTelegramLinkCode(code: string, chatId: string): Promise<boolean> {
+  async redeemAdminTelegramLinkCode(
+    code: string,
+    chatId: string,
+  ): Promise<boolean> {
     const settings = await this.get();
 
     // Constant-time, like every other secret comparison in the codebase. The
@@ -226,7 +236,7 @@ export class SettingsService {
     const faq = settings.faq ?? {};
 
     if (!faq[id]) {
-      throw new NotFoundException('FAQ item not found');
+      throw new NotFoundException('Питання не знайдено');
     }
 
     faq[id] = { ...faq[id], ...dto };
@@ -241,7 +251,7 @@ export class SettingsService {
     const faq = settings.faq ?? {};
 
     if (!faq[id]) {
-      throw new NotFoundException('FAQ item not found');
+      throw new NotFoundException('Питання не знайдено');
     }
 
     delete faq[id];
@@ -251,13 +261,15 @@ export class SettingsService {
     return faq;
   }
 
-  async reorderFaq(order: Record<string, number>): Promise<FaqMap> {
+  // Takes a validated list rather than a free-form object — see ReorderFaqDto
+  // for why the old `Record<string, number>` was not a shape at all.
+  async reorderFaq(entries: FaqOrderEntryDto[]): Promise<FaqMap> {
     const settings = await this.get();
     const faq = settings.faq ?? {};
 
-    for (const [id, newOrder] of Object.entries(order)) {
+    for (const { id, order } of entries) {
       if (faq[id]) {
-        faq[id] = { ...faq[id], order: newOrder };
+        faq[id] = { ...faq[id], order };
       }
     }
 

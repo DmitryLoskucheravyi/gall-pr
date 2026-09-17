@@ -108,3 +108,19 @@ export type CreateCommissionDto = {
   novaPoshtaWarehouseRef?: string;
   comment?: string;
 };
+
+// Which slice of the order book the admin is looking at. Filtering happens on
+// the server now: the page used to fetch every order the shop had ever taken
+// and filter the lot in the browser.
+export type AdminOrderTab = 'active' | 'completed';
+
+export type AdminOrdersPage = {
+  data: Order[];
+  total: number;
+  // Across the whole table, not this page — it feeds the nav badge, which has
+  // to say how many orders are waiting rather than how many are waiting here.
+  pendingTotal: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};

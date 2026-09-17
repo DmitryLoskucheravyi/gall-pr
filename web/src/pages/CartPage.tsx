@@ -16,6 +16,7 @@ import { useCart } from '../hooks/queries/useCart';
 import { useRemoveCartItemMutation } from '../hooks/mutations/useCartMutations';
 import { useCheckoutMutation } from '../hooks/mutations/useCheckoutMutation';
 import { useCardTransferIban } from '../hooks/queries/useSettings';
+import { useOnlinePaymentMethods } from '../hooks/queries/usePaymentMethods';
 import {
   useNovaPoshtaWarehouses,
   useNovaPoshtaDeliveryPrice,
@@ -27,6 +28,7 @@ import NovaPoshtaCityPicker from '../components/ui/NovaPoshtaCityPicker';
 import InfoTooltip from '../components/ui/InfoTooltip';
 import Checkbox from '../components/ui/Checkbox';
 import styles from './CartPage.module.scss';
+import { apiErrorMessage } from '../utils/apiError';
 
 function FloatField({
   id,
@@ -82,7 +84,25 @@ export default function CartPage() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
+  // The two manual methods are always on offer — they need no gateway, only a
+  // human. The card options are added when the server says it actually has
+  // keys for them: LiqPay and WayForPay were fully implemented on the backend
+  // and unreachable from here, because this list was a hard-coded pair.
+  //
+  // Offering a gateway that isn't configured would be worse than not offering
+  // it: the order is placed, no payment form comes back, and the customer is
+  // left holding something they cannot pay for.
+  const { data: onlineMethods = [] } = useOnlinePaymentMethods();
+
+  const ONLINE_LABELS: Partial<Record<PaymentProvider, string>> = {
+    LIQPAY: t('payment.liqpay'),
+    WAYFORPAY: t('payment.wayforpay'),
+  };
+
   const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
+    ...onlineMethods
+      .filter((method) => ONLINE_LABELS[method])
+      .map((method) => ({ value: method, label: ONLINE_LABELS[method]! })),
     { value: 'CASH_ON_DELIVERY', label: t('payment.cod') },
     { value: 'CARD_TRANSFER', label: t('payment.cardTransfer') },
   ];
@@ -98,10 +118,13 @@ export default function CartPage() {
   const [guestPhone, setGuestPhone] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [comment, setComment] = useState('');
-  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider | null>(null);
+  const [paymentProvider, setPaymentProvider] =
+    useState<PaymentProvider | null>(null);
   const [callMeRequested, setCallMeRequested] = useState(false);
 
-  const [npSelectedCity, setNpSelectedCity] = useState<NovaPoshtaOption | null>(null);
+  const [npSelectedCity, setNpSelectedCity] = useState<NovaPoshtaOption | null>(
+    null,
+  );
   const [npWarehouseRef, setNpWarehouseRef] = useState('');
 
   const cardTransferIban = useCardTransferIban();
@@ -113,7 +136,8 @@ export default function CartPage() {
     paymentProvider === 'CASH_ON_DELIVERY',
   );
 
-  const shippingCost = npSelectedCity && deliveryPrice ? deliveryPrice.shippingCost : 0;
+  const shippingCost =
+    npSelectedCity && deliveryPrice ? deliveryPrice.shippingCost : 0;
   const codFee =
     npSelectedCity && deliveryPrice && paymentProvider === 'CASH_ON_DELIVERY'
       ? deliveryPrice.redeliveryCost
@@ -196,7 +220,9 @@ export default function CartPage() {
 
       if (isAuthenticated) {
         dispatch(
-          showToast({ message: t('toasts.orderAcceptedAuth', { id: order.id }) }),
+          showToast({
+            message: t('toasts.orderAcceptedAuth', { id: order.id }),
+          }),
         );
         navigate('/orders');
       } else {
@@ -207,10 +233,10 @@ export default function CartPage() {
         );
         navigate('/');
       }
-    } catch (error: any) {
+    } catch (error) {
       dispatch(
         showToast({
-          message: error?.response?.data?.message ?? t('toasts.checkoutFailed'),
+          message: apiErrorMessage(error, t('toasts.checkoutFailed')),
           variant: 'error',
         }),
       );
@@ -369,14 +395,18 @@ export default function CartPage() {
 
             {shippingCost > 0 && (
               <div className={styles.summaryRow}>
-                <span className={styles.summaryLabel}>{t('summary.delivery')}</span>
+                <span className={styles.summaryLabel}>
+                  {t('summary.delivery')}
+                </span>
                 <span>{formatPrice(shippingCost, locale, usdRate)}</span>
               </div>
             )}
 
             {codFee > 0 && (
               <div className={styles.summaryRow}>
-                <span className={styles.summaryLabel}>{t('summary.codFee')}</span>
+                <span className={styles.summaryLabel}>
+                  {t('summary.codFee')}
+                </span>
                 <span>{formatPrice(codFee, locale, usdRate)}</span>
               </div>
             )}

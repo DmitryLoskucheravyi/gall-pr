@@ -29,7 +29,21 @@ const BOTTOM_SLACK = 4;
 // scrolling — this only fires on scroll that keeps going once there is
 // nothing left to scroll, and it should read as a deliberate push, not
 // something a reader falls into on their way to the "Нагору" button.
-const WHEEL_UNIT = 560;
+const WHEEL_UNIT = 900;
+// A hard flick of the wheel can carry the page straight to the bottom and
+// keep dispatching wheel events for a while after — mouse/OS scroll
+// momentum, not the reader still turning anything. Those trailing events
+// land while already at the bottom and would otherwise read as a deliberate
+// push past it. This window, counted from the moment the page first rests
+// against the bottom, is ignored outright so the flick that got the reader
+// here can't also be the push that carries them onward.
+const ARRIVAL_GRACE_MS = 400;
+// However much delta a burst reports, the bar can only climb this fast in
+// real time — a fast flick and a slow one that add up to the same total
+// fill the bar at the same rate. This is what actually stops a burst (or
+// its momentum tail, once past the grace window above) from completing the
+// bar in one motion: filling it for real takes this long no matter what.
+const MIN_FILL_MS = 900;
 // A touch gesture doesn't get the same luxury: there's no "keep spinning
 // the wheel," just however far a thumb can drag before it runs out of
 // screen, and a phone can't repeat that anywhere near as many times as a
@@ -63,17 +77,35 @@ export function useScrollContinue() {
   const target = useRef(0);
   const value = useRef(0);
   const frame = useRef(0);
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  // The veil's own timer. Held so unmounting mid-handover doesn't navigate a
+  // router that is on its way out — and so a locale change, which re-runs the
+  // effect below, can't leave an orphaned navigate() aimed at the old one.
+  const veilTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const touchY = useRef<number | null>(null);
   const arrived = useRef(false);
+  // Wheel-only: when the page first came to rest against the bottom, and
+  // the last moment the bar actually grew from it — see addTo's `limited`
+  // path. Touch has no equivalent, because a touchmove only fires while a
+  // finger is actually on the glass; there's no momentum tail to guard
+  // against there the way a mouse wheel has.
+  const bottomSince = useRef<number | null>(null);
+  const lastGrowAt = useRef<number | null>(null);
 
   // A fresh page is a fresh bar. Footer never unmounts across a client-side
   // navigation, so without this a completed bar would carry its full value
   // onto the page it just opened and fire again on the next scroll tick.
   useEffect(() => {
+    clearTimeout(veilTimer.current);
     target.current = 0;
     value.current = 0;
     arrived.current = false;
+    bottomSince.current = null;
+    lastGrowAt.current = null;
     setProgress(0);
     setLeaving(false);
   }, [pathname]);
@@ -81,7 +113,9 @@ export function useScrollContinue() {
   useEffect(() => {
     if (!nextPath) return;
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
 
     const atBottom = () =>
       window.innerHeight + window.scrollY >=
@@ -102,7 +136,10 @@ export function useScrollContinue() {
     function step() {
       frame.current = 0;
       const drift = target.current - value.current;
-      value.current = Math.abs(drift) > SETTLED ? value.current + drift * EASE : target.current;
+      value.current =
+        Math.abs(drift) > SETTLED
+          ? value.current + drift * EASE
+          : target.current;
       setProgress(value.current);
 
       if (value.current >= 0.999 && !arrived.current) {
@@ -112,7 +149,7 @@ export function useScrollContinue() {
           navigate(target);
         } else {
           setLeaving(true);
-          window.setTimeout(() => navigate(target), VEIL_MS);
+          veilTimer.current = setTimeout(() => navigate(target), VEIL_MS);
         }
         return;
       }
@@ -125,9 +162,13 @@ export function useScrollContinue() {
     // Shared by wheel and touch: only counts while resting against the very
     // bottom of the page, so an ordinary scroll anywhere else never touches
     // the bar, and stepping away from the bottom lets it straight back down.
-    const addTo = (delta: number) => {
+    // `limited` is the wheel-only guard against a hard flick's own momentum
+    // — see onWheel — and is a no-op for touch, which never had this problem.
+    const addTo = (delta: number, limited = false) => {
       if (arrived.current) return;
       if (!atBottom()) {
+        bottomSince.current = null;
+        lastGrowAt.current = null;
         if (target.current !== 0) {
           target.current = 0;
           wake();
@@ -138,12 +179,43 @@ export function useScrollContinue() {
       // negative first, so lifting off the bottom edge briefly doesn't
       // demand a whole bar's worth of scroll-up to cancel.
       if (delta <= 0 && target.current === 0) return;
-      target.current = Math.min(1, Math.max(0, target.current + delta / WHEEL_UNIT));
+
+      if (limited && delta > 0) {
+        const now = performance.now();
+        if (bottomSince.current === null) bottomSince.current = now;
+
+        // The flick that carried the page here is still arriving — its
+        // trailing wheel events land while already at the bottom and would
+        // otherwise read as a deliberate push past it. Ignore them outright
+        // rather than count them.
+        if (now - bottomSince.current < ARRIVAL_GRACE_MS) return;
+
+        // Past the grace window, the bar still can't fill any faster than
+        // real, sustained scrolling could — whatever a single event's delta
+        // claims, growth this tick is capped to what MIN_FILL_MS of steady
+        // input would produce. A burst (or momentum decaying out from the
+        // flick above) can't complete the bar in one motion; it has to keep
+        // coming for that long.
+        const elapsed =
+          lastGrowAt.current === null ? 0 : now - lastGrowAt.current;
+        lastGrowAt.current = now;
+        const maxStep = elapsed / MIN_FILL_MS;
+        const step = Math.min(delta / WHEEL_UNIT, Math.max(maxStep, 0));
+        target.current = Math.min(1, target.current + step);
+        armIdleDecay();
+        wake();
+        return;
+      }
+
+      target.current = Math.min(
+        1,
+        Math.max(0, target.current + delta / WHEEL_UNIT),
+      );
       armIdleDecay();
       wake();
     };
 
-    const onWheel = (event: WheelEvent) => addTo(event.deltaY);
+    const onWheel = (event: WheelEvent) => addTo(event.deltaY, true);
 
     const onTouchStart = (event: TouchEvent) => {
       touchY.current = event.touches[0]?.clientY ?? null;
@@ -171,9 +243,13 @@ export function useScrollContinue() {
     // Leaving the bottom by any other means — keyboard paging, a scrollbar
     // drag — should let the bar go too.
     const onScroll = () => {
-      if (!atBottom() && target.current !== 0) {
-        target.current = 0;
-        wake();
+      if (!atBottom()) {
+        bottomSince.current = null;
+        lastGrowAt.current = null;
+        if (target.current !== 0) {
+          target.current = 0;
+          wake();
+        }
       }
     };
 
@@ -190,6 +266,7 @@ export function useScrollContinue() {
       window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('scroll', onScroll);
       clearTimeout(idleTimer.current);
+      clearTimeout(veilTimer.current);
       if (frame.current) cancelAnimationFrame(frame.current);
       frame.current = 0;
     };

@@ -24,6 +24,7 @@ import { useConfirm } from '../../components/ui/ConfirmDialog';
 import { useAppDispatch } from '../../store/hooks';
 import { showToast } from '../../store/slices/toastSlice';
 import styles from './AdminGiveawaysPage.module.scss';
+import { apiErrorMessage } from '../../utils/apiError';
 
 function toDatetimeLocalValue(iso: string) {
   const date = new Date(iso);
@@ -80,11 +81,13 @@ export default function AdminGiveawaysPage() {
   }, [newsImage]);
   useEffect(() => {
     return () => {
-      if (newsImageRef.current) URL.revokeObjectURL(newsImageRef.current.previewUrl);
+      if (newsImageRef.current)
+        URL.revokeObjectURL(newsImageRef.current.previewUrl);
     };
   }, []);
 
-  const newsSaving = uploadingNewsImage || createNews.isPending || updateNews.isPending;
+  const newsSaving =
+    uploadingNewsImage || createNews.isPending || updateNews.isPending;
 
   const resetForm = () => {
     setEditingId(null);
@@ -112,7 +115,8 @@ export default function AdminGiveawaysPage() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!title.trim() || !description.trim() || !paintingId || !deadline) return;
+    if (!title.trim() || !description.trim() || !paintingId || !deadline)
+      return;
 
     const dto = {
       title: title.trim(),
@@ -194,11 +198,13 @@ export default function AdminGiveawaysPage() {
         setUploadingNewsImage(true);
         const uploaded = await uploadImage(newsImage.file);
         imageUrl = uploaded.url;
-      } catch (error: any) {
+      } catch (error) {
         dispatch(
           showToast({
-            message:
-              error?.response?.data?.message ?? t('giveawaysPage.news.uploadFailed'),
+            message: apiErrorMessage(
+              error,
+              t('giveawaysPage.news.uploadFailed'),
+            ),
             variant: 'error',
           }),
         );
@@ -217,7 +223,10 @@ export default function AdminGiveawaysPage() {
     };
 
     if (newsEditingId) {
-      updateNews.mutate({ id: newsEditingId, dto }, { onSuccess: resetNewsForm });
+      updateNews.mutate(
+        { id: newsEditingId, dto },
+        { onSuccess: resetNewsForm },
+      );
     } else {
       createNews.mutate(dto, { onSuccess: resetNewsForm });
     }
@@ -226,7 +235,9 @@ export default function AdminGiveawaysPage() {
   const handleNewsDelete = async (item: News) => {
     const ok = await confirm({
       title: t('giveawaysPage.news.confirmDelete.title'),
-      message: t('giveawaysPage.news.confirmDelete.message', { title: item.title }),
+      message: t('giveawaysPage.news.confirmDelete.message', {
+        title: item.title,
+      }),
       confirmLabel: t('giveawaysPage.news.confirmDelete.confirmLabel'),
       danger: true,
     });
@@ -344,7 +355,9 @@ export default function AdminGiveawaysPage() {
           </form>
 
           {loading ? (
-            <p className={styles.muted}>{t('giveawaysPage.giveaway.loading')}</p>
+            <p className={styles.muted}>
+              {t('giveawaysPage.giveaway.loading')}
+            </p>
           ) : giveaways.length === 0 ? (
             <p className={styles.muted}>{t('giveawaysPage.giveaway.empty')}</p>
           ) : (
@@ -388,7 +401,9 @@ export default function AdminGiveawaysPage() {
       ) : (
         <>
           <form onSubmit={handleNewsSubmit} className={styles.form}>
-            <span className={styles.fileLabel}>{t('giveawaysPage.news.imageLabel')}</span>
+            <span className={styles.fileLabel}>
+              {t('giveawaysPage.news.imageLabel')}
+            </span>
 
             <input
               ref={newsFileInputRef}
@@ -486,7 +501,11 @@ export default function AdminGiveawaysPage() {
               {news.map((item) => (
                 <div key={item.id} className={styles.item}>
                   {item.imageUrl && (
-                    <img src={item.imageUrl} alt="" className={styles.itemImage} />
+                    <img
+                      src={item.imageUrl}
+                      alt=""
+                      className={styles.itemImage}
+                    />
                   )}
                   <div className={styles.itemInfo}>
                     <span className={styles.itemTitle}>{item.title}</span>

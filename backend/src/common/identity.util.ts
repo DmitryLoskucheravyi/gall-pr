@@ -40,6 +40,12 @@ export function resolveIdentity(req: OptionalAuthenticatedRequest): Identity {
 
   const guestToken = req.headers['x-guest-token'];
 
+  // Left in English on purpose, unlike every other message in this codebase:
+  // the web client matches on this exact string to tell "your access token
+  // expired, retry as a guest" apart from a real bad request — see the
+  // isStaleTokenGuestFallback branch in web/src/api/client.ts. It is a
+  // sentinel, not a sentence anybody is meant to read; the client never shows
+  // it, it retries.
   if (typeof guestToken !== 'string' || !guestToken.trim()) {
     throw new BadRequestException('Guest token required');
   }

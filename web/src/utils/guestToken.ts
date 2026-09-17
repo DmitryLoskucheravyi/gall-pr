@@ -1,3 +1,5 @@
+import { readStored, removeStored, writeStored } from './safeStorage';
+
 const STORAGE_KEY = 'gall_guest_token';
 
 // This token is what the backend accepts as proof that a request belongs to a
@@ -32,7 +34,10 @@ function randomUuidV4(): string {
 }
 
 function generateGuestId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
     return crypto.randomUUID();
   }
 
@@ -49,25 +54,28 @@ function isWellFormed(token: string | null): token is string {
   return !!token && GUEST_TOKEN_PATTERN.test(token);
 }
 
+// Through safeStorage rather than localStorage directly: this function is
+// called from the axios request interceptor on every request, so a browser
+// that throws on storage access used to take the whole API layer with it.
 export function peekGuestToken(): string | null {
-  const token = localStorage.getItem(STORAGE_KEY);
+  const token = readStored(STORAGE_KEY);
 
   return isWellFormed(token) ? token : null;
 }
 
 export function getGuestToken(): string {
-  const existing = localStorage.getItem(STORAGE_KEY);
+  const existing = readStored(STORAGE_KEY);
 
   if (isWellFormed(existing)) {
     return existing;
   }
 
   const token = generateGuestId();
-  localStorage.setItem(STORAGE_KEY, token);
+  writeStored(STORAGE_KEY, token);
 
   return token;
 }
 
 export function clearGuestToken() {
-  localStorage.removeItem(STORAGE_KEY);
+  removeStored(STORAGE_KEY);
 }

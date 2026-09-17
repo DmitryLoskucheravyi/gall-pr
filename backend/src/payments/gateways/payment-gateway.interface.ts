@@ -23,6 +23,8 @@ export interface PaymentGateway {
   readonly provider: PaymentProvider;
   isConfigured(): boolean;
   createPayment(order: Order): PaymentInitResult;
-  verifyCallback(payload: Record<string, unknown>): PaymentCallbackResult | null;
+  verifyCallback(
+    payload: Record<string, unknown>,
+  ): PaymentCallbackResult | null;
   buildCallbackAck?(payload: Record<string, unknown>): Record<string, unknown>;
 }

@@ -30,6 +30,16 @@
   color: #fff;
 }
 
+// The sentence under the heading on the recovery panels — a line of
+// explanation the login and register forms don't need, since their own titles
+// say everything.
+.lead {
+  margin-top: $spacing-lg;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(237, 234, 226, 0.68);
+}
+
 .form {
   margin-top: $spacing-xxl;
   display: flex;

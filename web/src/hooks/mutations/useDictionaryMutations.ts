@@ -5,6 +5,7 @@ import { techniquesService } from '../../api/techniques.api';
 import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
+import { apiErrorMessage } from '../../utils/apiError';
 
 type DictionaryInput = { name: string; nameEn?: string };
 
@@ -14,25 +15,28 @@ type DictionaryService = {
   remove: (id: number) => Promise<unknown>;
 };
 
-function onSaveError(error: any) {
+function onSaveError(error: unknown) {
   store.dispatch(
     showToast({
-      message: error?.response?.data?.message ?? 'Не вдалося зберегти',
+      message: apiErrorMessage(error, 'Не вдалося зберегти'),
       variant: 'error',
     }),
   );
 }
 
-function onDeleteError(error: any) {
+function onDeleteError(error: unknown) {
   store.dispatch(
     showToast({
-      message: error?.response?.data?.message ?? 'Не вдалося видалити',
+      message: apiErrorMessage(error, 'Не вдалося видалити'),
       variant: 'error',
     }),
   );
 }
 
-function useDictionaryCrud(service: DictionaryService, listKey: readonly unknown[]) {
+function useDictionaryCrud(
+  service: DictionaryService,
+  listKey: readonly unknown[],
+) {
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: listKey });
 

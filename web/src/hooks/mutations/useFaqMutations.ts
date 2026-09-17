@@ -5,6 +5,7 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import type { FaqMap } from '../../types/faq.types';
+import { apiErrorMessage } from '../../utils/apiError';
 
 function useFaqMutation<TVars>(
   mutationFn: (vars: TVars) => Promise<FaqMap>,
@@ -17,10 +18,10 @@ function useFaqMutation<TVars>(
     onSuccess: (faq) => {
       queryClient.setQueryData(queryKeys.faq.all, faq);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? errorMessage,
+          message: apiErrorMessage(error, errorMessage),
           variant: 'error',
         }),
       );

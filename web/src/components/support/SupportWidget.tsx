@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -6,6 +11,7 @@ import { useMyUnreadSupportCount } from '../../hooks/queries/useSupport';
 import { useAppSelector } from '../../store/hooks';
 import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
 import { stripLocale } from '../../utils/locale';
+import { readStored, writeStored } from '../../utils/safeStorage';
 import styles from './SupportWidget.module.scss';
 
 // Kept in sync with .launcher's box in SupportWidget.module.scss.
@@ -32,7 +38,7 @@ function clampY(y: number) {
 
 function readDock(): Dock | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readStored(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Dock;
     if (parsed.side !== 'left' && parsed.side !== 'right') return null;
@@ -135,7 +141,7 @@ export default function SupportWidget() {
     setDrag(null);
     suppressClickRef.current = true;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      writeStored(STORAGE_KEY, JSON.stringify(next));
     } catch {
       // Private mode / storage full — position just won't persist.
     }
@@ -158,7 +164,9 @@ export default function SupportWidget() {
         }
         navigate('/support');
       }}
-      aria-label={unread > 0 ? t('widgetUnreadAria', { count: unread }) : t('title')}
+      aria-label={
+        unread > 0 ? t('widgetUnreadAria', { count: unread }) : t('title')
+      }
       className={`${styles.launcher} ${drag ? styles.dragging : ''}`}
       style={{
         left: drag ? drag.x : dockedX,

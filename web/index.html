@@ -10,10 +10,12 @@
       name="description"
       content="Кураторська добірка оригінальних картин від українських художників. Кожна робота — в єдиному екземплярі. Доставка Новою поштою по всій Україні."
     />
+    <link rel="canonical" href="https://viktorumm.com/ua" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Viktorumm" />
+    <meta property="og:url" content="https://viktorumm.com/ua" />
     <meta
       property="og:title"
       content="Viktorumm — галерея сучасного українського живопису"
@@ -22,7 +24,20 @@
       property="og:description"
       content="Кураторська добірка оригінальних картин від українських художників. Кожна робота — в єдиному екземплярі."
     />
+    <!-- Without an image a shared link renders as a bare line of text in every
+         messenger there is, which for a gallery is the worst possible preview.
+         A static file rather than a painting: the tags are baked into the HTML
+         at build time and no crawler runs the app, so nothing here can depend
+         on which page was shared. -->
+    <meta property="og:image" content="https://viktorumm.com/og-cover.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Оригінальний живопис із галереї Viktorumm"
+    />
     <meta property="og:locale" content="uk_UA" />
+    <meta property="og:locale:alternate" content="en_US" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -34,13 +49,28 @@
       name="twitter:description"
       content="Кураторська добірка оригінальних картин від українських художників."
     />
+    <meta name="twitter:image" content="https://viktorumm.com/og-cover.jpg" />
 
+    <!-- Runs before first paint so a dark-theme visitor never sees a white
+         flash. Inline for that reason and no other, which is why the CSP in
+         public/_headers allows exactly this script by hash — change a byte of
+         it and the hash there has to change too.
+
+         Every storage access is guarded: reading window.localStorage throws
+         outright in a private window or with site data blocked, and an
+         uncaught throw here runs before anything else on the page. -->
     <script>
       (function () {
-        var stored = localStorage.getItem('gall_theme');
+        var stored = null;
+        try {
+          stored = localStorage.getItem('gall_theme');
+        } catch (error) {
+          /* No storage: fall through to the system preference. */
+        }
         var isDark = stored
           ? stored === 'dark'
-          : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          : window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (isDark) document.documentElement.classList.add('dark');
       })();
     </script>

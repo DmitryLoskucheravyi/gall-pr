@@ -20,6 +20,11 @@ export type Painting = {
 
   amount: number;
 
+  // The series this work belongs to, if any. `series` is loaded eagerly by the
+  // API, so a card can name it without a second request.
+  seriesId: number | null;
+  series: { id: number; name: string; nameEn: string | null } | null;
+
   isAvailable: boolean;
   isFeatured: boolean;
   // False means one of a kind: sold is gone. True means a sold-out work can

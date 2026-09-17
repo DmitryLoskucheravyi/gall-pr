@@ -5,6 +5,7 @@ import { queryKeys } from '../../lib/queryKeys';
 import type { UpdateSettingsDto } from '../../types/settings.types';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export function useAdminTelegramLinkMutation() {
   return useMutation({
@@ -35,7 +36,10 @@ export function useResetAdminTelegramLinkMutation() {
     },
     onError: () => {
       store.dispatch(
-        showToast({ message: 'Не вдалося скинути прив\'язку', variant: 'error' }),
+        showToast({
+          message: "Не вдалося скинути прив'язку",
+          variant: 'error',
+        }),
       );
     },
   });
@@ -53,10 +57,10 @@ export function useUpdateSettingsMutation() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
       store.dispatch(showToast({ message: 'Налаштування збережено' }));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       store.dispatch(
         showToast({
-          message: error?.response?.data?.message ?? 'Не вдалося зберегти',
+          message: apiErrorMessage(error, 'Не вдалося зберегти'),
           variant: 'error',
         }),
       );

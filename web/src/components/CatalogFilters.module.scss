@@ -80,19 +80,19 @@
   }
 }
 
-.techniqueChips {
+.chips {
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-xs;
 }
 
-.techniqueChip {
+.chip {
   @include chip;
   padding: $spacing-xs $spacing-md;
   font-size: 13px;
 }
 
-.techniqueChipActive {
+.chipActive {
   @include chip($active: true);
   padding: $spacing-xs $spacing-md;
   font-size: 13px;

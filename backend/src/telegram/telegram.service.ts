@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bot, InputFile } from 'grammy';
@@ -8,8 +13,23 @@ import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
 import { TelegramPendingLink } from './entities/telegram-pending-link.entity';
 import { Painting } from '../paintings/entities/painting.entity';
+import { fetchWithTimeout } from '../common/http.util';
 
 const PENDING_CODE_TTL_MS = 10 * 60 * 1000; // 10 min
+
+// Telegram's own ceilings. sendMessage takes 4096 characters and sendPhoto's
+// caption only 1024 — exceeding either is a rejected API call, and since
+// send() swallows failures so a notification can never break a sale, an
+// over-long message used to mean the artist simply never heard about the
+// order. Truncating is the lesser loss: a clipped notification still says
+// there is an order and which one.
+const MAX_MESSAGE_CHARS = 4096;
+const MAX_CAPTION_CHARS = 1024;
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+
+function clip(text: string, limit: number): string {
+  return text.length <= limit ? text : `${text.slice(0, limit - 1)}…`;
+}
 
 // Thin wrapper around the Telegram Bot API (via grammy), long-polling so it
 // needs no public URL/webhook — works the same in dev and prod. Every method
@@ -35,7 +55,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly paintingsRepository: Repository<Painting>,
   ) {}
 
-  async onModuleInit() {
+  // Not async: nothing in here is awaited. bot.start()/drain() are both
+  // deliberately fire-and-forget — awaiting either would hold Nest's bootstrap
+  // open for the life of the process.
+  onModuleInit() {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) {
       this.logger.warn('[TELEGRAM NOT CONFIGURED] TELEGRAM_BOT_TOKEN is unset');
@@ -118,10 +141,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      const isAdminLink = await this.settingsService.redeemAdminTelegramLinkCode(
-        payload,
-        chatId,
-      );
+      const isAdminLink =
+        await this.settingsService.redeemAdminTelegramLinkCode(payload, chatId);
       if (isAdminLink) {
         await ctx.reply(
           'Готово! Тепер сюди надходитимуть сповіщення про нові замовлення, скріни оплати й повідомлення підтримки.',
@@ -171,7 +192,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   // can open a chat from one, and can't from a numeric id — so when it's
   // missing the message says so plainly instead of leaving her to discover it.
   private async handleRepeatEnquiry(
-    ctx: { chat: { id: number }; from?: { first_name: string; last_name?: string; username?: string }; reply: (text: string) => Promise<unknown> },
+    ctx: {
+      chat: { id: number };
+      from?: { first_name: string; last_name?: string; username?: string };
+      reply: (text: string) => Promise<unknown>;
+    },
     paintingId: number,
   ) {
     const painting = await this.paintingsRepository.findOne({
@@ -180,7 +205,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     const title = painting?.title ?? `#${paintingId}`;
     const from = ctx.from;
-    const name = `${from?.first_name ?? ''} ${from?.last_name ?? ''}`.trim() || 'Без імені';
+    const name =
+      `${from?.first_name ?? ''} ${from?.last_name ?? ''}`.trim() ||
+      'Без імені';
 
     // Anything this chat writes from here reaches the artist, so the promise
     // above survives the customer answering it. Without this the bot would
@@ -219,8 +246,12 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return `${linkedUser.firstName} ${linkedUser.lastName} · ${linkedUser.email}${linkedUser.phone ? ` · ${linkedUser.phone}` : ''}`;
     }
 
-    const name = `${from?.first_name ?? ''} ${from?.last_name ?? ''}`.trim() || 'Невідомий';
-    const handle = from?.username ? `@${from.username}` : `Telegram id ${chatId} (без username)`;
+    const name =
+      `${from?.first_name ?? ''} ${from?.last_name ?? ''}`.trim() ||
+      'Невідомий';
+    const handle = from?.username
+      ? `@${from.username}`
+      : `Telegram id ${chatId} (без username)`;
 
     return `${name} · ${handle}`;
   }
@@ -253,7 +284,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     await this.notifyAdmin(text, await this.fetchImage(imageUrl));
   }
 
-  private async fetchImage(imageUrl?: string | null): Promise<Buffer | undefined> {
+  private async fetchImage(
+    imageUrl?: string | null,
+  ): Promise<Buffer | undefined> {
     if (!imageUrl) return undefined;
 
     try {
@@ -267,12 +300,24 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           ? imageUrl
           : `${imageUrl.slice(0, at + marker.length)}f_jpg,q_auto,w_1280/${imageUrl.slice(at + marker.length)}`;
 
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url);
       if (!response.ok) return undefined;
 
-      return Buffer.from(await response.arrayBuffer());
+      // Telegram caps sendPhoto at 10 MB, and the transform above is a request
+      // to Cloudinary, not a promise — a source it can't transcode comes back
+      // at full size. Reading an unbounded body into memory for a notification
+      // is not worth it either way.
+      const declared = Number(response.headers.get('content-length') ?? 0);
+      if (declared > MAX_PHOTO_BYTES) return undefined;
+
+      const bytes = Buffer.from(await response.arrayBuffer());
+
+      return bytes.byteLength > MAX_PHOTO_BYTES ? undefined : bytes;
     } catch (error) {
-      this.logger.warn(`Could not fetch image for a Telegram notification`, error);
+      this.logger.warn(
+        `Could not fetch image for a Telegram notification`,
+        error,
+      );
       return undefined;
     }
   }
@@ -293,10 +338,20 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     try {
       if (photo) {
         await this.bot.api.sendPhoto(chatId, new InputFile(photo), {
-          caption: text,
+          caption: clip(text, MAX_CAPTION_CHARS),
         });
+
+        // The caption had to be cut to fit, so the rest follows as its own
+        // message rather than being dropped — a commission's comment can run
+        // to 2000 characters and all of it matters to whoever answers it.
+        if (text.length > MAX_CAPTION_CHARS) {
+          await this.bot.api.sendMessage(
+            chatId,
+            clip(text.slice(MAX_CAPTION_CHARS - 1), MAX_MESSAGE_CHARS),
+          );
+        }
       } else {
-        await this.bot.api.sendMessage(chatId, text);
+        await this.bot.api.sendMessage(chatId, clip(text, MAX_MESSAGE_CHARS));
       }
     } catch (error) {
       // A notification failure (bot blocked, chat id stale, network hiccup)
