@@ -1,0 +1,35 @@
+# Everything public is open. What is disallowed below is either behind a login
+# or a dead end for a crawler — indexing it wastes crawl budget on pages that
+# can never rank and, in the case of the admin, advertises where the doors are.
+
+User-agent: *
+Allow: /
+
+# Behind a login, or personal to one visitor.
+Disallow: /ua/cart
+Disallow: /en/cart
+Disallow: /ua/orders
+Disallow: /en/orders
+Disallow: /ua/profile
+Disallow: /en/profile
+Disallow: /ua/favorites
+Disallow: /en/favorites
+Disallow: /ua/admin/
+Disallow: /en/admin/
+
+# Auth screens have nothing to rank for, and the reset link carries a token.
+Disallow: /ua/login
+Disallow: /en/login
+Disallow: /ua/register
+Disallow: /en/register
+Disallow: /ua/forgot-password
+Disallow: /en/forgot-password
+Disallow: /ua/reset-password
+Disallow: /en/reset-password
+
+# The support thread is one visitor's conversation.
+Disallow: /ua/support/chat
+Disallow: /en/support/chat
+
+# Generated per request from the live catalogue — see functions/sitemap.xml.ts.
+Sitemap: https://viktorumm.com/sitemap.xml

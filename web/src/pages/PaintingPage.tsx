@@ -226,6 +226,13 @@ export default function PaintingPage() {
           price: formatPrice(Number(painting.price), locale, usdRate),
         })
       : undefined,
+    {
+      // The same card the Pages Function pre-renders for the bots that never
+      // run this code — see web/functions/[locale]/painting/[id].ts. Both must
+      // agree, or a link's preview and the page it opens say different things.
+      image: painting ? cdnImage(painting.cardImage, 1200) : null,
+      ogType: 'article',
+    },
   );
 
   if (loading) {

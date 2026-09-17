@@ -73,6 +73,37 @@ Pages copies them into the site root at build time:
 - `_headers` — CSP and the rest. The API deliberately ships no CSP (it serves
   JSON, not pages); this is where the policy that matters lives.
 
+### Pages Functions (SEO)
+
+`web/functions/` holds two Cloudflare Pages Functions. They exist because the
+app is a client-rendered SPA and the preview bots of Telegram, Instagram,
+Facebook and X run no JavaScript at all — so before these, every painting link
+shared in a messenger showed the same generic gallery card.
+
+- `[locale]/painting/[id].ts` — fetches the painting from the API and writes its
+  title, description, price, image and JSON-LD into the served `index.html`.
+  Every failure path falls through to the untouched SPA.
+- `sitemap.xml.ts` — generated per request from the live catalogue, with
+  `hreflang` alternates for both locales. Cached an hour at the edge.
+
+**They need one environment variable**, set in the Pages dashboard under
+Settings → Environment variables, for Production *and* Preview:
+
+| Variable | Value |
+|---|---|
+| `API_URL` | `https://api.viktorumm.com` |
+
+This is a **runtime** variable, and separate from `VITE_API_URL`: the `VITE_`
+one is baked into the bundle at build time and does not exist on the server
+where a Function runs. Without `API_URL` the functions fall through silently —
+the site works, the previews just stay generic.
+
+`public/robots.txt` names the sitemap and disallows everything behind a login.
+Update the `Sitemap:` line if the domain changes.
+
+If the app ever moves to Next.js, all three become redundant — its metadata API
+covers the same ground natively. See `docs/next-migration.md`.
+
 The CSP allows one inline script by hash: the theme script in `index.html` that
 runs before first paint. **Change a byte of that script and the hash in
 `_headers` has to change with it**, or the page loads unthemed and the console
