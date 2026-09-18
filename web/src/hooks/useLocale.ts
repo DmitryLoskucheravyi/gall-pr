@@ -1,19 +1,26 @@
-import { useParams } from 'react-router-dom';
+'use client';
 
-// The whole site lives under /ua or /en (see routes/LocaleLayout) — this is
-// the one place both the literal list and the fallback are written down.
-export type Locale = 'ua' | 'en';
-export const LOCALES: Locale[] = ['ua', 'en'];
-export const DEFAULT_LOCALE: Locale = 'ua';
+import { useParams } from 'next/navigation';
 
-export function isLocale(value: string | undefined): value is Locale {
-  return value === 'ua' || value === 'en';
-}
+import { DEFAULT_LOCALE, isLocale } from '../utils/locale';
 
-// Every page is a descendant of the /:locale route, so this is always safe
-// to call — no provider, no Redux slice, nothing to keep in sync: the URL
-// already is the state.
-export function useLocale(): Locale {
-  const { locale } = useParams<{ locale: string }>();
+// Re-exported so the ~30 call sites that import the type or the list from here
+// keep working. The definitions themselves moved to utils/locale.ts, which has
+// no React in it and is therefore safe for a Server Component to import.
+export type { Locale } from '../utils/locale';
+export { LOCALES, DEFAULT_LOCALE, isLocale } from '../utils/locale';
+
+// Every page is a descendant of app/[locale], so this is always safe to call —
+// no provider, no Redux slice, nothing to keep in sync: the URL already is the
+// state.
+//
+// Client-only. A Server Component receives `params` directly and should read
+// the locale from there rather than reaching for a hook.
+export function useLocale() {
+  const params = useParams<{ locale?: string }>();
+  const locale = Array.isArray(params?.locale)
+    ? params.locale[0]
+    : params?.locale;
+
   return isLocale(locale) ? locale : DEFAULT_LOCALE;
 }

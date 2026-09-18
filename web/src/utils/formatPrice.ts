@@ -1,4 +1,4 @@
-import type { Locale } from '../hooks/useLocale';
+import type { Locale } from './locale';
 
 // Display-only conversion — checkout stays in UAH throughout, this just
 // shows an English-locale visitor a price they can actually judge.

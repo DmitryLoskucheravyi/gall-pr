@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { usePathname } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supportService } from '../../api/support.api';
@@ -44,7 +46,7 @@ export function useMyUnreadSupportCount(): number {
   const isCustomer = useAppSelector((state) => state.auth.user?.role !== 'ADMIN');
   // The chat page owns a socket of its own while it's open, and reading the
   // chat is what zeroes this — so stand down there.
-  const { pathname } = useLocation();
+  const pathname = usePathname();
   const onChat = stripLocale(pathname).startsWith('/support/chat');
 
   const { data } = useQuery({

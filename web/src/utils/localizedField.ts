@@ -1,4 +1,4 @@
-import type { Locale } from '../hooks/useLocale';
+import type { Locale } from './locale';
 
 // Picks the English value of an admin-authored field when the site is in
 // English and that field has actually been translated, falling back to the

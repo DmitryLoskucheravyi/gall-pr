@@ -28,7 +28,14 @@ function warnOnce(error: unknown): void {
   );
 }
 
+// Rendering on the server is not a failure — there is simply no browser yet.
+// Without this the warning below fired on every server render, and the memory
+// fallback would have been shared between requests.
+const onServer = () => typeof window === 'undefined';
+
 export function readStored(key: string): string | null {
+  if (onServer()) return null;
+
   try {
     return window.localStorage.getItem(key);
   } catch (error) {
@@ -38,6 +45,8 @@ export function readStored(key: string): string | null {
 }
 
 export function writeStored(key: string, value: string): void {
+  if (onServer()) return;
+
   try {
     window.localStorage.setItem(key, value);
   } catch (error) {
@@ -49,6 +58,8 @@ export function writeStored(key: string, value: string): void {
 
 export function removeStored(key: string): void {
   memory.delete(key);
+
+  if (onServer()) return;
 
   try {
     window.localStorage.removeItem(key);

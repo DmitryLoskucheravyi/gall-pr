@@ -1,6 +1,8 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 
 import { LocalizedLink as Link, LocalizedNavLink as NavLink } from '../ui/LocalizedLink';
@@ -8,7 +10,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
 import { authService } from '../../api/auth.api';
-import { queryClient } from '../../lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCartCount } from '../../hooks/queries/useCart';
 import { useAdminPendingOrdersCount } from '../../hooks/queries/useOrders';
 import { useAdminUnreadSupportCount } from '../../hooks/queries/useSupport';
@@ -36,9 +38,12 @@ type Props = {
 
 export default function Header({ compact = false }: Props) {
   const { t } = useTranslation('header');
-  const rawNavigate = useNavigate();
+  const router = useRouter();
+  // Signing out must drop every cached response — the next visitor on this
+  // browser is a different person as far as the cache is concerned.
+  const queryClient = useQueryClient();
   const navigate = useLocalizedNavigate();
-  const location = useLocation();
+  const pathname = usePathname();
   const locale = useLocale();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
@@ -60,7 +65,7 @@ export default function Header({ compact = false }: Props) {
   useEffect(() => {
     setIsAdminMenuOpen(false);
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+  }, [pathname]);
 
   // Exposes the header's real rendered height as a CSS var — the mobile hero
   // sticks just below it (see HomePage.module.scss), and hardcoding a pixel
@@ -165,7 +170,15 @@ export default function Header({ compact = false }: Props) {
   // language mid-page stays on that page, it doesn't bounce home.
   const otherLocale: Locale = locale === 'ua' ? 'en' : 'ua';
   const handleLanguageToggle = () => {
-    rawNavigate(`/${otherLocale}${stripLocale(location.pathname)}${location.search}`);
+    // The raw router, not the localised one: this is the one navigation that
+    // deliberately switches locale rather than staying in the current one.
+    //
+    // The query string is read here, at click time, rather than through
+    // useSearchParams during render. That hook forces every page containing
+    // this header out of static rendering and into a Suspense bailout — and
+    // the value is only ever needed the moment someone presses the switch.
+    const query = typeof window === 'undefined' ? '' : window.location.search;
+    router.push(`/${otherLocale}${stripLocale(pathname)}${query}`);
   };
 
   const themeIcon = isDark ? (

@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { Locale } from '../hooks/useLocale';
+import type { Locale } from './locale';
 
 // Backed by Intl.PluralRules rather than a hand-written mod10/mod100 table,
 // because the old table was Ukrainian-specific (1 день, 2–4 дні, 5+ днів,

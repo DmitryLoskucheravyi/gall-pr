@@ -73,48 +73,27 @@ Pages copies them into the site root at build time:
 - `_headers` — CSP and the rest. The API deliberately ships no CSP (it serves
   JSON, not pages); this is where the policy that matters lives.
 
-### Pages Functions (SEO)
+### SEO
 
-`web/functions/` holds two Cloudflare Pages Functions. They exist because the
-app is a client-rendered SPA and the preview bots of Telegram, Instagram,
-Facebook and X run no JavaScript at all — so before these, every painting link
-shared in a messenger showed the same generic gallery card.
+Handled by the framework: `app/sitemap.ts`, `app/robots.ts` and
+`generateMetadata` on every public page. The two Cloudflare Pages Functions
+that used to do this by hand are gone — they existed because the Vite build had
+no server to generate anything.
 
-- `[locale]/painting/[id].ts` — fetches the painting from the API and writes its
-  title, description, price, image and JSON-LD into the served `index.html`.
-  Every failure path falls through to the untouched SPA.
-- `sitemap.xml.ts` — generated per request from the live catalogue, with
-  `hreflang` alternates for both locales. Cached an hour at the edge.
+`API_URL` must still be set in the Pages dashboard (Settings → Environment
+variables, Production *and* Preview). It is read by Server Components and by
+`sitemap.ts`, and it is deliberately separate from `NEXT_PUBLIC_API_URL`: the
+public one is inlined into the client bundle, this one never leaves the server.
 
-**They need one environment variable**, set in the Pages dashboard under
-Settings → Environment variables, for Production *and* Preview:
+The CSP lives in `next.config.ts` rather than in a `_headers` file, and it
+allows inline scripts. That is a step back from the SPA's hash-pinned policy
+and a deliberate one: Next injects its own inline scripts for hydration, and
+the only alternative is a per-request nonce, which would force every page to be
+rendered on demand and undo the static generation the migration exists for. The
+reasoning is written next to the policy.
 
-| Variable | Value |
-|---|---|
-| `API_URL` | `https://api.viktorumm.com` |
-
-This is a **runtime** variable, and separate from `VITE_API_URL`: the `VITE_`
-one is baked into the bundle at build time and does not exist on the server
-where a Function runs. Without `API_URL` the functions fall through silently —
-the site works, the previews just stay generic.
-
-`public/robots.txt` names the sitemap and disallows everything behind a login.
-Update the `Sitemap:` line if the domain changes.
-
-If the app ever moves to Next.js, all three become redundant — its metadata API
-covers the same ground natively. See `docs/next-migration.md`.
-
-The CSP allows one inline script by hash: the theme script in `index.html` that
-runs before first paint. **Change a byte of that script and the hash in
-`_headers` has to change with it**, or the page loads unthemed and the console
-fills with CSP violations. Recompute it with:
-
-```sh
-node -e "const fs=require('fs'),c=require('crypto');const m=fs.readFileSync('web/index.html','utf8').match(/<script>([\s\S]*?)<\/script>/);console.log('sha256-'+c.createHash('sha256').update(m[1]).digest('base64'))"
-```
-
-`connect-src` names `api.viktorumm.com` explicitly — update it if the API ever
-moves.
+`connect-src` is built from `NEXT_PUBLIC_API_URL` at build time, so it follows
+the API automatically.
 
 ## Bringing it up
 

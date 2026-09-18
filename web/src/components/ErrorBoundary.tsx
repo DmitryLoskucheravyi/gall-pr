@@ -1,3 +1,5 @@
+'use client';
+
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import styles from './ErrorBoundary.module.scss';
@@ -60,7 +62,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </a>
           </div>
 
-          {import.meta.env.DEV && (
+          {process.env.NODE_ENV === 'development' && (
             <pre className={styles.details}>
               {this.state.error.stack ?? this.state.error.message}
             </pre>

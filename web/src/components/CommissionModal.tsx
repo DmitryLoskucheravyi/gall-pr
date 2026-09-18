@@ -16,7 +16,7 @@ import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './CommissionModal.module.scss';
 import { apiErrorMessage } from '../utils/apiError';
 
-const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as
+const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME as
   | string
   | undefined;
 

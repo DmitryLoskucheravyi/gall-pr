@@ -1,5 +1,7 @@
-import { Suspense } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+'use client';
+
+import { Suspense, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 
 import Header from './Header';
 import Footer from './Footer';
@@ -24,9 +26,15 @@ const CHROME_FREE_PATHS = new Set([
   '/reset-password',
 ]);
 
-export default function Layout() {
+// The site chrome. A client component because everything in it is interactive
+// — the scroll-continue bar, the support launcher, the admin menu — and because
+// it reads the signed-in user from Redux, which only exists on the client.
+//
+// `children` replaces react-router's <Outlet />: in the App Router a layout is
+// handed its page rather than rendering a slot the router fills.
+export default function Layout({ children }: { children: ReactNode }) {
   const userRole = useAppSelector((state) => state.auth.user?.role);
-  const { pathname } = useLocation();
+  const pathname = usePathname();
   const showChrome = !CHROME_FREE_PATHS.has(stripLocale(pathname));
   // Scrolling past the bottom of a handful of pages carries the reader on to
   // the next one — see the hook for which. Owned here, not by Footer, so the
@@ -43,9 +51,7 @@ export default function Layout() {
             can go somewhere else. Keyed by pathname so navigating away clears
             the error rather than staying stuck on it. */}
         <ErrorBoundary key={pathname}>
-          <Suspense fallback={null}>
-            <Outlet />
-          </Suspense>
+          <Suspense fallback={null}>{children}</Suspense>
         </ErrorBoundary>
       </main>
       {showChrome && (

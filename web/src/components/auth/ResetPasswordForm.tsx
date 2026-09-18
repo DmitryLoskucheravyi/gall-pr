@@ -1,5 +1,7 @@
+'use client';
+
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 
 import { LocalizedLink as Link } from '../ui/LocalizedLink';
@@ -14,7 +16,7 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export default function ResetPasswordForm() {
   const { t } = useTranslation('auth');
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const token = searchParams.get('token') ?? '';
 
   const [password, setPassword] = useState('');

@@ -1,10 +1,13 @@
+'use client';
+
 import axios from 'axios';
 
 import { store } from '../store';
 import { refreshAuth, logout } from '../store/slices/authSlice';
 import { getGuestToken } from '../utils/guestToken';
 
-export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 // withCredentials is what lets the browser attach the refresh cookie. It only
 // actually travels on /auth/* — the cookie is scoped to that path — so every

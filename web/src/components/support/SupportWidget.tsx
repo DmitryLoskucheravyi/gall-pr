@@ -1,10 +1,12 @@
+'use client';
+
 import {
   useEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { useLocation } from 'react-router-dom';
+import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 
 import { useMyUnreadSupportCount } from '../../hooks/queries/useSupport';
@@ -31,10 +33,20 @@ const STORAGE_KEY = 'support-widget-dock';
 // drag moves it freely, then it snaps back to the nearer side on release.
 type Dock = { side: 'left' | 'right'; y: number };
 
+// Called from a useState initialiser, which runs on the server as well as in
+// the browser. With no window there is no viewport to clamp against, so the
+// requested position stands and the effect below corrects it on mount.
 function clampY(y: number) {
+  if (typeof window === 'undefined') return Math.max(y, TOP_LIMIT);
+
   const max = window.innerHeight - SIZE - BOTTOM_LIMIT;
+
   return Math.min(Math.max(y, TOP_LIMIT), Math.max(TOP_LIMIT, max));
 }
+
+// The launcher's resting place before the viewport is known. Corrected by the
+// resize effect the moment the component mounts.
+const SERVER_DOCK_Y = 480;
 
 function readDock(): Dock | null {
   try {
@@ -53,16 +65,20 @@ export default function SupportWidget() {
   const { t } = useTranslation('support');
   const isAdmin = useAppSelector((state) => state.auth.user?.role === 'ADMIN');
   const navigate = useLocalizedNavigate();
-  const location = useLocation();
+  const pathname = usePathname();
 
   // Same source as the header's icon on phones, so the two can't disagree.
   const unread = useMyUnreadSupportCount();
-  const onSupportPage = stripLocale(location.pathname).startsWith('/support');
+  const onSupportPage = stripLocale(pathname).startsWith('/support');
   const [dock, setDock] = useState<Dock>(
     () =>
       readDock() ?? {
         side: 'right',
-        y: clampY(window.innerHeight - SIZE - DEFAULT_BOTTOM_GAP),
+        y: clampY(
+          typeof window === 'undefined'
+            ? SERVER_DOCK_Y
+            : window.innerHeight - SIZE - DEFAULT_BOTTOM_GAP,
+        ),
       },
   );
   // Live pointer-follow position, set only while a drag is in flight.
@@ -147,8 +163,14 @@ export default function SupportWidget() {
     }
   };
 
+  // Read during render, so the server reaches it too. Docked left costs
+  // nothing to compute without a viewport; docked right needs one, and until
+  // the component mounts there isn't one — the resize effect above sets the
+  // real position on the first frame, and the launcher is fixed-position and
+  // off-screen-adjacent either way, so nothing visibly jumps.
+  const viewportWidth = typeof window === 'undefined' ? 0 : window.innerWidth;
   const dockedX =
-    dock.side === 'left' ? EDGE_GAP : window.innerWidth - SIZE - EDGE_GAP;
+    dock.side === 'left' ? EDGE_GAP : Math.max(EDGE_GAP, viewportWidth - SIZE - EDGE_GAP);
 
   return (
     <button

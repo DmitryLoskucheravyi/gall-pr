@@ -1,8 +1,0 @@
-# Cloudflare Pages serves static files and, for anything it doesn't recognise,
-# a 404 — so without this every deep link into the app was a dead page. The
-# routes are entirely client-side (createBrowserRouter), which means the server
-# has to hand index.html to any path and let React Router take it from there.
-#
-# 200, not 301: the URL the visitor typed has to survive, or /ua/painting/12
-# would become / before the router ever sees it.
-/*    /index.html   200

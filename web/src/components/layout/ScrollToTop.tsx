@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { usePathname } from 'next/navigation';
 
 // React Router keeps the browser's scroll position across client-side
 // navigations by default — so clicking a link while scrolled down (e.g. any
@@ -7,7 +9,7 @@ import { useLocation } from 'react-router-dom';
 // every pathname change; a hash change (e.g. #section anchors) is left alone
 // so in-page jump links keep working.
 export default function ScrollToTop() {
-  const { pathname } = useLocation();
+  const pathname = usePathname();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });

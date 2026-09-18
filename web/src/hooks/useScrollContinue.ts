@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { useLocale } from './useLocale';
 import { stripLocale } from '../utils/locale';
@@ -62,8 +64,8 @@ const SETTLED = 0.001;
 const VEIL_MS = 320;
 
 export function useScrollContinue() {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
   const locale = useLocale();
   const nextPath = NEXT_PATH[stripLocale(pathname)];
 
@@ -146,10 +148,10 @@ export function useScrollContinue() {
         arrived.current = true;
         const target = `/${locale}${nextPath}`;
         if (reduced) {
-          navigate(target);
+          router.push(target);
         } else {
           setLeaving(true);
-          veilTimer.current = setTimeout(() => navigate(target), VEIL_MS);
+          veilTimer.current = setTimeout(() => router.push(target), VEIL_MS);
         }
         return;
       }
@@ -270,7 +272,7 @@ export function useScrollContinue() {
       if (frame.current) cancelAnimationFrame(frame.current);
       frame.current = 0;
     };
-  }, [nextPath, navigate, locale]);
+  }, [nextPath, router, locale]);
 
   return { nextPath, progress, leaving };
 }
