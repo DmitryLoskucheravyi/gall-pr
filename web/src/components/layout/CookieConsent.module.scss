@@ -1,0 +1,233 @@
+// Sits above BottomNav (z-index 40) and the continue prompt (45), because a
+// consent decision blocks nothing but has to be reachable while either of
+// those is on screen.
+.banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: $spacing-md;
+  // Clears the phone's bottom bar and the home indicator under it, the same
+  // way ContinuePrompt does — BottomNav publishes its own height.
+  padding-bottom: calc(
+    var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom) + #{$spacing-md}
+  );
+  transform: translateY(110%);
+  opacity: 0;
+  transition:
+    transform 0.28s $ease-out,
+    opacity 0.28s ease;
+
+  &[data-revealed='true'] {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  // The arrival is a courtesy, not information. Someone who asked for less
+  // motion gets the banner already in place.
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.inner {
+  max-width: $container-max-width;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.title {
+  margin: 0;
+  font-family: $font-display;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  // Keeps the paragraph near a readable measure on a wide screen instead of
+  // running the full width of the container.
+  max-width: 68ch;
+}
+
+.toggle {
+  align-self: flex-start;
+  margin-top: $spacing-xs;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.85rem;
+  color: var(--color-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-accent-hover);
+  }
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background-color: var(--color-background);
+}
+
+.category {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.categoryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.categoryName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.always {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.categoryText {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+// The switch: a real checkbox kept visually hidden but still focusable, with
+// the track drawn beside it. Hiding it with display:none would take it out of
+// the tab order and off every screen reader.
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  input:focus-visible + .track {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  input:checked + .track {
+    background-color: var(--color-accent);
+
+    .thumb {
+      transform: translateX(18px);
+    }
+  }
+}
+
+.track {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 22px;
+  border-radius: $radius-pill;
+  background-color: var(--color-border-strong);
+  transition: background-color $duration-fast ease;
+}
+
+.thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform $duration-fast $ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.switchLabel {
+  min-width: 3.5em;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  // Refusal sits first in the DOM and on screen at phone width; on a wide
+  // screen the row is pushed right, with accept last where the thumb and the
+  // eye both end up. Neither option is hidden or made quieter than the other.
+  justify-content: flex-end;
+}
+
+.primary {
+  @include button-primary;
+}
+
+.secondary {
+  @include button-secondary;
+}
+
+// One column on a phone, with every button full width so none of them is
+// harder to hit than the others.
+@media (max-width: #{$breakpoint-sm}) {
+  .inner {
+    padding: $spacing-md;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .categoryHead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+}

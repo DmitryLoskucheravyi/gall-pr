@@ -28,5 +28,26 @@
     "text": "The link may be out of date, or the address slightly off. The paintings are all still here — start from the catalogue.",
     "home": "Home",
     "catalog": "Catalogue"
+  },
+  "cookies": {
+    "aria": "Cookie notice",
+    "title": "About cookies on this site",
+    "text": "We keep only what the gallery cannot work without: your sign-in session and your cart. There is no analytics and there are no advertising trackers at the moment — if they are ever added, they will not run without your consent.",
+    "showDetails": "What is stored",
+    "hideDetails": "Collapse",
+    "necessary": {
+      "name": "Necessary",
+      "always": "Always on",
+      "text": "The gall_refresh cookie keeps you signed in for up to 30 days and cannot be read by scripts on the page. Browser storage holds: gall_guest_token, so the cart and orders work without an account; gall_theme, the theme you chose; and support-widget-dock, where you dragged the support button. The site does not work without these, so they cannot be switched off."
+    },
+    "analytics": {
+      "name": "Analytics",
+      "text": "Anonymous visit statistics: which pages get read and where visitors arrive from. Not connected to the site yet. Your choice is remembered and takes effect if and when they are added."
+    },
+    "on": "On",
+    "off": "Off",
+    "acceptAll": "Accept all",
+    "onlyNecessary": "Necessary only",
+    "saveChoice": "Save choice"
   }
 }

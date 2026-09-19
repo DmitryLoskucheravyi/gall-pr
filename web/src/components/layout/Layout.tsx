@@ -7,6 +7,7 @@ import Header from './Header';
 import Footer from './Footer';
 import BottomNav from './BottomNav';
 import ContinuePrompt from './ContinuePrompt';
+import CookieConsent from './CookieConsent';
 import ScrollToTop from './ScrollToTop';
 import SupportWidget from '../support/SupportWidget';
 import ErrorBoundary from '../ErrorBoundary';
@@ -71,6 +72,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           launches from, so the screen simply goes to that colour and the
           next page arrives out of it. */}
       <div className={styles.veil} data-active={leaving} aria-hidden="true" />
+      {/* Outside the showChrome gate on purpose: the auth pages drop the
+          chrome, but they are also where the session cookie is actually set,
+          so that is the last place the notice should be missing. */}
+      <CookieConsent />
     </div>
   );
 }
