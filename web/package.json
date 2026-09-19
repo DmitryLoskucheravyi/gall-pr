@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 5173 --turbopack --experimental-https --experimental-https-key ../backend/cert/key.pem --experimental-https-cert ../backend/cert/cert.pem",
+    "dev:webpack": "next dev -p 5173 --experimental-https --experimental-https-key ../backend/cert/key.pem --experimental-https-cert ../backend/cert/cert.pem",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint",

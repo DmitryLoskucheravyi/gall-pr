@@ -27,18 +27,31 @@ const WS_ORIGIN = API_ORIGIN.replace(/^http/, 'ws');
 // stays tight. If the CSP ever matters more than the static rendering, the fix
 // is a nonce in middleware and `export const dynamic = 'force-dynamic'` — see
 // docs/next-migration.md.
+// Fast Refresh compiles modules with eval(), so development needs
+// 'unsafe-eval' and production must not have it. Keyed off NODE_ENV, which
+// Next sets itself — `next dev` is development, `next build` is production —
+// so this cannot be got wrong by forgetting a flag.
+//
+// Without it the dev server loads and then hot reloading silently dies:
+// "Evaluating a string as JavaScript violates the following Content Security
+// Policy directive", thrown from @next/react-refresh-utils.
+const DEV = process.env.NODE_ENV === 'development';
+
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self' https://www.liqpay.ua https://secure.wayforpay.com",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${DEV ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "media-src 'self' https://res.cloudinary.com",
   "font-src 'self' data:",
-  `connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN}`,
+  // The last two are the dev server's own HMR socket; harmless in production,
+  // where nothing listens on them, but omitted anyway to keep the policy
+  // honest about what it permits.
+  `connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN}${DEV ? ' ws: wss:' : ''}`,
   'upgrade-insecure-requests',
 ].join('; ');
 
