@@ -4,7 +4,7 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 
 import View from '@/views/PaintingPage';
 import { makeQueryClient } from '@/lib/queryClient';
-import { serverFetchOrNull } from '@/lib/api-server';
+import { ApiError, serverFetch, serverFetchOrNull } from '@/lib/api-server';
 import { queryKeys } from '@/lib/queryKeys';
 import { alternatesFor, canonicalFor } from '@/lib/metadata';
 import { pickLocale } from '@/utils/localizedField';
@@ -37,13 +37,32 @@ type Props = {
   params: Promise<{ locale: string; id: string }>;
 };
 
+// Null means the work genuinely is not there. Anything else throws.
+//
+// This used to swallow every failure alike, and the caller turned null into
+// notFound() — so a momentary API hiccup answered 404. To a crawler a 404 is
+// not "try later", it is "this is gone", and the painting drops out of the
+// index on the strength of one bad second. A thrown error is the honest
+// answer to "I don't know": under ISR the last good render keeps being
+// served, and nothing is told to forget the page.
+//
+// A malformed id is a real absence — no amount of retrying makes
+// /painting/abc exist — so that stays null.
 async function getPainting(id: string): Promise<Painting | null> {
   if (!/^[1-9]\d*$/.test(id)) return null;
 
-  return serverFetchOrNull<Painting>(`/paintings/${id}`, {
-    revalidate: 3600,
-    tags: [`painting:${id}`],
-  });
+  try {
+    return await serverFetch<Painting>(`/paintings/${id}`, {
+      revalidate: 3600,
+      tags: [`painting:${id}`],
+    });
+  } catch (error) {
+    // The one status that means what notFound() means. A sold-out or hidden
+    // work the API answers 404 for is genuinely gone from the public site.
+    if (error instanceof ApiError && error.status === 404) return null;
+
+    throw error;
+  }
 }
 
 export async function generateStaticParams() {
