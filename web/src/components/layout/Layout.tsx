@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 
 import Header from './Header';
@@ -51,9 +51,22 @@ export default function Layout({ children }: { children: ReactNode }) {
             leave the header, the footer and the nav standing so the visitor
             can go somewhere else. Keyed by pathname so navigating away clears
             the error rather than staying stuck on it. */}
-        <ErrorBoundary key={pathname}>
-          <Suspense fallback={null}>{children}</Suspense>
-        </ErrorBoundary>
+        {/* Deliberately no <Suspense> around children.
+
+            There used to be one, and it quietly turned every notFound() into a
+            soft 404. A Suspense boundary above the page lets React flush the
+            shell as soon as the page suspends on its data — and the shell goes
+            out with 200. By the time the page comes back and calls notFound(),
+            the status line has already left the building, so /painting/999999
+            answered 200 with an empty page. Measured: with the boundary 200,
+            without it 404.
+
+            That is the one thing the move to Next was supposed to buy here —
+            a real status code instead of the SPA's silent bounce — so the
+            boundary does not come back. A page that genuinely needs one (see
+            reset-password, which reads useSearchParams) declares it itself,
+            where it cannot swallow anybody else's status. */}
+        <ErrorBoundary key={pathname}>{children}</ErrorBoundary>
       </main>
       {showChrome && (
         <Footer continueTo={nextPath} continueProgress={progress} />
