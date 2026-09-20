@@ -9,8 +9,10 @@ import { queryKeys } from '@/lib/queryKeys';
 import { alternatesFor, canonicalFor } from '@/lib/metadata';
 import { pickLocale } from '@/utils/localizedField';
 import { cdnImage } from '@/utils/imageUrl';
+import { safeJsonLd } from '@/utils/safeUrl';
 import { DEFAULT_LOCALE, isLocale } from '@/utils/locale';
 import type { Painting } from '@/types/painting.types';
+import type { PublicAppSettings } from '@/types/settings.types';
 
 // The page the whole migration was for.
 //
@@ -134,24 +136,49 @@ export default async function Page({ params }: Props) {
   const painting = await getPainting(id);
   if (!painting) notFound();
 
+  // The artist's name, for the Product's brand. Public settings, so the server
+  // may read them; null on failure because a missing brand is a slightly
+  // poorer rich result, not a reason to fail the page.
+  const settings = await serverFetchOrNull<PublicAppSettings>('/settings', {
+    revalidate: 3600,
+    tags: ['settings'],
+  });
+
   // Warm the cache the client view reads from, then hand it across the
   // boundary. usePainting(id) finds it already there and renders the real page
   // on the server pass instead of a skeleton.
   const queryClient = makeQueryClient();
   queryClient.setQueryData(queryKeys.paintings.detail(painting.id), painting);
 
+  if (settings) {
+    queryClient.setQueryData(queryKeys.settings.all, settings);
+  }
+
   const title = pickLocale(painting, 'title', locale);
   const description = pickLocale(painting, 'description', locale);
+  const authorName = settings ? pickLocale(settings, 'authorName', locale) : '';
 
   return (
     <>
-      {/* In the markup rather than rendered by the view: the view's copy only
-          exists after JavaScript runs, and a rich result is built from what
-          the crawler was served. */}
+      {/* The page's only Product block.
+
+          PaintingPage used to render a second one of its own, so every
+          painting shipped two, and they disagreed: this one carried
+          productionDate and the offer URL, that one carried the brand. Search
+          engines pick one of a duplicate pair without announcing which, so
+          half the fields were a coin toss. Merged here, in the markup,
+          because a rich result is built from what the crawler was served —
+          the view's copy only existed once JavaScript had run.
+
+          safeJsonLd, not the hand-rolled escape that used to sit below it.
+          That one replaced every '<' with a source literal that IS '<', so it
+          swapped each character for itself and did nothing at all. Title and
+          description are admin-editable and land inside a <script> block,
+          where a literal closing tag would end it early. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonLd({
             '@context': 'https://schema.org',
             '@type': 'Product',
             name: title,
@@ -159,6 +186,9 @@ export default async function Page({ params }: Props) {
               ? painting.images
               : [painting.cardImage],
             ...(description ? { description } : {}),
+            ...(authorName
+              ? { brand: { '@type': 'Brand', name: authorName } }
+              : {}),
             ...(painting.year ? { productionDate: String(painting.year) } : {}),
             offers: {
               '@type': 'Offer',
@@ -169,9 +199,7 @@ export default async function Page({ params }: Props) {
                 ? 'https://schema.org/InStock'
                 : 'https://schema.org/OutOfStock',
             },
-          })
-            .replace(/</g, '\u003c')
-            .replace(/>/g, '\u003e'),
+          }),
         }}
       />
       <HydrationBoundary state={dehydrate(queryClient)}>

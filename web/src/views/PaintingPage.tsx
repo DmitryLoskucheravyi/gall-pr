@@ -21,7 +21,6 @@ import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import { useAuthorName } from '../hooks/queries/useSettings';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useAppSelector } from '../store/hooks';
-import { safeJsonLd } from '../utils/safeUrl';
 import { cdnImage } from '../utils/imageUrl';
 import styles from './PaintingPage.module.scss';
 
@@ -261,36 +260,17 @@ export default function PaintingPage() {
   const title = pickLocale(painting, 'title', locale);
   const description = pickLocale(painting, 'description', locale);
 
-  // Product structured data — lets search engines show the painting as a rich
-  // result (name, image, price, availability).
-  const productJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: title,
-    image: images,
-    ...(description ? { description } : {}),
-    ...(authorName ? { brand: { '@type': 'Brand', name: authorName } } : {}),
-    offers: {
-      '@type': 'Offer',
-      price,
-      priceCurrency: 'UAH',
-      availability: painting.isAvailable
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-    },
-  };
+  // No Product structured data here any more.
+  //
+  // This used to emit its own block, and the server component above the view
+  // emits one too — so every painting shipped two Product blocks that
+  // disagreed about which fields they carried. A crawler picks one of a
+  // duplicate pair without saying which. The server's copy is the one that
+  // survives: it is in the HTML before any JavaScript runs, which is the only
+  // version a crawler is guaranteed to read. See painting/[id]/page.tsx.
 
   return (
     <div>
-      <script
-        type="application/ld+json"
-        // Escaped rather than plain JSON.stringify: the painting's title and
-        // description end up inside a <script> block, where a literal
-        // "</script>" would close it early and turn the rest into markup.
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(productJsonLd) }}
-      />
-
       <div className={styles.grid}>
         <div>
           <div
