@@ -70,17 +70,23 @@ export default function SupportWidget() {
   // Same source as the header's icon on phones, so the two can't disagree.
   const unread = useMyUnreadSupportCount();
   const onSupportPage = stripLocale(pathname).startsWith('/support');
-  const [dock, setDock] = useState<Dock>(
-    () =>
+  // The real dock is in localStorage and depends on the viewport, neither of
+  // which the server has. So the launcher isn't rendered until mount: drawing
+  // it at a guessed position on the server made the client's first render
+  // disagree with the HTML for every visitor.
+  const [mounted, setMounted] = useState(false);
+  const [dock, setDock] = useState<Dock>({ side: 'right', y: SERVER_DOCK_Y });
+
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect
+    setDock(
       readDock() ?? {
         side: 'right',
-        y: clampY(
-          typeof window === 'undefined'
-            ? SERVER_DOCK_Y
-            : window.innerHeight - SIZE - DEFAULT_BOTTOM_GAP,
-        ),
+        y: clampY(window.innerHeight - SIZE - DEFAULT_BOTTOM_GAP),
       },
-  );
+    );
+    setMounted(true);
+  }, []);
   // Live pointer-follow position, set only while a drag is in flight.
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const gestureRef = useRef<{
@@ -105,7 +111,7 @@ export default function SupportWidget() {
 
   // Guests get the launcher too — support is the one thing on the site that
   // shouldn't wait for an account.
-  if (isAdmin || onSupportPage) return null;
+  if (!mounted || isAdmin || onSupportPage) return null;
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;

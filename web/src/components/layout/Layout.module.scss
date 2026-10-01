@@ -17,6 +17,9 @@
   // both break the sticky header and leave the hero's own sticky stage with
   // nothing to pin against.
   overflow-x: clip;
+  // Its own stacking context, so a z-index: -1 backdrop inside (see
+  // GrowingBranches) sits above this background instead of behind it.
+  isolation: isolate;
 }
 
 .main {

@@ -138,12 +138,20 @@ export default function Header({ compact = false }: Props) {
   };
 
   const handleThemeToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // The class on <html> is what the stylesheets actually read. It's set
+    // here, in the same synchronous step as the store, so the view transition
+    // below snapshots the page already in its new theme.
+    const applyToggle = () => {
+      document.documentElement.classList.toggle('dark', !isDark);
+      dispatch(toggleTheme());
+    };
+
     const prefersReducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches;
 
     if (!document.startViewTransition || prefersReducedMotion) {
-      dispatch(toggleTheme());
+      applyToggle();
       return;
     }
 
@@ -160,9 +168,7 @@ export default function Header({ compact = false }: Props) {
     root.style.setProperty('--theme-toggle-r', `${radius}px`);
 
     document.startViewTransition(() => {
-      flushSync(() => {
-        dispatch(toggleTheme());
-      });
+      flushSync(applyToggle);
     });
   };
 
@@ -181,25 +187,30 @@ export default function Header({ compact = false }: Props) {
     router.push(`/${otherLocale}${stripLocale(pathname)}${query}`);
   };
 
-  const themeIcon = isDark ? (
-    <svg viewBox="0 0 24 24" fill="none">
-      <path
-        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36-.7-.7M6.34 6.34l-.7-.7m12.72 0-.7.7M6.34 17.66l-.7.7M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" fill="none">
-      <path
-        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+  // Both icons are always rendered and CSS shows the right one off the
+  // `dark` class on <html>. The server cannot know the theme — it lives in the
+  // visitor's browser — so picking the icon in JS made the server's markup and
+  // the client's first render disagree for every dark-theme visitor.
+  const themeIcon = (
+    <>
+      <svg viewBox="0 0 24 24" fill="none" className={styles.themeIconSun}>
+        <path
+          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36-.7-.7M6.34 6.34l-.7-.7m12.72 0-.7.7M6.34 17.66l-.7.7M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+      <svg viewBox="0 0 24 24" fill="none" className={styles.themeIconMoon}>
+        <path
+          d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </>
   );
 
   const profileIcon = (

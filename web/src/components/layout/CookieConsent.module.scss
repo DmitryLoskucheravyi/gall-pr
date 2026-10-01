@@ -3,16 +3,21 @@
 // those is on screen.
 .banner {
   position: fixed;
-  left: 0;
   right: 0;
   bottom: 0;
+  left: 0;
   z-index: 60;
+  display: flex;
+  justify-content: center;
   padding: $spacing-md;
   // Clears the phone's bottom bar and the home indicator under it, the same
   // way ContinuePrompt does — BottomNav publishes its own height.
   padding-bottom: calc(
     var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom) + #{$spacing-md}
   );
+  // The wrapper spans the full width only to position the card; clicks on
+  // the empty part must reach the page underneath.
+  pointer-events: none;
   transform: translateY(110%);
   opacity: 0;
   transition:
@@ -33,31 +38,45 @@
   }
 }
 
-.inner {
-  max-width: $container-max-width;
-  margin: 0 auto;
+.card {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
-  padding: $spacing-lg;
+  width: 100%;
+  max-width: 880px;
+  padding: $spacing-lg $spacing-xl;
   border: 1px solid var(--color-border);
   border-radius: $radius-lg;
   background-color: var(--color-surface);
   box-shadow: var(--shadow-lg);
+  pointer-events: auto;
 }
 
-.body {
+.brand {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
+  align-items: center;
+  gap: $spacing-sm;
 }
 
-.title {
-  margin: 0;
+.logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+// Same wordmark as the header, scaled down.
+.wordmark {
   font-family: $font-display;
-  font-size: 1.05rem;
-  font-weight: 500;
+  font-weight: 700;
+  font-size: 1.3rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
   color: var(--color-text);
+
+  &::after {
+    content: '.';
+    color: var(--color-accent-text);
+  }
 }
 
 .text {
@@ -65,67 +84,224 @@
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--color-text-secondary);
-  // Keeps the paragraph near a readable measure on a wide screen instead of
-  // running the full width of the container.
-  max-width: 68ch;
 }
 
-.toggle {
-  align-self: flex-start;
-  margin-top: $spacing-xs;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 0.85rem;
-  color: var(--color-accent-text);
+.policyLink,
+.panelLink {
+  font-weight: 600;
+  color: var(--color-text);
   text-decoration: underline;
   text-underline-offset: 3px;
-  cursor: pointer;
 
   &:hover {
-    color: var(--color-accent-hover);
+    color: var(--color-accent-text);
   }
 }
 
-.details {
+.actions {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-  padding: $spacing-md;
-  border: 1px solid var(--color-border);
-  border-radius: $radius-md;
-  background-color: var(--color-background);
+  justify-content: flex-end;
+  gap: $spacing-sm;
+
+  button {
+    min-width: 140px;
+  }
 }
 
-.category {
+.primary {
+  @include button-primary;
+}
+
+.secondary {
+  @include button-secondary;
+}
+
+// ── Settings panel ────────────────────────────────────────────────────────
+
+// Full-height sheet on the right. The <dialog> itself is the sheet; its
+// ::backdrop dims the page.
+.dialog {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(480px, 100vw);
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  animation: slide-in 0.28s $ease-out;
+
+  &::backdrop {
+    background-color: rgba(20, 20, 16, 0.45);
+    animation: fade-in 0.28s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+
+    &::backdrop {
+      animation: none;
+    }
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.panel {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  height: 100%;
+  padding: $spacing-xxl $spacing-xl $spacing-xl;
+  overflow-y: auto;
+}
+
+.close {
+  position: absolute;
+  top: $spacing-md;
+  right: $spacing-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: $radius-pill;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    color: var(--color-text);
+    background-color: var(--color-background-alt);
+  }
+}
+
+.panelTitle {
+  margin: 0 0 $spacing-sm;
+  font-family: $font-display;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.panelText {
+  margin: 0 0 $spacing-lg;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.panelLink {
+  align-self: flex-start;
+  font-size: 0.92rem;
+}
+
+.sectionTitle {
+  margin: $spacing-xxl 0 $spacing-sm;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.categories {
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+}
+
+.category + .category {
+  border-top: 1px solid var(--color-border);
 }
 
 .categoryHead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: $spacing-md;
+  padding: $spacing-md;
+  list-style: none;
+  cursor: pointer;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+}
+
+// A plus that turns into a minus while the section is open.
+.plus {
+  position: relative;
+  flex: none;
+  width: 12px;
+  height: 12px;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 1px;
+    background-color: currentColor;
+    transition: transform $duration-fast ease;
+  }
+
+  &::after {
+    transform: rotate(90deg);
+  }
+
+  .category[open] &::after {
+    transform: rotate(0deg);
+  }
 }
 
 .categoryName {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text);
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .always {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-success);
   white-space: nowrap;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .categoryText {
   margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.5;
+  padding: 0 $spacing-md $spacing-md calc(#{$spacing-md} * 2 + 12px);
+  font-size: 0.85rem;
+  line-height: 1.55;
   color: var(--color-text-secondary);
 }
 
@@ -134,8 +310,6 @@
 // the tab order and off every screen reader.
 .switch {
   display: inline-flex;
-  align-items: center;
-  gap: $spacing-sm;
   cursor: pointer;
 
   input {
@@ -158,7 +332,7 @@
     background-color: var(--color-accent);
 
     .thumb {
-      transform: translateX(18px);
+      transform: translateX(20px);
     }
   }
 }
@@ -166,8 +340,8 @@
 .track {
   position: relative;
   display: block;
-  width: 40px;
-  height: 22px;
+  width: 46px;
+  height: 26px;
   border-radius: $radius-pill;
   background-color: var(--color-border-strong);
   transition: background-color $duration-fast ease;
@@ -175,10 +349,10 @@
 
 .thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background-color: #fff;
   box-shadow: var(--shadow-sm);
@@ -189,45 +363,42 @@
   }
 }
 
-.switchLabel {
-  min-width: 3.5em;
-  font-size: 0.82rem;
-  color: var(--color-text-secondary);
+// Pinned to the bottom of the sheet, the way the confirm button sits at the
+// end of every settings panel like it.
+.panelFooter {
+  margin-top: auto;
+  padding-top: $spacing-xl;
+
+  button {
+    min-width: 220px;
+  }
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
-  // Refusal sits first in the DOM and on screen at phone width; on a wide
-  // screen the row is pushed right, with accept last where the thumb and the
-  // eye both end up. Neither option is hidden or made quieter than the other.
-  justify-content: flex-end;
-}
-
-.primary {
-  @include button-primary;
-}
-
-.secondary {
-  @include button-secondary;
-}
-
-// One column on a phone, with every button full width so none of them is
-// harder to hit than the others.
 @media (max-width: #{$breakpoint-sm}) {
-  .inner {
+  .card {
     padding: $spacing-md;
   }
 
+  // Settings on its own row, decline and accept side by side beneath it —
+  // the two answers stay equal in size and weight.
   .actions {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    button {
+      min-width: 0;
+    }
   }
 
-  .categoryHead {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: $spacing-xs;
+  .settingsButton {
+    grid-column: 1 / -1;
+  }
+
+  .panel {
+    padding: $spacing-xxl $spacing-lg $spacing-lg;
+  }
+
+  .panelFooter button {
+    width: 100%;
   }
 }

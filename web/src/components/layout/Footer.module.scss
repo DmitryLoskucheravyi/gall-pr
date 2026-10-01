@@ -150,6 +150,18 @@
   }
 }
 
+// A button that opens the cookie settings, dressed as one of the links
+// around it.
+.linkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
 // ---------- Info strip: payment / delivery / guarantee ----------
 
 .info {

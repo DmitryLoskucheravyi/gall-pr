@@ -14,13 +14,17 @@ import { useEffect, useState } from 'react';
 // only about how much room there is.
 const QUERY = '(max-width: 768px)';
 
+// False on the first render, the server's included, and corrected in an
+// effect — the same reasoning as useReducedMotion. Reading matchMedia in the
+// initialiser gave the server "wide" and a phone "narrow", so every phone's
+// first render disagreed with the HTML it was hydrating.
 export function useNarrowViewport(): boolean {
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(QUERY).matches,
-  );
+  const [narrow, setNarrow] = useState(false);
 
   useEffect(() => {
     const mql = window.matchMedia(QUERY);
+    // oxlint-disable-next-line react/set-state-in-effect
+    setNarrow(mql.matches);
     const handler = (event: MediaQueryListEvent) => setNarrow(event.matches);
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);

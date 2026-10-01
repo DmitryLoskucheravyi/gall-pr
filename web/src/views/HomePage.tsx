@@ -103,6 +103,16 @@ function pickScramblePlan(slots: number) {
   return { lockOrder, total };
 }
 
+// The plan both the server and the client's first pass render: every letter
+// spinning, in order, with nothing drawn yet. Deterministic on purpose — see
+// HeroTitle.
+function blankScramblePlan(slots: number) {
+  return {
+    lockOrder: Array.from({ length: slots }, (_, slot) => slot),
+    total: slots,
+  };
+}
+
 // Was a bare matchMedia read. It ran inside a useState initialiser, which the
 // server executes too — see useReducedMotion.
 
@@ -126,10 +136,20 @@ function HeroTitle({
     [lines],
   );
   // Which letters churn is drawn fresh on each mount, so the headline
-  // doesn't assemble the same way twice.
-  const [plan] = useState(() => pickScramblePlan(slots));
+  // doesn't assemble the same way twice. The draw happens in an effect: the
+  // server and the client's first pass must render identical markup, so both
+  // start from a plan with every letter blank and spinning, and the random
+  // one replaces it once hydration is done.
+  const [plan, setPlan] = useState(() => blankScramblePlan(slots));
   const reduced = useReducedMotion();
   const [locked, setLocked] = useState(0);
+  const [glyphs, setGlyphs] = useState(() => slotChars.map(() => ''));
+
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect
+    setPlan(pickScramblePlan(slots));
+    setGlyphs(slotChars.map(randomGlyph));
+  }, [slots, slotChars]);
 
   // Someone who asked for less motion gets the finished headline rather than
   // the scramble. Applied in an effect rather than as an initial value,
@@ -138,7 +158,6 @@ function HeroTitle({
   useEffect(() => {
     if (reduced) setLocked(plan.total);
   }, [reduced, plan.total]);
-  const [glyphs, setGlyphs] = useState(() => slotChars.map(randomGlyph));
 
   useEffect(() => {
     // Held until the first hero painting has decoded, so the headline
@@ -470,7 +489,6 @@ export default function HomePage() {
             <GiveawayHighlight giveaway={giveaway} />
           </Reveal>
         ) : null}
-
       </div>
 
       {/* The corridor: the featured works hung along a walk the reader

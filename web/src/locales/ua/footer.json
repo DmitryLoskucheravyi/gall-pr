@@ -17,7 +17,9 @@
     "support": "Підтримка",
     "telegramBot": "Бот у Telegram",
     "login": "Увійти",
-    "register": "Реєстрація"
+    "register": "Реєстрація",
+    "privacy": "Конфіденційність і cookie",
+    "cookieSettings": "Налаштування cookie"
   },
   "info": {
     "paymentLabel": "Оплата",

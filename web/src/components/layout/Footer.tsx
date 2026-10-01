@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { LocalizedLink as Link, LocalizedNavLink as NavLink } from '../ui/LocalizedLink';
 import { useAuthorName, useSupportTelegramUrl } from '../../hooks/queries/useSettings';
+import { openCookieSettings } from '../../lib/consent';
 import { useAppSelector } from '../../store/hooks';
 import { safeExternalUrl } from '../../utils/safeUrl';
 import styles from './Footer.module.scss';
@@ -121,6 +122,16 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
                   {t('nav.telegramBot')}
                 </a>
               )}
+              <NavLink to="/privacy" className={linkClass}>
+                {t('nav.privacy')}
+              </NavLink>
+              <button
+                type="button"
+                onClick={openCookieSettings}
+                className={`${styles.link} ${styles.linkButton}`}
+              >
+                {t('nav.cookieSettings')}
+              </button>
               {!isAuthenticated && (
                 <>
                   <NavLink to="/login" className={linkClass}>

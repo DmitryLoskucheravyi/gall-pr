@@ -17,7 +17,9 @@
     "support": "Support",
     "telegramBot": "Telegram bot",
     "login": "Log in",
-    "register": "Sign up"
+    "register": "Sign up",
+    "privacy": "Privacy and cookies",
+    "cookieSettings": "Cookie settings"
   },
   "info": {
     "paymentLabel": "Payment",

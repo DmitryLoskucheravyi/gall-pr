@@ -1,0 +1,49 @@
+.loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: loader-spin 0.8s linear infinite;
+
+  .loader[data-size='sm'] & {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Visually hidden, still announced.
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// No spin, but still something on screen: a slow pulse says "working"
+// without the motion.
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation: loader-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes loader-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}

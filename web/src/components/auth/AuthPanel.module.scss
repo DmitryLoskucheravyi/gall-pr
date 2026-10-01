@@ -93,6 +93,76 @@
   }
 }
 
+// "I agree to the privacy policy" — a real checkbox, restyled to sit on the
+// dark video like the underlined fields above it.
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  margin-top: $spacing-xs;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(237, 234, 226, 0.68);
+  cursor: pointer;
+}
+
+.consentBox {
+  flex: none;
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 1px solid rgba(237, 234, 226, 0.45);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color $duration-fast ease,
+    border-color $duration-fast ease;
+
+  &::after {
+    content: '';
+    width: 10px;
+    height: 6px;
+    margin-top: -2px;
+    border-bottom: 2px solid #1d1f19;
+    border-left: 2px solid #1d1f19;
+    transform: rotate(-45deg) scale(0);
+    transition: transform $duration-fast ease;
+  }
+
+  &:checked {
+    border-color: var(--color-accent-text);
+    background-color: var(--color-accent-text);
+
+    &::after {
+      transform: rotate(-45deg) scale(1);
+    }
+  }
+
+  &:hover {
+    border-color: rgba(237, 234, 226, 0.8);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent-text);
+    outline-offset: 2px;
+  }
+}
+
+.consentLink {
+  font-weight: 600;
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: var(--color-accent-text);
+  }
+}
+
 .error {
   font-size: 13px;
   color: #e08a7d;

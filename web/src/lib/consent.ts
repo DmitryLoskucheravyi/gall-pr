@@ -108,3 +108,14 @@ export function onConsentChange(listener: (consent: Consent) => void): () => voi
 
   return () => window.removeEventListener(CONSENT_EVENT, handler);
 }
+
+// Asks the cookie banner to open its settings panel. Anything can call it —
+// the privacy page and the footer do — so a visitor can change their mind
+// after the banner has gone, which the law requires to be as easy as agreeing.
+export const COOKIE_SETTINGS_EVENT = 'gall:cookie-settings';
+
+export function openCookieSettings(): void {
+  if (typeof window === 'undefined') return;
+
+  window.dispatchEvent(new Event(COOKIE_SETTINGS_EVENT));
+}

@@ -70,8 +70,9 @@ export default function AuthPage() {
             // Competes with the JS bundle, the CSS, the fonts for the same
             // connection otherwise — this is the one thing on the page
             // meant to be moving the moment it can be, so it goes first.
-            // Not yet in React's DOM types for a <video>, hence the cast.
-            {...({ fetchpriority: 'high' } as Record<string, string>)}
+            // Not in React's DOM types for a <video>, hence the cast; React 19
+            // renders the camelCase prop as the fetchpriority attribute.
+            {...({ fetchPriority: 'high' } as Record<string, string>)}
             aria-hidden="true"
           />
           {/* Held back until the first clip can play, then loaded across the

@@ -14,7 +14,7 @@ const SITE_URL = (
 // Public, indexable routes. Everything behind a login — cart, orders, profile,
 // favourites, the whole admin — is deliberately absent, and each of those pages
 // also carries `robots: { index: false }` of its own.
-const STATIC_PATHS = ['/', '/catalog', '/gallery', '/support'];
+const STATIC_PATHS = ['/', '/catalog', '/gallery', '/support', '/privacy'];
 
 export const revalidate = 3600;
 

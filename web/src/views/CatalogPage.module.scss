@@ -117,3 +117,33 @@
   background: var(--color-primary);
   color: var(--color-on-primary);
 }
+
+// The list and its pager, and the box the page-turn spinner centres in.
+.results {
+  position: relative;
+  scroll-margin-top: 96px; // clear of the sticky header when scrolled to
+}
+
+.gridLoading {
+  @extend .grid;
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity $duration-fast $ease-out;
+}
+
+// Sticky, not centred in the whole list: on a tall grid the middle can be a
+// screen away, and the spinner has to be where the visitor is looking.
+.resultsLoader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 20vh;
+  pointer-events: none;
+
+  > * {
+    position: sticky;
+    top: 40vh;
+  }
+}

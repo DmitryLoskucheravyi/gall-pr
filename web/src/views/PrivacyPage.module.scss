@@ -1,0 +1,232 @@
+// Laid out like a document across the full page width: a header, a contents
+// block, then numbered sections separated by rules. On a wide screen each
+// section puts its number and heading in a left column and the text in the
+// right one, which uses the width without stretching lines past what reads
+// comfortably.
+.page {
+  width: 100%;
+}
+
+.header {
+  display: grid;
+  gap: $spacing-md;
+  padding-bottom: $spacing-huge;
+  border-bottom: 1px solid var(--color-border-strong);
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: $spacing-huge;
+    align-items: end;
+  }
+}
+
+.eyebrow {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.title {
+  font-family: $font-display;
+  font-size: clamp(32px, 4.4vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  color: var(--color-text);
+}
+
+.updated {
+  font-size: 14px;
+  color: var(--color-text-muted);
+
+  @include respond-up($breakpoint-lg) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+.intro {
+  max-width: 68ch;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+
+  @include respond-up($breakpoint-lg) {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+  }
+}
+
+.toc {
+  padding: $spacing-xxxxl 0;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.tocTitle {
+  margin-bottom: $spacing-md;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+// Fills down each column first, so the order still reads 1, 2, 3 …
+.tocList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 1;
+  column-gap: $spacing-xxl;
+
+  @include respond-up($breakpoint-sm) {
+    columns: 2;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    columns: 3;
+  }
+
+  li {
+    break-inside: avoid;
+    padding: $spacing-xs 0;
+  }
+
+  a {
+    display: inline-flex;
+    gap: $spacing-sm;
+    font-size: 15px;
+    color: var(--color-text-secondary);
+
+    &:hover {
+      color: var(--color-accent-text);
+    }
+  }
+}
+
+.tocNumber {
+  min-width: 1.6em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.section {
+  display: grid;
+  gap: $spacing-md;
+  padding: $spacing-xxxxl 0;
+  border-bottom: 1px solid var(--color-border);
+  // Clears the sticky header when jumped to from the contents.
+  scroll-margin-top: var(--header-height, 72px);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: minmax(240px, 1fr) minmax(0, 2.2fr);
+    column-gap: $spacing-huge;
+  }
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-md;
+  font-family: $font-display;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text);
+
+  @include respond-up($breakpoint-lg) {
+    position: sticky;
+    top: calc(var(--header-height, 72px) + #{$spacing-lg});
+    align-self: start;
+  }
+}
+
+.sectionNumber {
+  font-family: $font-sans;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent-text);
+}
+
+.sectionBody {
+  min-width: 0;
+}
+
+.paragraph,
+.list {
+  max-width: 80ch;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+
+  & + & {
+    margin-top: $spacing-md;
+  }
+}
+
+.list {
+  display: grid;
+  gap: $spacing-xs;
+  padding-left: 1.25em;
+  list-style: disc;
+
+  li::marker {
+    color: var(--color-accent-text);
+  }
+}
+
+.tableWrap {
+  margin: $spacing-lg 0;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+}
+
+.table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.5;
+
+  th,
+  td {
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+    color: var(--color-text-secondary);
+  }
+
+  thead th {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    background-color: var(--color-background-alt);
+  }
+
+  tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+}
+
+.settingsButton {
+  @include button-secondary;
+  margin-top: $spacing-lg;
+}

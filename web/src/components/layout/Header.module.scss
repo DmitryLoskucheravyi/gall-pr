@@ -496,6 +496,21 @@
   }
 }
 
+// The button offers the other theme: a moon in light, a sun in dark.
+.themeIconSun {
+  display: none;
+
+  :global(.dark) & {
+    display: block;
+  }
+}
+
+.themeIconMoon {
+  :global(.dark) & {
+    display: none;
+  }
+}
+
 // Same box as .themeButton, sized for a two-letter code instead of an
 // icon — the hover lift/press is shared, the rotate-on-hover isn't (there's
 // no glyph to spin).

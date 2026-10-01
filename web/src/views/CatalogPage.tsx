@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Painting } from '../types/painting.types';
@@ -19,9 +19,16 @@ import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useAddToCart } from '../hooks/mutations/useAddToCart';
 import { useAppSelector } from '../store/hooks';
 import type { PaintingSort } from '../lib/queryKeys';
+import GrowingBranches from '../components/ui/GrowingBranches';
+import Pagination from '../components/ui/Pagination';
+import Loader from '../components/ui/Loader';
 import styles from './CatalogPage.module.scss';
 
 type PriceRange = { min: number; max: number };
+
+// Must match FIRST_PAGE.limit in app/[locale]/catalog/page.tsx, or the
+// server-rendered first page is seeded under a key this view never asks for.
+const PAGE_SIZE = 24;
 
 export default function CatalogPage() {
   const { t } = useTranslation('catalog');
@@ -43,21 +50,70 @@ export default function CatalogPage() {
   // Two ways to read the catalogue: every work at once, or the same works
   // grouped under the series they belong to.
   const [view, setView] = useState<'all' | 'series'>('all');
+  const [page, setPage] = useState(1);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const { data: priceBounds = null } = usePriceRange();
 
-  useEffect(() => {
-    if (priceBounds && !priceFilter) setPriceFilter(priceBounds);
-  }, [priceBounds, priceFilter]);
+  // The full range is no filter at all, so it stays out of the query key.
+  // Copying the bounds into the filter on arrival — as this page used to —
+  // changed the key straight after hydration: the listing the server had
+  // already rendered was thrown away, the grid fell back to skeletons, and
+  // the same twenty-four paintings were fetched a second time.
+  const narrowed =
+    priceFilter &&
+    !(
+      priceBounds &&
+      priceFilter.min === priceBounds.min &&
+      priceFilter.max === priceBounds.max
+    )
+      ? priceFilter
+      : null;
 
-  const { data: paintingsResponse, isLoading: loading } = usePaintings({
-    page: 1,
-    limit: 24,
-    isAvailable: true,
-    minPrice: priceFilter?.min,
-    maxPrice: priceFilter?.max,
-    sort,
-  });
+  const {
+    data: paintingsResponse,
+    isLoading: loading,
+    isPlaceholderData: turningPage,
+  } = usePaintings(
+    {
+      page,
+      limit: PAGE_SIZE,
+      isAvailable: true,
+      minPrice: narrowed?.min,
+      maxPrice: narrowed?.max,
+      sort,
+    },
+    { keepPrevious: true },
+  );
+
+  const totalPages = paintingsResponse?.totalPages ?? 0;
+
+  // Deleting the last work on the last page would otherwise leave the visitor
+  // on a page that no longer exists, looking at "nothing here". Corrected
+  // during render rather than in an effect, so the stale page never paints.
+  if (totalPages > 0 && page > totalPages) setPage(totalPages);
+
+  // A new sort or price range is a new list, so it starts from its first page.
+  const changeSort = (next: PaintingSort) => {
+    setSort(next);
+    setPage(1);
+  };
+
+  const changePrice = (next: PriceRange) => {
+    setPriceFilter(next);
+    setPage(1);
+  };
+
+  const goToPage = (next: number) => {
+    setPage(next);
+    // Back to the top of the list: the pager sits under the grid, and the
+    // next page should be read from its first row, not its last.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    resultsRef.current?.scrollIntoView({
+      behavior: reduced ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  };
 
   const paintings = paintingsResponse?.data ?? [];
   const deletePainting = useDeletePaintingMutation();
@@ -81,6 +137,7 @@ export default function CatalogPage() {
 
   return (
     <div>
+      <GrowingBranches />
       <div className={styles.header}>
         <h1 className={styles.title}>{t('pageTitle')}</h1>
 
@@ -146,10 +203,10 @@ export default function CatalogPage() {
           (priceBounds.min > 0 || priceBounds.max > 0) && (
           <CatalogFilters
             sort={sort}
-            onSelectSort={setSort}
+            onSelectSort={changeSort}
             priceBounds={priceBounds}
             priceValue={priceFilter ?? priceBounds}
-            onApplyPrice={setPriceFilter}
+            onApplyPrice={changePrice}
           />
         )}
       </div>
@@ -167,22 +224,41 @@ export default function CatalogPage() {
             <PaintingCardSkeleton key={index} />
           ))}
         </div>
-      ) : visiblePaintings.length === 0 ? (
-        <p className={styles.muted}>
-          {showLikedOnly ? t('emptyLiked') : t('emptyAll')}
-        </p>
       ) : (
-        <div className={styles.grid}>
-          {visiblePaintings.map((painting) => (
-            <PaintingCard
-              key={painting.id}
-              painting={painting}
-              isAdmin={user?.role === 'ADMIN'}
-              onBuy={() => addToCart.mutate(painting)}
-              onEdit={() => setEditingPainting(painting)}
-              onDelete={() => handleDelete(painting)}
-            />
-          ))}
+        // While the next page or a new filter loads, the current grid stays
+        // where it is, dimmed, with a spinner over it — rather than dropping
+        // to skeletons and yanking the scroll position with it.
+        <div
+          ref={resultsRef}
+          className={styles.results}
+          aria-busy={turningPage}
+        >
+          {visiblePaintings.length === 0 ? (
+            <p className={styles.muted}>
+              {showLikedOnly ? t('emptyLiked') : t('emptyAll')}
+            </p>
+          ) : (
+            <div className={turningPage ? styles.gridLoading : styles.grid}>
+              {visiblePaintings.map((painting) => (
+                <PaintingCard
+                  key={painting.id}
+                  painting={painting}
+                  isAdmin={user?.role === 'ADMIN'}
+                  onBuy={() => addToCart.mutate(painting)}
+                  onEdit={() => setEditingPainting(painting)}
+                  onDelete={() => handleDelete(painting)}
+                />
+              ))}
+            </div>
+          )}
+
+          {turningPage && (
+            <div className={styles.resultsLoader}>
+              <Loader label={t('loading', { ns: 'common' })} />
+            </div>
+          )}
+
+          <Pagination page={page} totalPages={totalPages} onChange={goToPage} />
         </div>
       )}
 

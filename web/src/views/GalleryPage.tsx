@@ -11,6 +11,7 @@ import { pickLocale } from '../utils/localizedField';
 import GalleryCard from '../components/GalleryCard';
 import GalleryCardSkeleton from '../components/GalleryCardSkeleton';
 import { useAppSelector } from '../store/hooks';
+import GrowingBranches from '../components/ui/GrowingBranches';
 import styles from './GalleryPage.module.scss';
 
 export default function GalleryPage() {
@@ -40,6 +41,7 @@ export default function GalleryPage() {
 
   return (
     <div>
+      <GrowingBranches />
       <div className={styles.header}>
         <h1 className={styles.title}>{t('pageTitle')}</h1>
         <p className={styles.subtitle}>{t('subtitle')}</p>

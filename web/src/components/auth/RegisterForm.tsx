@@ -24,6 +24,7 @@ export default function RegisterForm() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -116,6 +117,31 @@ export default function RegisterForm() {
             onChange={(e) => setPassword(e.target.value)}
             className={styles.input}
           />
+        </label>
+
+        {/* Required, so the browser refuses to submit without it. The link
+            opens in a new tab: following it here would throw away everything
+            typed into the form above. */}
+        <label className={styles.consent}>
+          <input
+            type="checkbox"
+            required
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className={styles.consentBox}
+          />
+          <span>
+            {t('register.termsBefore')}{' '}
+            <Link
+              to="/privacy"
+              target="_blank"
+              rel="noopener"
+              className={styles.consentLink}
+            >
+              {t('register.termsLink')}
+            </Link>{' '}
+            {t('register.termsAfter')}
+          </span>
         </label>
 
         {error && <p className={styles.error}>{error}</p>}
