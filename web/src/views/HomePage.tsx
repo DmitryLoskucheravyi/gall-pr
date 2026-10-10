@@ -14,15 +14,18 @@ import GiveawayHighlight, {
   GiveawayHighlightSkeleton,
 } from '../components/GiveawayHighlight';
 import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
-import CorridorSection from '../components/CorridorSection';
+// Corridor scene shelved for now — see the note at the bottom of the page.
+// import CorridorSection from '../components/CorridorSection';
+import PaintingShowcase from '../components/home/PaintingShowcase';
+import { HomeAbout, HomeHowToBuy, HomeClosing } from '../components/home/HomeSections';
 import Reveal from '../components/ui/Reveal';
 import styles from './HomePage.module.scss';
 
-// How many works the corridor is hung with. The flag itself is free for the
-// admin to set on as many as they like; this is the display cap, and it is
-// really a cap on how long the walk is — each work adds a couple of screens
-// of scrolling to it.
-const FEATURED_LIMIT = 15;
+// How many works the showcase ring is hung with. Featured works first; if the
+// admin has flagged fewer than SHOWCASE_MIN, the newest available ones fill
+// the ring out, because three works on a ring read as a gap, not a gallery.
+const SHOWCASE_LIMIT = 12;
+const SHOWCASE_MIN = 6;
 
 // Module scope so the object keeps its identity between renders — the hook
 // watches it, and a fresh literal each time would re-attach the source and
@@ -276,10 +279,12 @@ export default function HomePage() {
     () => paintingsResponse?.data ?? [],
     [paintingsResponse],
   );
-  const featured = useMemo(
-    () => paintings.filter((p) => p.isFeatured),
-    [paintings],
-  );
+  const showcase = useMemo(() => {
+    const featured = paintings.filter((p) => p.isFeatured);
+    if (featured.length >= SHOWCASE_MIN) return featured.slice(0, SHOWCASE_LIMIT);
+    const rest = paintings.filter((p) => !p.isFeatured);
+    return [...featured, ...rest].slice(0, SHOWCASE_LIMIT);
+  }, [paintings]);
 
   const giveaway =
     (giveaways ?? [])
@@ -470,6 +475,10 @@ export default function HomePage() {
           </div>
         </div>
 
+        <PaintingShowcase paintings={showcase} />
+
+        <HomeAbout available={paintingsResponse?.total ?? null} />
+
         {newsLoading ? (
           <section className={styles.section}>
             <NewsBannerSkeleton />
@@ -489,13 +498,18 @@ export default function HomePage() {
             <GiveawayHighlight giveaway={giveaway} />
           </Reveal>
         ) : null}
+
+        <HomeHowToBuy />
+
+        <HomeClosing />
       </div>
 
-      {/* The corridor: the featured works hung along a walk the reader
-          takes, and the invitation waiting at the end of it. This is where
-          the featured paintings live now — the strip that used to show them
-          further up the page is gone. */}
-      <CorridorSection paintings={featured.slice(0, FEATURED_LIMIT)} />
+      {/* The corridor — the featured works hung along a scroll-driven walk —
+          is shelved for now; PaintingShowcase above shows them instead. The
+          component and its footage are left in place to bring back:
+
+          <CorridorSection paintings={featured.slice(0, FEATURED_LIMIT)} />
+      */}
     </div>
   );
 }

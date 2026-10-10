@@ -12,5 +12,54 @@
   "marqueeAuthor": "Gustav Klimt",
   "corridor": {
     "cta": "To the catalog"
+  },
+  "showcase": {
+    "kicker": "Featured",
+    "title": "Works people come back to",
+    "lede": "A selection of paintings still waiting for a home. Spin the ring to look at each one — click the work in the centre to open its page.",
+    "hint": "Drag to spin",
+    "prev": "Previous work",
+    "next": "Next work",
+    "all": "Full catalogue"
+  },
+  "about": {
+    "kicker": "About the gallery",
+    "title": "Paintings that won’t be repeated",
+    "text1": "Viktorumm is an online gallery of original paintings. No prints, no reproductions: every work exists as a single piece, and once it is sold it leaves the catalogue.",
+    "text2": "Some works are marked “Available on commission” — those can be ordered again even after the original has found its owner.",
+    "stats": {
+      "available": "Works available",
+      "unique": "Copy of each work",
+      "delivery": "Delivery across Ukraine",
+      "deliveryValue": "Nova Poshta"
+    }
+  },
+  "howToBuy": {
+    "kicker": "How to buy",
+    "title": "Four steps to your painting",
+    "steps": {
+      "choose": {
+        "title": "Choose a work",
+        "text": "Browse the catalogue or the gallery. Every painting’s page lists its size and technique, and many show it hanging in a room."
+      },
+      "order": {
+        "title": "Place an order",
+        "text": "Add the painting to your cart and enter delivery details. No account needed."
+      },
+      "pay": {
+        "title": "Pay on delivery",
+        "text": "Cash on delivery: you pay at the post office once the painting is in your hands."
+      },
+      "receive": {
+        "title": "Collect it from Nova Poshta",
+        "text": "Follow the order status on the site or in our Telegram bot."
+      }
+    }
+  },
+  "closing": {
+    "title": "Find your painting",
+    "text": "Questions about a work, its size or delivery? Write to us — we’ll help you choose.",
+    "catalog": "Go to the catalogue",
+    "support": "Ask a question"
   }
 }

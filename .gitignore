@@ -21,3 +21,6 @@ graphify-out/
 # Third-party, reinstallable, and nothing in the app or the build reads it.
 /.agents/
 /skills-lock.json
+
+# Paperwork that happens to be saved next to the repo, not part of the site.
+/*.docx

@@ -1,0 +1,247 @@
+// The showcase is a night room in both themes: the ring reads by its own
+// light, and a pale backdrop would flatten the shading that tells the
+// active work from the rest. Fixed colours for that reason, not tokens.
+$room: #12120f;
+$room-text: #f3efe7;
+$room-muted: rgba(243, 239, 231, 0.62);
+$room-line: rgba(243, 239, 231, 0.16);
+$room-accent: #c9b98f;
+
+.showcase {
+  position: relative;
+  z-index: 1;
+  margin-top: $spacing-huge;
+  // Full bleed out of the page container — see .pageContent in
+  // HomePage.module.scss for why 50% − 50vw is exactly the gap.
+  margin-inline: calc(50% - 50vw);
+  padding: $spacing-huge calc(50vw - 50%) $spacing-xxl;
+  background:
+    radial-gradient(ellipse 55% 60% at 50% 42%, rgba(255, 244, 214, 0.1), transparent 70%),
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(201, 185, 143, 0.08), transparent 70%),
+    $room;
+  color: $room-text;
+  overflow: hidden;
+}
+
+.head {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.kicker {
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: $room-accent;
+}
+
+.title {
+  margin-top: $spacing-sm;
+  font-family: $font-display;
+  font-size: clamp(30px, 4.4vw, 48px);
+  letter-spacing: -0.01em;
+  color: $room-text;
+}
+
+.lede {
+  margin-top: $spacing-md;
+  color: $room-muted;
+  line-height: 1.6;
+}
+
+// ---------- the ring ----------
+
+.stage {
+  position: relative;
+  height: clamp(380px, 62vh, 620px);
+  margin-top: $spacing-xl;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  // Horizontal drags spin the ring; vertical ones still scroll the page.
+  touch-action: pan-y;
+  opacity: 0;
+  transition: opacity 0.9s $ease-out;
+
+  .stage[data-ready='true'] & {
+    opacity: 1;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.stageLoader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hint {
+  position: absolute;
+  bottom: $spacing-sm;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $room-muted;
+  pointer-events: none;
+}
+
+// ---------- caption ----------
+
+.caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-lg;
+  max-width: 720px;
+  margin: $spacing-lg auto 0;
+}
+
+.captionText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.counter {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  font-variant-numeric: tabular-nums;
+  color: $room-muted;
+}
+
+.workTitle {
+  font-family: $font-display;
+  font-size: clamp(22px, 2.6vw, 30px);
+  color: $room-text;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    color: $room-accent;
+  }
+}
+
+.meta {
+  font-size: 14px;
+  color: $room-muted;
+}
+
+.price {
+  margin-top: 4px;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: $room-accent;
+}
+
+.arrow {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid $room-line;
+  background: transparent;
+  color: $room-text;
+  cursor: pointer;
+  transition:
+    border-color $duration-fast $ease-out,
+    background-color $duration-fast $ease-out;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $room-accent;
+    background: rgba(201, 185, 143, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $room-accent;
+    outline-offset: 3px;
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  margin-top: $spacing-xxl;
+}
+
+.allLink {
+  padding: 12px 28px;
+  border: 1px solid $room-line;
+  border-radius: $radius-pill;
+  color: $room-text;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  transition:
+    border-color $duration-fast $ease-out,
+    color $duration-fast $ease-out;
+
+  &:hover {
+    border-color: $room-accent;
+    color: $room-accent;
+  }
+}
+
+// ---------- fallback: no WebGL ----------
+
+.strip {
+  display: flex;
+  gap: $spacing-lg;
+  margin: $spacing-xl 0 0;
+  padding: 0 0 $spacing-md;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.stripItem {
+  flex: 0 0 min(70vw, 280px);
+  scroll-snap-align: center;
+}
+
+.stripLink {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  color: $room-text;
+  text-decoration: none;
+
+  img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+}
