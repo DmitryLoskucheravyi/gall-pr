@@ -29,7 +29,9 @@ $hero-stage-height: calc(
   // difference is exactly that gap plus the padding — correct both below and
   // above the cap. (Same breakout .pageContent uses further down.)
   margin-inline: calc(50% - 50vw);
-  margin-top: calc(-1 * $spacing-xxxxl);
+  // Up under the header too: the header goes clear over the hero (see
+  // Header.tsx), so the footage has to be behind it rather than below it.
+  margin-top: calc(-1 * #{$spacing-xxxxl} - var(--header-height, 64px));
   // The length of the sequence, and so how much scrolling it costs to get
   // through it. 100dvh (not vh/%) accounts for mobile browser chrome
   // correctly. Short on a phone, where scrolling is a thumb flick at a time
@@ -47,8 +49,10 @@ $hero-stage-height: calc(
 // what moves is the sequence painted on it.
 .heroSticky {
   position: sticky;
-  top: var(--header-height, 64px);
-  height: $hero-stage-height;
+  // Pinned to the very top, behind the clear header; a header's height
+  // taller than the stage it used to sit under.
+  top: 0;
+  height: calc(#{$hero-stage-height} + var(--header-height, 64px));
   // The copy grows past the edge of the frame as it approaches; this is what
   // keeps that from spilling onto the page and opening a scrollbar.
   overflow: hidden;
@@ -124,11 +128,15 @@ $hero-stage-height: calc(
 // only occupies one corner, and the gradient in .heroOverlay handles that
 // corner. brightness alone here keeps the rest of the picture open.
 .heroWall {
-  // A canvas has no poster of its own — where one stands in for the video
-  // (touch devices) the still is set as a background from the component, and
-  // these are the rules that make it behave like one.
+  // A canvas has no poster of its own, so the opening still is set as a
+  // background from the component and these rules make it behave like one.
+  // The multiply against a grey is the same 0.66 the frames are drawn at, so
+  // the poster does not flash brighter than the footage that replaces it —
+  // static, unlike the filter it stands in for.
   background-size: cover;
   background-position: center;
+  background-color: #a8a8a8;
+  background-blend-mode: multiply;
   position: absolute;
   inset: 0;
   width: 100%;
@@ -136,7 +144,13 @@ $hero-stage-height: calc(
   object-fit: cover;
   transform: translateZ(calc(-120px + var(--hero-progress, 0) * 260px))
     scale(calc(1.13 + var(--hero-progress, 0) * 0.26));
-  filter: brightness(0.66) saturate(0.92);
+  // The dimming moved into the canvas — see paint() in useHeroSequence. A CSS
+  // filter on a full-screen element whose transform changes every frame makes
+  // the browser re-filter the whole surface every frame, and it was the other
+  // half of the hero's stutter. Inside the canvas the same brightness and
+  // saturation are applied once per drawn frame, over 900×506 pixels rather
+  // than the whole viewport, and the element itself is left plainly
+  // composited.
 }
 
 // Scrim that keeps the copy legible against the wall. Darkens in both
@@ -192,9 +206,18 @@ $hero-stage-height: calc(
 // That 0.55 and HERO_COPY_GONE in useHeroSequence are the same number and
 // have to stay that way.
 //
-// Spending its inverse on blur and a small lift is what turns a plain fade
-// into something dissolving: going out of focus as it goes, and drifting up
-// out of frame rather than simply thinning away.
+// Spending its inverse on a lift and a swell is what turns a plain fade into
+// something dissolving: drifting up out of frame and growing past it rather
+// than simply thinning away.
+//
+// It used to spend it on blur as well — filter: blur(0 → 13px) — and that one
+// property was half of why the hero stuttered. A blur whose radius changes
+// every frame cannot be cached or composited: the browser re-renders the
+// whole text block through the filter on each one. Measured on this page,
+// with it and the canvas filter below removed, the scroll went from 36 frames
+// in 216 over 32ms to none at all, p99 from 250ms to 17ms. Opacity and
+// transform are the two things a compositor can animate without repainting,
+// so the effect is built out of those.
 .heroText {
   display: flex;
   flex-direction: column;
@@ -202,8 +225,9 @@ $hero-stage-height: calc(
   --hold: clamp(0, calc((0.55 - var(--hero-progress, 0)) / 0.3), 1);
 
   opacity: var(--hold);
-  filter: blur(calc((1 - var(--hold)) * 13px));
-  transform: translateY(calc((1 - var(--hold)) * -34px));
+  transform: translateY(calc((1 - var(--hold)) * -48px))
+    scale(calc(1 + (1 - var(--hold)) * 0.05));
+  transform-origin: left bottom;
 }
 
 // Once the copy has faded it must stop swallowing clicks: by then it has
@@ -467,7 +491,17 @@ $hero-stage-height: calc(
   padding-inline: calc(50vw - 50%);
 }
 
-// Breathing room between the last section and the closing band.
+// The news band is full-bleed and carries its own colour, and it is the first
+// thing under the hero: it meets the video edge to edge rather than across a
+// strip of page background.
+//
+// Doubled class on purpose. .section is declared further down with a
+// desktop margin inside a media query, and at equal specificity that later
+// rule won — leaving a 72px strip of page background above the band.
+.sectionLead.sectionLead {
+  margin-top: 0;
+}
+
 .pageContentOpen {
   padding-bottom: $spacing-huge * 2;
 }

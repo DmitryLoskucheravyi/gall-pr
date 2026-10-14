@@ -19,7 +19,9 @@
     "support": "Support",
     "giveaways": "Giveaway",
     "mail": "Mail log",
-    "series": "Series"
+    "series": "Series",
+    "analytics": "Analytics",
+    "reviews": "Reviews"
   },
   "themeToggle": "Toggle theme",
   "languageToggle": "Change language",

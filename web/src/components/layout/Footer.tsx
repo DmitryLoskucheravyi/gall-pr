@@ -69,14 +69,6 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
         </div>
 
         <div className={styles.main}>
-          <div className={styles.brand}>
-            <p className={styles.tagline}>
-              {authorName
-                ? t('taglineWithAuthor', { author: authorName })
-                : t('taglineNoAuthor')}
-            </p>
-          </div>
-
           <div className={styles.links}>
             <nav className={styles.column}>
               <h3 className={styles.columnTitle}>{t('columns.navigation')}</h3>
@@ -122,6 +114,15 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
                   {t('nav.telegramBot')}
                 </a>
               )}
+              <NavLink to="/delivery" className={linkClass}>
+                {t('nav.delivery')}
+              </NavLink>
+              <NavLink to="/returns" className={linkClass}>
+                {t('nav.returns')}
+              </NavLink>
+              <NavLink to="/offer" className={linkClass}>
+                {t('nav.offer')}
+              </NavLink>
               <NavLink to="/privacy" className={linkClass}>
                 {t('nav.privacy')}
               </NavLink>

@@ -27,7 +27,6 @@
   },
   "interior": {
     "title": "In a room",
-    "hint": "How the work looks on a wall — to picture it in yours",
     "photoAria": "Photo {{n}} of {{total}}",
     "alt": "The painting in a room"
   },
@@ -61,7 +60,16 @@
     "submit": "Send request",
     "or": "or write to us directly",
     "instagram": "Instagram Direct",
-    "telegram": "Telegram"
+    "telegram": "Telegram",
+    "kicker": "A repeat",
+    "floor": "From {{price}} ₴",
+    "contactsLabel": "How to reach you",
+    "commentLabel": "Wishes",
+    "steps": {
+      "one": "You leave your contact details and wishes on size and details.",
+      "two": "We get in touch to agree the size, timing and final price.",
+      "three": "The work is painted anew — one of a kind, for you."
+    }
   },
   "series": {
     "title": "Series",
@@ -71,7 +79,6 @@
     "namePlaceholder": "Name of the new series",
     "save": "Create and add",
     "saving": "Creating…",
-    "cancel": "Cancel",
-    "hint": "A work belongs to at most one series. A new series is created with this work already in it."
+    "cancel": "Cancel"
   }
 }

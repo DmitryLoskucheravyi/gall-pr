@@ -1,0 +1,37 @@
+#!/bin/sh
+# The slow half: the whole tree typechecked, and the backend's tests.
+#
+# This is the last gate before a push, which is the last point at which a
+# break is cheap — after it, CI finds it in front of everyone. Both halves run
+# only if their directory has changed since the upstream branch, so a push
+# that touches one app does not wait on the other.
+#
+# Enable once per clone:
+#
+#   git config core.hooksPath .githooks
+#
+set -e
+
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo '')
+range=${upstream:+$upstream..HEAD}
+
+changed() {
+  if [ -z "$range" ]; then
+    # No upstream yet — this is the first push of the branch, so check both.
+    echo "yes"
+  else
+    git diff --name-only "$range" -- "$1" | head -1
+  fi
+}
+
+if [ -n "$(changed web)" ]; then
+  echo "pre-push: tsc (web)"
+  (cd web && npm run typecheck)
+fi
+
+if [ -n "$(changed backend)" ]; then
+  echo "pre-push: tests (backend)"
+  (cd backend && npm test -- --silent)
+fi
+
+exit 0

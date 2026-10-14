@@ -30,6 +30,7 @@ export class NewsService {
       text: dto.text,
       textEn: dto.textEn ?? null,
       imageUrl: dto.imageUrl ?? null,
+      gallery: dto.gallery?.length ? dto.gallery : null,
     });
 
     return this.newsRepository.save(news);
@@ -44,6 +45,9 @@ export class NewsService {
     if (dto.text !== undefined) patch.text = dto.text;
     if (dto.textEn !== undefined) patch.textEn = dto.textEn;
     if (dto.imageUrl !== undefined) patch.imageUrl = dto.imageUrl;
+    if (dto.gallery !== undefined) {
+      patch.gallery = dto.gallery.length ? dto.gallery : null;
+    }
 
     if (Object.keys(patch).length > 0) {
       await this.newsRepository.update(id, patch);

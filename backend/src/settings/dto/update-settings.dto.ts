@@ -50,4 +50,8 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   instagramUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  facebookUrl?: string;
 }

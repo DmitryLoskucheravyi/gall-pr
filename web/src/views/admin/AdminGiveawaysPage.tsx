@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { uploadImage } from '../../api/uploads.api';
+import DateTimeField from '../../components/ui/DateTimeField';
 import type { Giveaway } from '../../types/giveaway.types';
 import type { News } from '../../types/news.types';
 import { useLocale } from '../../hooks/useLocale';
@@ -32,6 +33,16 @@ function toDatetimeLocalValue(iso: string) {
   const date = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+type GalleryItem =
+  | { kind: 'url'; url: string }
+  | { kind: 'file'; file: File; previewUrl: string };
+
+function revokeGallery(items: GalleryItem[]) {
+  for (const item of items) {
+    if (item.kind === 'file') URL.revokeObjectURL(item.previewUrl);
+  }
 }
 
 export default function AdminGiveawaysPage() {
@@ -81,10 +92,22 @@ export default function AdminGiveawaysPage() {
   useEffect(() => {
     newsImageRef.current = newsImage;
   }, [newsImage]);
+
+  // The entry's gallery, in order: photos already uploaded (a URL) and ones
+  // picked in this session (a File, uploaded on save). One list, so the order
+  // the admin sees is the order the slider shows.
+  const [newsGallery, setNewsGallery] = useState<GalleryItem[]>([]);
+  const newsGalleryInputRef = useRef<HTMLInputElement>(null);
+  const newsGalleryRef = useRef(newsGallery);
+  useEffect(() => {
+    newsGalleryRef.current = newsGallery;
+  }, [newsGallery]);
+
   useEffect(() => {
     return () => {
       if (newsImageRef.current)
         URL.revokeObjectURL(newsImageRef.current.previewUrl);
+      revokeGallery(newsGalleryRef.current);
     };
   }, []);
 
@@ -160,6 +183,8 @@ export default function AdminGiveawaysPage() {
     if (newsImage) URL.revokeObjectURL(newsImage.previewUrl);
     setNewsImage(null);
     setNewsExistingImageUrl(null);
+    revokeGallery(newsGallery);
+    setNewsGallery([]);
   };
 
   const handleNewsEdit = (item: News) => {
@@ -171,6 +196,41 @@ export default function AdminGiveawaysPage() {
     if (newsImage) URL.revokeObjectURL(newsImage.previewUrl);
     setNewsImage(null);
     setNewsExistingImageUrl(item.imageUrl);
+    revokeGallery(newsGallery);
+    setNewsGallery((item.gallery ?? []).map((url) => ({ kind: 'url', url })));
+  };
+
+  const handleNewsGallerySelected = (fileList: FileList | null) => {
+    const files = Array.from(fileList ?? []);
+    if (files.length === 0) return;
+    setNewsGallery((was) => [
+      ...was,
+      ...files.map((file) => ({
+        kind: 'file' as const,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+    if (newsGalleryInputRef.current) newsGalleryInputRef.current.value = '';
+  };
+
+  const handleNewsGalleryRemove = (index: number) => {
+    setNewsGallery((was) => {
+      const gone = was[index];
+      if (gone?.kind === 'file') URL.revokeObjectURL(gone.previewUrl);
+      return was.filter((_, i) => i !== index);
+    });
+  };
+
+  // Moves a photo one place along, so the admin can choose which leads.
+  const handleNewsGalleryMove = (index: number, by: -1 | 1) => {
+    setNewsGallery((was) => {
+      const to = index + by;
+      if (to < 0 || to >= was.length) return was;
+      const next = [...was];
+      [next[index], next[to]] = [next[to], next[index]];
+      return next;
+    });
   };
 
   const handleNewsFileSelected = (fileList: FileList | null) => {
@@ -216,12 +276,37 @@ export default function AdminGiveawaysPage() {
       setUploadingNewsImage(false);
     }
 
+    // The gallery's new photos go up in order, each replaced by its URL. All
+    // or nothing: a half-uploaded gallery saved as if complete would quietly
+    // drop the rest.
+    let gallery: string[];
+    try {
+      setUploadingNewsImage(true);
+      gallery = [];
+      for (const item of newsGallery) {
+        gallery.push(
+          item.kind === 'url' ? item.url : (await uploadImage(item.file)).url,
+        );
+      }
+    } catch (error) {
+      dispatch(
+        showToast({
+          message: apiErrorMessage(error, t('giveawaysPage.news.uploadFailed')),
+          variant: 'error',
+        }),
+      );
+      setUploadingNewsImage(false);
+      return;
+    }
+    setUploadingNewsImage(false);
+
     const dto = {
       title: newsTitle.trim(),
       titleEn: newsTitleEn.trim() || undefined,
       text: newsText.trim(),
       textEn: newsTextEn.trim() || undefined,
       imageUrl,
+      gallery,
     };
 
     if (newsEditingId) {
@@ -299,12 +384,12 @@ export default function AdminGiveawaysPage() {
               placeholder={t('giveawaysPage.giveaway.paintingPlaceholder')}
             />
 
-            <input
+            <DateTimeField
               required
-              type="datetime-local"
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className={styles.input}
+              onChange={setDeadline}
+              placeholder={t('giveawaysPage.giveaway.deadlinePlaceholder')}
+              ariaLabel={t('giveawaysPage.giveaway.deadlinePlaceholder')}
             />
 
             <textarea
@@ -439,6 +524,68 @@ export default function AdminGiveawaysPage() {
                 {t('giveawaysPage.news.addImage')}
               </button>
             )}
+
+            <span className={styles.fileLabel}>
+              {t('giveawaysPage.news.galleryLabel')}
+            </span>
+            <p className={styles.galleryHint}>
+              {t('giveawaysPage.news.galleryHint', { count: newsGallery.length })}
+            </p>
+
+            <input
+              ref={newsGalleryInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleNewsGallerySelected(e.target.files)}
+              className={styles.hiddenFileInput}
+            />
+
+            <div className={styles.galleryGrid}>
+              {newsGallery.map((item, index) => {
+                const src = item.kind === 'url' ? item.url : item.previewUrl;
+                return (
+                  <div key={src} className={styles.galleryItem}>
+                    <img src={src} alt="" className={styles.galleryThumb} />
+                    <span className={styles.galleryIndex}>{index + 1}</span>
+                    <div className={styles.galleryActions}>
+                      <button
+                        type="button"
+                        onClick={() => handleNewsGalleryMove(index, -1)}
+                        disabled={index === 0}
+                        aria-label={t('giveawaysPage.news.galleryMoveLeft')}
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleNewsGalleryMove(index, 1)}
+                        disabled={index === newsGallery.length - 1}
+                        aria-label={t('giveawaysPage.news.galleryMoveRight')}
+                      >
+                        →
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleNewsGalleryRemove(index)}
+                      className={styles.removeImageButton}
+                      aria-label={t('giveawaysPage.news.galleryRemove')}
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => newsGalleryInputRef.current?.click()}
+                className={styles.galleryAdd}
+              >
+                {t('giveawaysPage.news.galleryAdd')}
+              </button>
+            </div>
 
             <input
               required

@@ -22,5 +22,10 @@ export function usePainting(id: number | undefined) {
     },
     // Retrying a malformed id would only fail the same way three more times.
     retry: valid ? undefined : false,
+    // The page around it is static and an hour old at worst; whether the work
+    // is still for sale is the one fact on it that must be current, so the
+    // client always asks again on arrival.
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }

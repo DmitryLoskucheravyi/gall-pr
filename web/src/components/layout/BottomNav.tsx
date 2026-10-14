@@ -114,7 +114,7 @@ export default function BottomNav() {
         <span>{t('catalog')}</span>
       </NavLink>
 
-      <NavLink to="/cart" className={linkClass}>
+      <NavLink to="/cart" className={linkClass} data-cart-target>
         <span className={styles.iconWrap}>
           {cartIcon}
           {cartCount > 0 && (

@@ -5,6 +5,8 @@ export type News = {
   text: string;
   textEn: string | null;
   imageUrl: string | null;
+  /** Further photos; the homepage shows them as a slider from three up. */
+  gallery: string[] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -15,4 +17,5 @@ export type CreateNewsDto = {
   text: string;
   textEn?: string;
   imageUrl?: string;
+  gallery?: string[];
 };

@@ -54,6 +54,11 @@ export class AppSettings {
   @Column({ name: 'instagram_url', default: '' })
   instagramUrl: string;
 
+  // Shown beside Instagram in the mobile menu's social group, when filled in.
+  // See backend/temp/2026-10-social-links.sql.
+  @Column({ name: 'facebook_url', default: '' })
+  facebookUrl: string;
+
   // Telegram chat id the bot sends admin notifications to (new orders, payment
   // proofs, new support messages). Set exclusively via the "Прив'язати бота"
   // deep-link flow on this settings page — never entered manually, and the

@@ -10,10 +10,12 @@ import { useExchangeRate } from '../hooks/queries/useExchangeRate';
 import { formatPrice } from '../utils/formatPrice';
 import PaintingCard from '../components/PaintingCard';
 import Painting3DViewer from '../components/Painting3DViewer';
+import ArrowButton from '../components/ui/ArrowButton';
 import InteriorCarousel from '../components/InteriorCarousel';
 import CommissionModal from '../components/CommissionModal';
 import PaintingSeriesControl from '../components/admin/PaintingSeriesControl';
 import LikeButton from '../components/ui/LikeButton';
+import ShareButton from '../components/ui/ShareButton';
 import Skeleton from '../components/ui/Skeleton';
 import { usePainting } from '../hooks/queries/usePainting';
 import { useRelatedPaintings } from '../hooks/queries/useRelatedPaintings';
@@ -23,6 +25,7 @@ import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useAppSelector } from '../store/hooks';
 import { cdnImage } from '../utils/imageUrl';
 import styles from './PaintingPage.module.scss';
+import { inStock } from '../utils/stock';
 
 export default function PaintingPage() {
   const { t } = useTranslation('painting');
@@ -151,6 +154,24 @@ export default function PaintingPage() {
     // it doesn't need to be here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lightboxOpen, activeImage, images.length]);
+
+  // A tap on the photo's outer thirds steps the way it points; the middle
+  // opens the lightbox. With one photo, the whole of it opens.
+  const onSlideClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (images.length > 1) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width;
+      if (x < 0.3) {
+        goToImage((activeImage - 1 + images.length) % images.length);
+        return;
+      }
+      if (x > 0.7) {
+        goToImage((activeImage + 1) % images.length);
+        return;
+      }
+    }
+    openLightbox();
+  };
 
   const openLightbox = () => {
     activeImageOnOpen.current = activeImage;
@@ -303,7 +324,7 @@ export default function PaintingPage() {
                 <button
                   key={url}
                   type="button"
-                  onClick={openLightbox}
+                  onClick={onSlideClick}
                   className={styles.slide}
                   aria-label={t('openImageAria', { n: index + 1 })}
                 >
@@ -323,8 +344,8 @@ export default function PaintingPage() {
 
             {images.length > 1 && (
               <>
-                <button
-                  type="button"
+                <ArrowButton
+                  direction="prev"
                   onClick={() =>
                     goToImage((activeImage - 1 + images.length) % images.length)
                   }
@@ -332,36 +353,16 @@ export default function PaintingPage() {
                     arrowsVisible ? styles.visible : ''
                   }`}
                   aria-label={t('prevImageAria')}
-                >
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="m15 6-6 6 6 6"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+                />
 
-                <button
-                  type="button"
+                <ArrowButton
+                  direction="next"
                   onClick={() => goToImage((activeImage + 1) % images.length)}
                   className={`${styles.navArrow} ${styles.navArrowRight} ${
                     arrowsVisible ? styles.visible : ''
                   }`}
                   aria-label={t('nextImageAria')}
-                >
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="m9 6 6 6-6 6"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+                />
               </>
             )}
           </div>
@@ -393,10 +394,13 @@ export default function PaintingPage() {
         <div>
           <div className={styles.titleRow}>
             <h1 className={styles.title}>{title}</h1>
-            <LikeButton
-              paintingId={painting.id}
-              likesCount={painting.likesCount}
-            />
+            <div className={styles.titleActions}>
+              <ShareButton />
+              <LikeButton
+                paintingId={painting.id}
+                likesCount={painting.likesCount}
+              />
+            </div>
           </div>
 
           {!!authorName && <p className={styles.author}>{authorName}</p>}
@@ -407,7 +411,7 @@ export default function PaintingPage() {
               work that exists beats commissioning a copy of it. Sold splits on
               whether the artist will paint it again: an offer to order one, or
               a plain statement that it's gone. */}
-          {painting.isAvailable ? (
+          {inStock(painting) ? (
             <button
               onClick={() => addToCart.mutate(painting)}
               className={styles.buyButton}
@@ -422,9 +426,11 @@ export default function PaintingPage() {
               {t('order')}
             </button>
           ) : (
-            // Not a disabled button: there is nothing to press, and a greyed
-            // one invites the attempt anyway.
-            <p className={styles.soldNotice}>{t('sold')}</p>
+            // Where the buy button stood: the same button, greyed and
+            // inert, saying the work has gone.
+            <button type="button" className={`${styles.buyButton} ${styles.soldButton}`} disabled>
+              {t('sold')}
+            </button>
           )}
 
           <SectionHeader
@@ -488,7 +494,6 @@ export default function PaintingPage() {
       {interiorImages.length > 0 && (
         <section className={styles.interior}>
           <h2 className={styles.interiorTitle}>{t('interior.title')}</h2>
-          <p className={styles.interiorHint}>{t('interior.hint')}</p>
           <InteriorCarousel images={interiorImages} />
         </section>
       )}
@@ -561,48 +566,10 @@ export default function PaintingPage() {
             ))}
           </div>
 
+          {/* No arrows over the photograph: it is swiped (or stepped with the
+              arrow keys), and the count says where in the set it is. */}
           {images.length > 1 && (
             <>
-              <button
-                type="button"
-                onClick={() =>
-                  goToLightboxImage(
-                    (activeImage - 1 + images.length) % images.length,
-                  )
-                }
-                className={`${styles.navArrow} ${styles.navArrowLeft} ${styles.visible}`}
-                aria-label={t('prevImageAria')}
-              >
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="m15 6-6 6 6 6"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  goToLightboxImage((activeImage + 1) % images.length)
-                }
-                className={`${styles.navArrow} ${styles.navArrowRight} ${styles.visible}`}
-                aria-label={t('nextImageAria')}
-              >
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="m9 6 6 6-6 6"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-
               <span className={styles.lightboxCount}>
                 {activeImage + 1} / {images.length}
               </span>

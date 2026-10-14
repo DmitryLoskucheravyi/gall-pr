@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 
 import Header from './Header';
 import Footer from './Footer';
-import BottomNav from './BottomNav';
 import ContinuePrompt from './ContinuePrompt';
 import CookieConsent from './CookieConsent';
 import ScrollToTop from './ScrollToTop';
@@ -71,7 +70,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       {showChrome && (
         <Footer continueTo={nextPath} continueProgress={progress} />
       )}
-      {showChrome && <BottomNav />}
       {/* Footer's own continue row hides itself on a phone — this is what
           takes over there. See ContinuePrompt for why. */}
       {showChrome && <ContinuePrompt nextPath={nextPath} progress={progress} />}

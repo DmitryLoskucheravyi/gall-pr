@@ -1,30 +1,473 @@
-// No card around the news any more — no panel, no border, no shadow. It
-// reads as a passage set into the page rather than a widget sitting on it.
-.banner {
+// The news band: full width of the screen, the gallery's own green, and the
+// date set as large as the headline. See NewsBanner.tsx for why the date
+// carries the design rather than a photograph.
+//
+// Everything inside is coloured with currentColor at an opacity rather than
+// with a token, because the band flips: in the light theme it is pale type on
+// deep moss, in the dark one dark type on pale sage. Only --color-primary and
+// --color-on-primary know which, and the same rules have to hold for both.
+
+.band {
+  --pad-y: clamp(64px, 8vw, 128px);
+  --turn: 9s; // the band turns when the bar's fill finishes — see NewsBanner.tsx
+
+  position: relative;
+  overflow: hidden;
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+
+  // Full bleed out of the page container — see .pageContent in
+  // HomePage.module.scss for why 50% − 50vw is exactly the gap.
+  margin-inline: calc(50% - 50vw);
+  padding: var(--pad-y) calc(50vw - 50%);
+
+  // A room of its own rather than a strip: it holds most of a screen on the
+  // desktop, with the entry sitting in the middle of it.
+  @include respond-up($breakpoint-lg) {
+    display: flex;
+    min-height: min(78vh, 820px);
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  // A light that falls across the band from where the lamp would be, so a
+  // large flat field of colour has somewhere to go.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 70% 120% at 82% -10%,
+      rgb(255 255 255 / 10%),
+      transparent 62%
+    );
+  }
+}
+
+.inner {
+  position: relative;
+  display: grid;
+  gap: $spacing-xxl;
+
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: $spacing-huge;
+    row-gap: $spacing-xxxxl;
+    align-items: start;
+
+    .band[data-media='photo'] & {
+      grid-template-columns: auto minmax(0, 1fr) minmax(220px, 0.62fr);
+    }
+  }
+}
+
+// Keeps the three parts of one entry as children of the grid while still
+// giving them a single element to be keyed — and so remounted — by.
+.turn {
+  display: contents;
+}
+
+// ---------- the date ----------
+
+.date {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: baseline;
   gap: $spacing-md;
+
+  @include respond-up($breakpoint-lg) {
+    align-items: flex-end;
+    gap: $spacing-lg;
+  }
+}
+
+.day {
+  font-family: $font-display;
+  font-size: clamp(66px, 10vw, 142px);
+  line-height: 0.76;
+  letter-spacing: -0.045em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.rest {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.6;
+
+  // Stood on end beside the numeral, reading up the way a spine does. It is
+  // the one place on the page where type is allowed to behave like an object.
+  @include respond-up($breakpoint-lg) {
+    flex-direction: row;
+    gap: $spacing-md;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    padding-bottom: 2px;
+  }
+}
+
+.month,
+.year {
+  white-space: nowrap;
+}
+
+// ---------- the entry ----------
+
+.copy {
+  max-width: 62ch;
+
+  // With no photograph the entry takes the whole band instead of leaving half
+  // of it empty: the headline against the text, the two of them under the
+  // date, three columns across.
+  @include respond-up($breakpoint-lg) {
+    .band[data-media='none'] & {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: $spacing-huge;
+      align-items: start;
+      max-width: none;
+    }
+  }
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+// Something on this page is live, and this is the only part of it that
+// changes between visits.
+.pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: $radius-pill;
+  background-color: currentColor;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: news-pulse 2.6s $ease-out infinite;
+  }
+}
+
+@keyframes news-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .title {
+  margin-top: $spacing-md;
   font-family: $font-display;
-  font-size: clamp(24px, 3.4vw, 34px);
-  line-height: 1.2;
-  color: var(--color-text);
+  font-size: clamp(27px, 3.5vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: inherit;
 }
 
 .text {
-  width: 100%;
-  color: var(--color-text-secondary);
+  margin-top: $spacing-lg;
+  max-width: 52ch;
+
+  // Side by side with the headline it sets from the same line, not below it.
+  @include respond-up($breakpoint-lg) {
+    .band[data-media='none'] & {
+      margin-top: 6px;
+    }
+  }
   font-size: 16px;
-  line-height: 1.7;
+  line-height: 1.75;
+  opacity: 0.78;
   // Keeps the paragraph breaks the admin typed.
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
 
-.skeleton {
-  height: 140px;
-  background-color: var(--color-background-alt);
+// ---------- the photograph ----------
+
+.media {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: $radius-lg;
+  aspect-ratio: 4 / 3;
+  background-color: rgb(0 0 0 / 14%);
+
+  // Floor to ceiling of the band and out to the edge of the screen: the
+  // photograph is a wall of the room, not a picture hung inside it.
+  @include respond-up($breakpoint-lg) {
+    // Its own column, down every row the band has: without spanning the
+    // strip's row it would stop short of the band's bottom edge.
+    grid-column: 3;
+    grid-row: 1 / -1;
+    margin-block: calc(-1 * var(--pad-y));
+    margin-right: calc(50% - 50vw);
+    border-radius: $radius-lg 0 0 $radius-lg;
+    aspect-ratio: auto;
+    align-self: stretch;
+    min-height: 320px;
+  }
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: news-drift 18s $ease-out both;
+  }
+}
+
+// The slowest possible push in. Over a turn of the band it is not a movement
+// so much as the picture refusing to sit perfectly still.
+@keyframes news-drift {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+// ---------- the strip along the bottom ----------
+
+.strip {
+  display: grid;
+  gap: $spacing-lg;
+  grid-column: 1 / -1;
+
+  @include respond-up($breakpoint-sm) {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: $spacing-xl;
+  }
+
+  // Clear of the photograph, which runs to the edge of the screen.
+  @include respond-up($breakpoint-lg) {
+    .band[data-media='photo'] & {
+      grid-column: 1 / 3;
+    }
+  }
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $spacing-sm;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0.58;
+  transition: opacity $duration-fast $ease-out;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 0.85;
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+  }
+
+  &[data-current] {
+    opacity: 1;
+    cursor: default;
+  }
+}
+
+// The bar is the clock: it fills across one turn of the band.
+.bar {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background-color: rgb(128 128 128 / 35%);
+  background-color: color-mix(in srgb, currentColor 28%, transparent);
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background-color: currentColor;
+
+  [data-current] & {
+    width: 100%;
+
+    @media (prefers-reduced-motion: no-preference) {
+      width: 0;
+      animation: news-count var(--turn) linear both;
+    }
+  }
+
+  // Held while the pointer rests on the band or the keyboard is inside it —
+  // and since the band turns on this animation's end, that holds the band
+  // too. Hover only where a pointer can actually rest: a tap leaves :hover
+  // stuck on touch screens, which would stop the band for good.
+  @media (hover: hover) {
+    .band:hover & {
+      animation-play-state: paused;
+    }
+  }
+
+  .band:has(:focus-visible) & {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes news-count {
+  to {
+    width: 100%;
+  }
+}
+
+.tabDate {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.tabTitle {
+  font-family: $font-display;
+  font-size: 15px;
+  line-height: 1.35;
+  // Two lines is enough to tell one entry from another; a third would make
+  // the strip taller than the entry it belongs to.
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+// ---------- entrance ----------
+
+// Replayed on every turn of the band, because .turn is keyed by the entry and
+// so remounts with it. The date leads, the words follow it in.
+@media (prefers-reduced-motion: no-preference) {
+  .date,
+  .copy,
+  .media {
+    animation: news-in $duration-slow $ease-out both;
+  }
+
+  .copy {
+    animation-delay: 90ms;
+  }
+
+  .media {
+    animation-name: news-in-media;
+    animation-delay: 40ms;
+  }
+}
+
+@keyframes news-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// The photograph is flush to two edges of the band, so it can only come in
+// from the one it is not pinned to.
+@keyframes news-in-media {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 0 12%);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+// ---------- skeleton ----------
+
+.skeletonDate {
+  width: clamp(120px, 16vw, 210px);
+  height: clamp(60px, 9vw, 120px);
+  border-radius: $radius-sm;
+  background-color: rgb(128 128 128 / 20%);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.skeletonCopy {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.skeletonLine {
+  height: 14px;
+  border-radius: $radius-sm;
+  background-color: rgb(128 128 128 / 20%);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+
+  &[data-w='title'] {
+    height: 34px;
+    width: 62%;
+  }
+
+  &[data-w='short'] {
+    width: 34%;
+  }
+}
+
+// ---------- the gallery ----------
+
+// Under the heading, in the left column. The slider's own controls are pale
+// ink on the band rather than the page's colours.
+.gallery {
+  --arrow-fg: currentColor;
+  --arrow-accent: currentColor;
+  --slider-dot: currentColor;
+  --slider-dot-active: currentColor;
+
+  margin-top: $spacing-xxl;
+  max-width: 720px;
+}
+
+.slide {
+  flex: 0 0 min(78%, 340px);
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background-color: rgb(0 0 0 / 12%);
+}
+
+.slideImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  transition: transform 0.8s $ease-out;
+
+  .slide:hover & {
+    transform: scale(1.03);
+  }
 }

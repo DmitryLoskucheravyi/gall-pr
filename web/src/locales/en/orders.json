@@ -15,9 +15,34 @@
     "COMPLETED": "Completed"
   },
   "orderNumber": "Order #{{id}}",
-  "items": { "one": "work", "other": "works" },
+  "items": {
+    "one": "work",
+    "other": "works"
+  },
   "proofSent": "✓ Payment screenshot sent, awaiting confirmation",
   "proofUploading": "Uploading…",
   "proofUpload": "Attach payment screenshot",
-  "cancelButton": "Cancel order"
+  "cancelButton": "Cancel order",
+  "review": {
+    "title": "How do you like the work?",
+    "promptTitle": "Your painting is home — how do you like it?",
+    "lead": "A few words and a rating help others decide on a painting of their own, and tell us what we do well.",
+    "ratingLabel": "Rating",
+    "textLabel": "Review",
+    "textPlaceholder": "How the work looks in person, how delivery went, what you feel looking at it…",
+    "minChars_one": "At least {{count}} more character",
+    "minChars_other": "At least {{count}} more characters",
+    "note": "Your review appears on the site after a check. It can’t be changed once sent.",
+    "send": "Send review",
+    "sending": "Sending…",
+    "later": "Not now",
+    "close": "Close",
+    "done": "Done",
+    "thanksTitle": "Thank you for the review!",
+    "thanksText": "We’ll read it shortly — once checked, it will appear on the site.",
+    "leave": "Leave a review",
+    "pending": "Under review",
+    "published": "Published",
+    "failed": "Couldn’t send the review"
+  }
 }

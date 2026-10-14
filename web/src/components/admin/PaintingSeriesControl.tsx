@@ -125,8 +125,6 @@ export default function PaintingSeriesControl({ painting }: Props) {
           </button>
         </form>
       )}
-
-      <p className={styles.hint}>{t('series.hint')}</p>
     </section>
   );
 }

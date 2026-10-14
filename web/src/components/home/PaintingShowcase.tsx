@@ -14,6 +14,8 @@ import { cdnImage } from '../../utils/imageUrl';
 import { formatPrice } from '../../utils/formatPrice';
 import { pickLocale } from '../../utils/localizedField';
 import type { PaintingRingScene } from './paintingRingScene';
+import ArrowButton from '../ui/ArrowButton';
+import Slider from '../ui/Slider';
 import styles from './PaintingShowcase.module.scss';
 
 // The featured works on a turning ring — the homepage's showcase now that the
@@ -30,6 +32,10 @@ import styles from './PaintingShowcase.module.scss';
 const TEXTURE_WIDTH = 900;
 // Start fetching the scene this far before the section scrolls into view.
 const PRELOAD_MARGIN = '600px';
+// How long the scene may wait for a quiet moment before being built anyway.
+// Long enough to let a scroll through the hero finish, short enough that it
+// is always ready before the section itself arrives.
+const IDLE_TIMEOUT_MS = 2000;
 
 type Mode = 'waiting' | 'loading' | 'ring' | 'strip';
 
@@ -62,6 +68,8 @@ export default function PaintingShowcase({ paintings }: { paintings: Painting[] 
 
     let cancelled = false;
     let scene: PaintingRingScene | null = null;
+    let idle = 0;
+    let timer = 0;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -69,7 +77,21 @@ export default function PaintingShowcase({ paintings }: { paintings: Painting[] 
         observer.disconnect();
         setMode('loading');
 
-        import('./paintingRingScene')
+        // One retry before giving up on the ring: a chunk that fails to load
+        // once — a dropped connection, a dev server restarting — is usually
+        // there a moment later, and the fallback lasts for the whole visit.
+        const loadScene = () =>
+          import('./paintingRingScene').catch(
+            () =>
+              new Promise<typeof import('./paintingRingScene')>((resolve, reject) =>
+                window.setTimeout(
+                  () => import('./paintingRingScene').then(resolve, reject),
+                  1500,
+                ),
+              ),
+          );
+
+        loadScene()
           .then(({ PaintingRingScene, supportsWebGL }) => {
             if (cancelled) return;
             const canvas = canvasRef.current;
@@ -78,23 +100,45 @@ export default function PaintingShowcase({ paintings }: { paintings: Painting[] 
               return;
             }
 
-            const list = paintingsRef.current;
-            scene = new PaintingRingScene(
-              canvas,
-              list.map((p) => ({ src: cdnImage(p.cardImage, TEXTURE_WIDTH) })),
-              {
-                reducedMotion: reduced,
-                onActiveChange: setActive,
-                onOpen: (index) => {
-                  const painting = paintingsRef.current[index];
-                  if (painting) navigate(`/painting/${painting.id}`);
+            // Built in a quiet moment, not the moment the import lands.
+            //
+            // The section preloads 600px early, which puts the constructor in
+            // the middle of a scroll through the hero — and building a WebGL
+            // scene is not something that can be split across frames: lights,
+            // shadow maps, twelve meshes, and the first render's shader
+            // compile all happen in one go. That showed up as a 500–800ms
+            // frozen frame while the reader was still scrolling, which is
+            // exactly the stutter this preloading is supposed to prevent.
+            //
+            // An idle callback puts it between scrolls instead. The timeout
+            // is the backstop for a reader who never stops scrolling, and for
+            // Safari, which has no requestIdleCallback at all.
+            const build = () => {
+              if (cancelled) return;
+              const list = paintingsRef.current;
+              scene = new PaintingRingScene(
+                canvas,
+                list.map((p) => ({ src: cdnImage(p.cardImage, TEXTURE_WIDTH) })),
+                {
+                  reducedMotion: reduced,
+                  onActiveChange: setActive,
+                  onOpen: (index) => {
+                    const painting = paintingsRef.current[index];
+                    if (painting) navigate(`/painting/${painting.id}`);
+                  },
+                  onReady: () => {
+                    if (!cancelled) setMode('ring');
+                  },
                 },
-                onReady: () => {
-                  if (!cancelled) setMode('ring');
-                },
-              },
-            );
-            sceneRef.current = scene;
+              );
+              sceneRef.current = scene;
+            };
+
+            if (typeof requestIdleCallback === 'function') {
+              idle = requestIdleCallback(build, { timeout: IDLE_TIMEOUT_MS });
+            } else {
+              timer = window.setTimeout(build, 300);
+            }
           })
           .catch(() => {
             if (!cancelled) setMode('strip');
@@ -107,6 +151,8 @@ export default function PaintingShowcase({ paintings }: { paintings: Painting[] 
     return () => {
       cancelled = true;
       observer.disconnect();
+      if (idle && typeof cancelIdleCallback === 'function') cancelIdleCallback(idle);
+      if (timer) window.clearTimeout(timer);
       scene?.destroy();
       sceneRef.current = null;
     };
@@ -132,25 +178,27 @@ export default function PaintingShowcase({ paintings }: { paintings: Painting[] 
         <h2 id="showcase-title" className={styles.title}>
           {t('showcase.title')}
         </h2>
-        <p className={styles.lede}>{t('showcase.lede')}</p>
       </header>
 
       {mode === 'strip' ? (
-        <ul className={styles.strip}>
+        // The fallback when there is no WebGL: the same works as a slider —
+        // the site's own, not a scrollbar across the room.
+        <Slider className={styles.strip} label={t('showcase.title')}>
           {paintings.map((painting) => (
-            <li key={painting.id} className={styles.stripItem}>
+            <div key={painting.id} className={styles.stripItem}>
               <Link to={`/painting/${painting.id}`} className={styles.stripLink}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={cdnImage(painting.cardImage, 600)}
                   alt={pickLocale(painting, 'title', locale)}
                   loading="lazy"
+                  draggable={false}
                 />
                 <span>{pickLocale(painting, 'title', locale)}</span>
               </Link>
-            </li>
+            </div>
           ))}
-        </ul>
+        </Slider>
       ) : (
         <>
           <div className={styles.stage} data-ready={mode === 'ring'}>
@@ -171,17 +219,13 @@ export default function PaintingShowcase({ paintings }: { paintings: Painting[] 
           </div>
 
           <div className={styles.caption} aria-live="polite">
-            <button
-              type="button"
+            <ArrowButton
+              direction="prev"
               className={styles.arrow}
               onClick={() => sceneRef.current?.prev()}
               aria-label={t('showcase.prev')}
               disabled={paintings.length < 2}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
-            </button>
+            />
 
             <div className={styles.captionText}>
               <span className={styles.counter}>
@@ -200,24 +244,32 @@ export default function PaintingShowcase({ paintings }: { paintings: Painting[] 
               </span>
             </div>
 
-            <button
-              type="button"
+            <ArrowButton
+              direction="next"
               className={styles.arrow}
               onClick={() => sceneRef.current?.next()}
               aria-label={t('showcase.next')}
               disabled={paintings.length < 2}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M9 6l6 6-6 6" />
-              </svg>
-            </button>
+            />
           </div>
         </>
       )}
 
       <div className={styles.footer}>
+        {/* The same link the hero ends on — uppercase, spaced, the outward
+            arrow, a hairline over it — so the page's two ways into the
+            catalogue read as one control. */}
         <Link to="/catalog" className={styles.allLink}>
           {t('showcase.all')}
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M8 16 16 8M9.5 8H16v6.5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </Link>
       </div>
     </section>

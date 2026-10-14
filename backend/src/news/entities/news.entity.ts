@@ -26,6 +26,12 @@ export class News {
   @Column({ name: 'image_url', type: 'varchar', length: 500, nullable: true })
   imageUrl: string | null;
 
+  // Further photos, shown as a slider on the homepage once there are three or
+  // more. Replaced as a whole list from the admin form. See
+  // backend/temp/2026-10-news-gallery.sql.
+  @Column({ type: 'json', nullable: true })
+  gallery: string[] | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

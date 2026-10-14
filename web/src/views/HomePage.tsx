@@ -14,10 +14,9 @@ import GiveawayHighlight, {
   GiveawayHighlightSkeleton,
 } from '../components/GiveawayHighlight';
 import NewsBanner, { NewsBannerSkeleton } from '../components/NewsBanner';
-// Corridor scene shelved for now — see the note at the bottom of the page.
-// import CorridorSection from '../components/CorridorSection';
 import PaintingShowcase from '../components/home/PaintingShowcase';
-import { HomeAbout, HomeHowToBuy, HomeClosing } from '../components/home/HomeSections';
+import { HomeHowToBuy, HomeClosing } from '../components/home/HomeSections';
+import HomeReviews from '../components/home/HomeReviews';
 import Reveal from '../components/ui/Reveal';
 import styles from './HomePage.module.scss';
 
@@ -27,13 +26,14 @@ import styles from './HomePage.module.scss';
 const SHOWCASE_LIMIT = 12;
 const SHOWCASE_MIN = 6;
 
+// How many entries the news section can leaf through. Enough for an index
+// worth reading; past that it would compete with the works below it.
+const NEWS_LIMIT = 4;
+
 // Module scope so the object keeps its identity between renders — the hook
 // watches it, and a fresh literal each time would re-attach the source and
 // restart the footage on every render.
-const HERO_FOOTAGE = {
-  scrub: '/hero-paint.mp4',
-  frames: { base: '/frames/hero', count: 48 },
-};
+const HERO_FOOTAGE = { base: '/frames/hero', count: 48 };
 
 type TitlePart = { text: string; em?: boolean };
 
@@ -263,11 +263,9 @@ export default function HomePage() {
   // A touch screen has no hovering pointer to follow, so the sequence there
   // is driven by scroll alone rather than sitting dead.
   const coarsePointer = useCoarsePointer();
-  // `mode` is the hook's own call on whether this browser can scrub a video
-  // at all, and it can change after mount — see canScrubVideo there.
-  const { trackRef, stickyRef, videoRef, canvasRef, mode } = useHeroSequence({
+  const { trackRef, stickyRef, canvasRef } = useHeroSequence({
     noPointer: coarsePointer,
-    sources: HERO_FOOTAGE,
+    frames: HERO_FOOTAGE,
     // The first screen — it does not wait for anything.
     eager: true,
   });
@@ -294,7 +292,9 @@ export default function HomePage() {
           new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
       )[0] ?? null;
 
-  const latestNews = news?.[0] ?? null;
+  // The news section leafs through the most recent entries itself, so it
+  // takes the list rather than only the newest one.
+  const newsItems = useMemo(() => (news ?? []).slice(0, NEWS_LIMIT), [news]);
 
   // Gates the hero copy's entrance: nothing animates until there is
   // something behind it (see .heroTextWaiting).
@@ -350,7 +350,7 @@ export default function HomePage() {
           its own — its height is the runway the sequence plays along, and
           .heroSticky is pinned across it. Everything below the track stays
           where it is until the sequence has finished. */}
-      <section className={styles.hero} ref={trackRef}>
+      <section className={styles.hero} ref={trackRef} data-hero-under-header>
         <div className={styles.heroSticky} ref={stickyRef}>
           {/* Independent of the paintings query: the footage is the whole of
               the first screen now, and holding it back until that request
@@ -361,37 +361,20 @@ export default function HomePage() {
                 hand-tuned offsets — is what moves it against the copy in
                 front. See .heroStage. */}
             <div className={styles.heroStage}>
-              {/* Macro oil paint on canvas, filling the frame. It never
-                  plays by itself — useHeroSequence walks it in step with the
-                  scroll, so the drift across the impasto is something the
-                  reader drives rather than watches. Decorative and silent,
-                  so there is nothing to caption and no controls to expose.
-
-                  Two elements for the one shot: a video where it can be
-                  scrubbed, and the same seconds as drawn stills where it
-                  can't. See the note on Sources in useHeroSequence. */}
-              {mode === 'frames' ? (
-                <canvas
-                  className={styles.heroWall}
-                  ref={canvasRef}
-                  // Stands in until the first frame is drawn, and is all a
-                  // reduced-motion visitor ever sees. A canvas has no poster
-                  // of its own, so it wears one.
-                  style={{ backgroundImage: 'url(/hero-paint.jpg)' }}
-                />
-              ) : (
-                <video
-                  className={styles.heroWall}
-                  ref={videoRef}
-                  poster="/hero-paint.jpg"
-                  muted
-                  playsInline
-                  // Seeking needs the frames already in hand: on `metadata`
-                  // the first scroll would stall against the network instead
-                  // of moving the picture.
-                  preload="auto"
-                />
-              )}
+              {/* Macro oil paint on canvas, filling the frame. Nothing
+                  plays by itself — useHeroSequence walks the strip of stills
+                  in step with the scroll, so the drift across the impasto is
+                  something the reader drives rather than watches. Decorative
+                  and silent, so there is nothing to caption and no controls
+                  to expose. */}
+              <canvas
+                className={styles.heroWall}
+                ref={canvasRef}
+                // Stands in until the first frame is drawn, and is all a
+                // reduced-motion visitor ever sees. A canvas has no poster
+                // of its own, so it wears one.
+                style={{ backgroundImage: 'url(/hero-paint.jpg)' }}
+              />
               <div className={styles.heroOverlay} />
             </div>
           </div>
@@ -468,6 +451,21 @@ export default function HomePage() {
           first of it only reaches the screen once the sequence has played
           all the way through. */}
       <div className={`${styles.pageContent} ${styles.pageContentOpen}`}>
+        {/* The studio's own news comes first: whoever lands here should meet
+            what is happening now before the works themselves. */}
+        {newsLoading ? (
+          <section className={`${styles.section} ${styles.sectionLead}`}>
+            <NewsBannerSkeleton />
+          </section>
+        ) : newsItems.length ? (
+          <Reveal
+            as="section"
+            className={`${styles.section} ${styles.sectionLead}`}
+          >
+            <NewsBanner items={newsItems} />
+          </Reveal>
+        ) : null}
+
         <div className={styles.marquee} aria-hidden="true">
           <div className={styles.marqueeTrack}>
             {marqueeContent}
@@ -476,18 +474,6 @@ export default function HomePage() {
         </div>
 
         <PaintingShowcase paintings={showcase} />
-
-        <HomeAbout available={paintingsResponse?.total ?? null} />
-
-        {newsLoading ? (
-          <section className={styles.section}>
-            <NewsBannerSkeleton />
-          </section>
-        ) : latestNews ? (
-          <Reveal as="section" className={styles.section}>
-            <NewsBanner news={latestNews} />
-          </Reveal>
-        ) : null}
 
         {giveawayLoading ? (
           <section className={styles.section}>
@@ -501,15 +487,10 @@ export default function HomePage() {
 
         <HomeHowToBuy />
 
+        <HomeReviews />
+
         <HomeClosing />
       </div>
-
-      {/* The corridor — the featured works hung along a scroll-driven walk —
-          is shelved for now; PaintingShowcase above shows them instead. The
-          component and its footage are left in place to bring back:
-
-          <CorridorSection paintings={featured.slice(0, FEATURED_LIMIT)} />
-      */}
     </div>
   );
 }

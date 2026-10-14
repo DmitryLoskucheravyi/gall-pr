@@ -1,0 +1,174 @@
+.slider {
+  position: relative;
+}
+
+// A native scroller with its bar hidden: the arrows and dots below are the
+// affordance now. The vertical padding is room for the cards' hover lift and
+// shadow, which a scroll container would otherwise clip.
+.track {
+  display: flex;
+  gap: $spacing-lg;
+  padding-block: $spacing-xs $spacing-md;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  // The fades only where there is more to see in that direction — see
+  // data-prev / data-next on .slider.
+  --fade-l: 0px;
+  --fade-r: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)),
+    transparent
+  );
+  transition:
+    --fade-l $duration-fast $ease-out,
+    --fade-r $duration-fast $ease-out;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  > * {
+    scroll-snap-align: start;
+  }
+
+  // On a phone a card comes to rest in the middle of the row, with room at
+  // either end so the first and last can get there too.
+  @media (max-width: 640px) {
+    // Inside the scroller, so it scrolls away with the cards rather than
+    // narrowing the row; no negative margin, which would push the page wide.
+    padding-inline: 9vw;
+
+    > * {
+      scroll-snap-align: center;
+      scroll-snap-stop: always;
+    }
+  }
+
+  // Free movement while a mouse drags it; snapping returns on release and
+  // settles the row on the nearest card.
+  &[data-dragging] {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    scroll-behavior: auto;
+  }
+}
+
+// Registered so the fade width can transition rather than jump.
+@property --fade-l {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+@property --fade-r {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+.slider[data-bleed] {
+  // So the track can measure the gutter in px: 100cqw is this box's width.
+  container-type: inline-size;
+}
+
+.slider[data-bleed] .track {
+  // Out over the page's side margins to the screen edges (the page clips the
+  // overflow), padded back so the first card starts where the text does.
+  // The gutter is spelled out in container units rather than percentages:
+  // in scroll-padding a percentage means the track's own width, which made
+  // the snap pull the first card back to the screen edge.
+  --gutter: calc((100vw - 100cqw) / 2);
+
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+  scroll-padding-inline: var(--gutter);
+  // No fade: the cards go off the edge as they are.
+  mask-image: none;
+}
+
+.slider[data-prev] .track {
+  --fade-l: 48px;
+}
+
+.slider[data-next] .track {
+  --fade-r: 48px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  margin-top: $spacing-md;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+// Wide hit area, thin mark: the visible dot is the ::before.
+.dot {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  // Buttons don't inherit colour by default; without this a --slider-dot of
+  // currentColor resolves to the browser's button text, black on any band.
+  color: inherit;
+  cursor: pointer;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background-color: var(--slider-dot, var(--color-text-muted));
+    opacity: 0.4;
+    transform: translate(-50%, -50%);
+    transition:
+      width $duration-fast $ease-out,
+      opacity $duration-fast $ease-out,
+      background-color $duration-fast $ease-out;
+  }
+
+  &:hover::before {
+    opacity: 0.75;
+  }
+
+  &[data-current]::before {
+    width: 18px;
+    opacity: 1;
+    background-color: var(--slider-dot-active, var(--color-primary));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+    border-radius: 999px;
+  }
+}
+
+.arrows {
+  display: flex;
+  gap: $spacing-sm;
+  margin-left: auto;
+}

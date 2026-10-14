@@ -1,20 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 
 import type { Painting } from '../types/painting.types';
-import type { NovaPoshtaOption } from '../types/novaPoshta.types';
 import { ordersService } from '../api/orders.api';
 import { useSettings } from '../hooks/queries/useSettings';
 import { useAppSelector } from '../store/hooks';
 import { useLocale } from '../hooks/useLocale';
 import { pickLocale } from '../utils/localizedField';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-import { useNovaPoshtaWarehouses } from '../hooks/queries/useNovaPoshta';
-import NovaPoshtaCityPicker from './ui/NovaPoshtaCityPicker';
-import Select from './ui/Select';
 import { safeExternalUrl } from '../utils/safeUrl';
 import styles from './CommissionModal.module.scss';
 import { apiErrorMessage } from '../utils/apiError';
+import { cdnImage } from '../utils/imageUrl';
 
 const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME as
   | string
@@ -39,6 +36,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
   const { t } = useTranslation('painting');
   const locale = useLocale();
   const title = pickLocale(painting, 'title', locale);
+  const priceLocale = locale === 'en' ? 'en-GB' : 'uk-UA';
   useEscapeKey(onClose, true);
 
   const user = useAppSelector((state) => state.auth.user);
@@ -50,14 +48,11 @@ export default function CommissionModal({ painting, onClose }: Props) {
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [contactHandle, setContactHandle] = useState('');
-  // What the work cost the first time, which is both the starting figure and
-  // the floor. A repeat is at least as much work as the original, so it can
-  // go up but never down.
+  // What the work cost the first time — shown as the starting point. The form
+  // asks no price and no delivery: the artist agrees both with the customer
+  // directly, so all it collects is how to reach them.
   const originalPrice = Number(painting.price);
-  const [amount, setAmount] = useState(String(originalPrice));
 
-  const [city, setCity] = useState<NovaPoshtaOption | null>(null);
-  const [warehouseRef, setWarehouseRef] = useState('');
   const [comment, setComment] = useState('');
 
   const [sending, setSending] = useState(false);
@@ -85,12 +80,7 @@ export default function CommissionModal({ painting, onClose }: Props) {
     };
   }, []);
 
-  const { data: warehouses = [] } = useNovaPoshtaWarehouses(city?.ref ?? null);
 
-  // Blocks the submit and shows why, rather than letting the request go and
-  // come back rejected — the server enforces the same floor, but finding out
-  // after a round trip is a worse way to learn it.
-  const belowOriginal = amount.trim() !== '' && Number(amount) < originalPrice;
 
   // Straight to the bot, carrying which painting this is about, so neither
   // side has to explain it: one tap on Start and the artist gets a message
@@ -108,8 +98,6 @@ export default function CommissionModal({ painting, onClose }: Props) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (belowOriginal) return;
-
     setError(null);
     setSending(true);
 
@@ -120,15 +108,6 @@ export default function CommissionModal({ painting, onClose }: Props) {
         email: email.trim(),
         phone: phone.trim(),
         contactHandle: contactHandle.trim() || undefined,
-        offeredPrice: Number(amount) || originalPrice,
-        // Sent as a pair or not at all — a city without a branch is not an
-        // address, and the server resolves the names from these refs.
-        ...(city && warehouseRef
-          ? {
-              novaPoshtaCityRef: city.ref,
-              novaPoshtaWarehouseRef: warehouseRef,
-            }
-          : {}),
         comment: comment.trim() || undefined,
       });
 
@@ -139,6 +118,26 @@ export default function CommissionModal({ painting, onClose }: Props) {
       setSending(false);
     }
   };
+
+  // Instagram / Telegram: in the left column on a desktop, under the form on
+  // a phone — one block, placed by the stylesheet.
+  const directLinks = (placement: string) => (
+    <div className={`${styles.alternative} ${placement}`}>
+      <span className={styles.or}>{t('commission.or')}</span>
+      <div className={styles.links}>
+        {instagramUrl && (
+          <a href={instagramUrl} target="_blank" rel="noreferrer" className={styles.link}>
+            {t('commission.instagram')}
+          </a>
+        )}
+        {telegramUrl && (
+          <a href={telegramUrl} target="_blank" rel="noreferrer" className={styles.link}>
+            {t('commission.telegram')}
+          </a>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -172,155 +171,101 @@ export default function CommissionModal({ painting, onClose }: Props) {
             </button>
           </div>
         ) : (
-          <>
-            <h2 className={styles.title}>{t('commission.title')}</h2>
-            <p className={styles.lead}>{t('commission.lead', { title })}</p>
+          // Two columns on a desktop: the work and how this goes on the left,
+          // the form on the right in labelled sections. One column on a phone,
+          // where the work shrinks to a line at the top of the sheet.
+          <div className={styles.layout}>
+            <aside className={styles.aside}>
+              <figure className={styles.work}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cdnImage(painting.cardImage, 600)} alt="" />
+              </figure>
 
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <input
-                required
-                placeholder={t('commission.namePlaceholder')}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={styles.input}
-              />
-              <input
-                required
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={styles.input}
-              />
-              <input
-                required
-                type="tel"
-                placeholder={t('commission.phonePlaceholder')}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={styles.input}
-              />
-
-              {/* One field for both networks. Asking for a Telegram and an
-                  Instagram separately makes someone fill in a box they don't
-                  use, and which one this is is plain from what they type. */}
-              <input
-                placeholder={t('commission.contactPlaceholder')}
-                value={contactHandle}
-                onChange={(e) => setContactHandle(e.target.value)}
-                className={styles.input}
-              />
-
-              <span className={styles.optional}>
-                {t('commission.amountLabel')}
-              </span>
-
-              <div className={styles.amountRow}>
-                <input
-                  required
-                  type="number"
-                  inputMode="numeric"
-                  min={originalPrice}
-                  step={100}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className={`${styles.input} ${
-                    belowOriginal ? styles.inputInvalid : ''
-                  }`}
-                />
-                <span className={styles.currency}>₴</span>
+              <div className={styles.workMeta}>
+                <span className={styles.kicker}>{t('commission.kicker')}</span>
+                <h2 className={styles.title}>{t('commission.title')}</h2>
+                <p className={styles.workTitle}>«{title}»</p>
+                <p className={styles.floor}>
+                  {t('commission.floor', { price: originalPrice.toLocaleString(priceLocale) })}
+                </p>
               </div>
 
-              <p className={styles.amountHint}>
-                {belowOriginal ? (
-                  <span className={styles.error}>
-                    {t('commission.amountBelowOriginal', {
-                      price: originalPrice.toLocaleString('uk-UA'),
-                    })}
-                  </span>
-                ) : (
-                  <Trans
-                    t={t}
-                    i18nKey="commission.amountHint"
-                    values={{ price: originalPrice.toLocaleString('uk-UA') }}
-                    components={{ strong: <strong /> }}
+              <ol className={styles.howto}>
+                {(['one', 'two', 'three'] as const).map((step, index) => (
+                  <li key={step}>
+                    <span className={styles.howtoNumber}>{String(index + 1).padStart(2, '0')}</span>
+                    {t(`commission.steps.${step}`)}
+                  </li>
+                ))}
+              </ol>
+
+              {hasDirectContact && directLinks(styles.altDesktop)}
+            </aside>
+
+            <form onSubmit={handleSubmit} className={styles.form}>
+              <p className={styles.lead}>{t('commission.lead', { title })}</p>
+
+              <fieldset className={styles.section}>
+                <legend className={styles.legend}>{t('commission.contactsLabel')}</legend>
+                <div className={styles.grid}>
+                  <input
+                    required
+                    placeholder={t('commission.namePlaceholder')}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={styles.input}
+                    autoComplete="name"
                   />
-                )}
-              </p>
+                  <input
+                    required
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={styles.input}
+                    autoComplete="email"
+                  />
+                  <input
+                    required
+                    type="tel"
+                    placeholder={t('commission.phonePlaceholder')}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={styles.input}
+                    autoComplete="tel"
+                  />
+                  {/* One field for both networks: which one it is is plain
+                      from what they type. */}
+                  <input
+                    placeholder={t('commission.contactPlaceholder')}
+                    value={contactHandle}
+                    onChange={(e) => setContactHandle(e.target.value)}
+                    className={styles.input}
+                  />
+                </div>
+              </fieldset>
 
-              <span className={styles.optional}>
-                {t('commission.deliveryLabel')}
-              </span>
-
-              <NovaPoshtaCityPicker
-                value={city}
-                onChange={(next) => {
-                  setCity(next);
-                  setWarehouseRef('');
-                }}
-              />
-
-              {city && (
-                <Select
-                  value={warehouseRef}
-                  onChange={setWarehouseRef}
-                  options={[
-                    { value: '', label: t('commission.chooseWarehouse') },
-                    ...warehouses.map((warehouse) => ({
-                      value: warehouse.ref,
-                      label: warehouse.name,
-                    })),
-                  ]}
+              <fieldset className={styles.section}>
+                <legend className={styles.legend}>{t('commission.commentLabel')}</legend>
+                <textarea
+                  placeholder={t('commission.commentPlaceholder')}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={3}
+                  className={styles.textarea}
                 />
-              )}
-
-              <textarea
-                placeholder={t('commission.commentPlaceholder')}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={3}
-                className={styles.textarea}
-              />
+              </fieldset>
 
               {error && <p className={styles.error}>{error}</p>}
 
-              <button
-                type="submit"
-                disabled={sending || belowOriginal}
-                className={styles.submit}
-              >
+              <button type="submit" disabled={sending} className={styles.submit}>
                 {sending ? t('commission.sending') : t('commission.submit')}
               </button>
-            </form>
 
-            {hasDirectContact && (
-              <div className={styles.alternative}>
-                <span className={styles.or}>{t('commission.or')}</span>
-                <div className={styles.links}>
-                  {instagramUrl && (
-                    <a
-                      href={instagramUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.link}
-                    >
-                      {t('commission.instagram')}
-                    </a>
-                  )}
-                  {telegramUrl && (
-                    <a
-                      href={telegramUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.link}
-                    >
-                      {t('commission.telegram')}
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
+              {/* On a phone the way out comes after the form, not before it. */}
+              {hasDirectContact && directLinks(styles.altMobile)}
+            </form>
+          </div>
         )}
       </div>
     </div>

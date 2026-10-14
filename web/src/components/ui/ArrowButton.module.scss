@@ -1,0 +1,163 @@
+// See ArrowButton.tsx. Everything a context may want to change is a custom
+// property read with a page-palette fallback — never declared here, so it can
+// be set on the button itself or on any ancestor (a dark band, a photo).
+.arrow {
+  --arrow-ease: cubic-bezier(0.55, 0, 0.25, 1);
+
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--arrow-size, 40px) * 1.7);
+  height: var(--arrow-size, 40px);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--arrow-fill, transparent);
+  color: var(--arrow-fg, var(--color-text));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.4s ease,
+    background-color 0.4s ease,
+    opacity 0.3s ease;
+
+  &:focus-visible {
+    outline: 1px solid var(--arrow-accent, var(--color-primary));
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+}
+
+// ---------- the ink ----------
+
+.ink {
+  width: 86%;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.6s var(--arrow-ease);
+}
+
+// Drawn pointing right; `prev` is the same drawing mirrored, so the stem
+// still grows from its root and the head is still the last thing inked.
+.arrow[data-direction='prev'] .ink {
+  scale: -1 1;
+}
+
+// Every stroke runs 0..1 along its length (pathLength="1"), so one dash of
+// length 1 drawn from an offset of 1 down to 0 is the pen going over it.
+.stem,
+.twig,
+.sprig {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.stem {
+  stroke-width: 1.15;
+}
+
+.twig {
+  stroke-width: 1.05;
+}
+
+.sprig {
+  stroke-width: 0.85;
+  opacity: 0.85;
+}
+
+// First appearance: inked in once, root to tip.
+@media (prefers-reduced-motion: no-preference) {
+  .stem {
+    animation: ink 0.9s var(--arrow-ease) both;
+  }
+
+  .twig {
+    animation: ink 0.5s var(--arrow-ease) 0.6s both;
+  }
+
+  .twigLow {
+    animation-delay: 0.68s;
+  }
+
+  .sprig {
+    animation: ink 0.5s var(--arrow-ease) 0.45s both;
+  }
+
+  // Hover: drawn again from the root, a touch quicker, while the line
+  // reaches a few pixels on in the direction it points. Named apart from
+  // `ink` so the browser restarts it rather than treating it as the same
+  // animation already finished.
+  @media (hover: hover) {
+    .arrow:hover:not(:disabled) {
+      color: var(--arrow-accent, var(--color-primary));
+      background-color: var(--arrow-fill-hover, var(--arrow-fill, transparent));
+
+      .ink {
+        transform: translateX(5px);
+      }
+
+      .stem {
+        animation: reink 0.65s var(--arrow-ease) both;
+      }
+
+      .twig {
+        animation: reink 0.4s var(--arrow-ease) 0.42s both;
+      }
+
+      .twigLow {
+        animation-delay: 0.5s;
+      }
+
+      .sprig {
+        animation: reink 0.4s var(--arrow-ease) 0.3s both;
+      }
+    }
+
+    .arrow[data-direction='prev']:hover:not(:disabled) .ink {
+      transform: translateX(-5px);
+    }
+  }
+
+  .arrow:active:not(:disabled) .ink {
+    transform: translateX(8px);
+    transition-duration: 0.1s;
+  }
+
+  .arrow[data-direction='prev']:active:not(:disabled) .ink {
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes ink {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes reink {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+// Without motion it still answers the pointer — in colour only.
+@media (prefers-reduced-motion: reduce) {
+  .arrow:hover:not(:disabled) {
+    color: var(--arrow-accent, var(--color-primary));
+  }
+}

@@ -1,0 +1,262 @@
+// ---------- trend ----------
+
+.trend {
+  color: var(--color-primary);
+}
+
+.legend {
+  display: flex;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-md;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+}
+
+.legendLine::before {
+  content: '';
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--color-primary);
+}
+
+.legendBars::before {
+  content: '';
+  width: 8px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: var(--color-border-strong);
+}
+
+.trendFrame {
+  position: relative;
+}
+
+.trendSvg {
+  display: block;
+  width: 100%;
+  height: 260px;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.grid {
+  stroke: var(--color-border);
+  stroke-dasharray: 2 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.axis {
+  stroke: var(--color-border-strong);
+  vector-effect: non-scaling-stroke;
+}
+
+.bar {
+  fill: var(--color-border-strong);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+
+  &[data-active] {
+    opacity: 1;
+    fill: var(--color-accent);
+  }
+}
+
+.area {
+  stroke: none;
+}
+
+// Inked in when the chart arrives, like every other line on the site.
+.line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+
+  // The dash exists only while the line is being inked: in the keyframes,
+  // never in the resting style. Chrome measures pathLength against the
+  // screen-space stroke that non-scaling-stroke produces, so a dash left in
+  // place cut long lines off part-way.
+  @media (prefers-reduced-motion: no-preference) {
+    animation: chart-ink 1.2s cubic-bezier(0.55, 0, 0.25, 1) backwards;
+  }
+}
+
+@keyframes chart-ink {
+  from {
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 1;
+  }
+  99.9% {
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dasharray: none;
+  }
+}
+
+.cursor {
+  stroke: var(--color-text-muted);
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.dot {
+  fill: var(--color-surface);
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-sm;
+  background-color: var(--color-surface);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 10%);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  white-space: nowrap;
+
+  &[data-side='right'] {
+    transform: translateX(12px);
+  }
+
+  &[data-side='left'] {
+    transform: translateX(calc(-100% - 12px));
+  }
+
+  strong {
+    color: var(--color-text);
+    font-weight: normal;
+  }
+}
+
+.tooltipLabel {
+  margin-bottom: 2px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.ticks {
+  position: relative;
+  height: 18px;
+  margin-top: $spacing-xs;
+  font-size: 11px;
+  color: var(--color-text-muted);
+
+  span {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+}
+
+// ---------- sparkline ----------
+
+.spark {
+  display: block;
+  width: 100%;
+  height: 32px;
+  overflow: visible;
+
+  path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+
+    @media (prefers-reduced-motion: no-preference) {
+      animation: chart-ink 1s cubic-bezier(0.55, 0, 0.25, 1) 0.2s backwards;
+    }
+  }
+}
+
+// ---------- breakdown ----------
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breakdownRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.breakdownHead {
+  display: flex;
+  justify-content: space-between;
+  gap: $spacing-md;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.breakdownValue {
+  font-variant-numeric: tabular-nums;
+
+  em {
+    margin-left: $spacing-sm;
+    font-style: normal;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+}
+
+.track {
+  position: relative;
+  height: 4px;
+  border-radius: 4px;
+  background-color: var(--color-background-alt);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background-color: var(--color-primary);
+  transform-origin: left;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: grow 0.9s cubic-bezier(0.55, 0, 0.25, 1) both;
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.breakdownNote {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

@@ -469,6 +469,11 @@ export class MailService {
         ? `${titles[0]} тепер ваша.`
         : `Тепер ваші: ${titles.join(', ')}.`;
 
+    // Straight to the review form. The homepage rather than /orders: most
+    // orders are a guest's, and /orders is behind a login — the review prompt
+    // opens the form for this order on any page that carries ?review=<id>.
+    const reviewLink = `${(process.env.WEB_URL ?? '').replace(/\/$/, '')}/ua?review=${order.id}`;
+
     const care = [
       'подалі від прямого сонця — воно з часом змінює кольори;',
       'не над батареєю і не у вологій кімнаті;',
@@ -489,7 +494,17 @@ export class MailService {
       <p style="font-size:15px;line-height:1.7;color:${INK};">
         Якщо надішлете фото роботи на стіні — нам буде дуже приємно побачити. І якщо
         виникне будь-яке питання про картину, просто відповідайте на цей лист.
-      </p>`;
+      </p>
+      <div style="margin:28px 0 8px;padding:20px;border:1px solid #e4e0d6;text-align:center;">
+        <div style="font-size:15px;line-height:1.7;color:${INK};">
+          Нам дуже важливо знати, як вам робота наживо. Кілька слів і оцінка від
+          однієї до пʼяти зірок допоможуть іншим наважитися на свою картину.
+        </div>
+        <a href="${escapeHtml(reviewLink)}"
+           style="display:inline-block;margin-top:16px;padding:12px 26px;background:${ACCENT};color:#ffffff;text-decoration:none;font-size:14px;letter-spacing:.06em;">
+          Залишити відгук
+        </a>
+      </div>`;
 
     const text = [
       heading,
@@ -500,6 +515,9 @@ export class MailService {
       ...care.map((line) => `• ${line}`),
       '',
       'Надішлете фото роботи на стіні — нам буде дуже приємно побачити. Питання про картину — просто відповідайте на цей лист.',
+      '',
+      'Нам дуже важливо знати, як вам робота наживо. Кілька слів і оцінка від однієї до пʼяти зірок допоможуть іншим наважитися на свою картину:',
+      reviewLink,
     ].join('\n');
 
     await this.send(

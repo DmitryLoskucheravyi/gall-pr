@@ -1,0 +1,42 @@
+#!/bin/sh
+# Lints what is actually being committed, and nothing else.
+#
+# Deliberately fast: a hook that takes a minute is a hook people start
+# committing around with --no-verify, and then it guards nothing. Typechecking
+# and the test suite live in .githooks/pre-push and in CI, where the wait is
+# somebody else's.
+#
+# Errors block the commit; warnings are printed and let it through. The tree
+# carries eighteen inherited warnings from the move off the SPA (see section
+# 4.4 of docs/outstanding.md), and a hook that refused every commit until
+# those were dealt with is a hook that gets turned off on day one. Turn this
+# strict — add --deny-warnings below — once that list is empty.
+#
+# Enable once per clone:
+#
+#   git config core.hooksPath .githooks
+#
+set -e
+
+staged() {
+  git diff --cached --name-only --diff-filter=ACMR -- "$@"
+}
+
+# :(glob) so that ** means "any depth, including none". Without it git's
+# plain pathspecs need a slash after the **, and files at the top of src —
+# backend/src/main.ts, web/src/instrumentation-client.ts — were never linted.
+web_files=$(staged ':(glob)web/src/**/*.ts' ':(glob)web/src/**/*.tsx' ':(glob)web/*.ts')
+api_files=$(staged ':(glob)backend/src/**/*.ts' ':(glob)backend/test/**/*.ts')
+
+if [ -n "$web_files" ]; then
+  echo "pre-commit: oxlint (web)"
+  # Paths come through prefixed with web/, and oxlint runs from inside it.
+  (cd web && echo "$web_files" | sed 's|^web/||' | xargs npx --no-install oxlint --)
+fi
+
+if [ -n "$api_files" ]; then
+  echo "pre-commit: eslint (backend)"
+  (cd backend && echo "$api_files" | sed 's|^backend/||' | xargs npx --no-install eslint --max-warnings 0 --)
+fi
+
+exit 0

@@ -10,7 +10,9 @@ $room-accent: #c9b98f;
 .showcase {
   position: relative;
   z-index: 1;
-  margin-top: $spacing-huge;
+  // Flush against the marquee above: the room starts where the quote strip
+  // ends, rather than across a band of page background.
+  margin-top: 0;
   // Full bleed out of the page container — see .pageContent in
   // HomePage.module.scss for why 50% − 50vw is exactly the gap.
   margin-inline: calc(50% - 50vw);
@@ -151,45 +153,10 @@ $room-accent: #c9b98f;
 }
 
 .arrow {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid $room-line;
-  background: transparent;
-  color: $room-text;
-  cursor: pointer;
-  transition:
-    border-color $duration-fast $ease-out,
-    background-color $duration-fast $ease-out;
-
-  svg {
-    width: 20px;
-    height: 20px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.6;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  &:hover:not(:disabled) {
-    border-color: $room-accent;
-    background: rgba(201, 185, 143, 0.1);
-  }
-
-  &:disabled {
-    opacity: 0.3;
-    cursor: default;
-  }
-
-  &:focus-visible {
-    outline: 2px solid $room-accent;
-    outline-offset: 3px;
-  }
+  // ArrowButton in the room's palette: pale ink, re-inked in brass on hover.
+  --arrow-size: 46px;
+  --arrow-fg: #{$room-text};
+  --arrow-accent: #{$room-accent};
 }
 
 .footer {
@@ -199,37 +166,57 @@ $room-accent: #c9b98f;
 }
 
 .allLink {
-  padding: 12px 28px;
-  border: 1px solid $room-line;
-  border-radius: $radius-pill;
+  // Matches .ctaButton in HomePage.module.scss, in the room's colours.
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-width: min(420px, 100%);
+  justify-content: center;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $room-line;
+  font-family: $font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   color: $room-text;
   text-decoration: none;
-  letter-spacing: 0.04em;
-  transition:
-    border-color $duration-fast $ease-out,
-    color $duration-fast $ease-out;
+  transition: opacity $duration-fast ease;
+
+  svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+  }
 
   &:hover {
-    border-color: $room-accent;
-    color: $room-accent;
+    opacity: 0.7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $room-accent;
+    outline-offset: 4px;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    font-size: 14px;
   }
 }
 
 // ---------- fallback: no WebGL ----------
 
 .strip {
-  display: flex;
-  gap: $spacing-lg;
-  margin: $spacing-xl 0 0;
-  padding: 0 0 $spacing-md;
-  list-style: none;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  // ui/Slider in the room's palette.
+  --arrow-fg: #{$room-text};
+  --arrow-accent: #{$room-accent};
+  --slider-dot: #{$room-text};
+  --slider-dot-active: #{$room-accent};
+
+  margin-top: $spacing-xl;
 }
 
 .stripItem {
   flex: 0 0 min(70vw, 280px);
-  scroll-snap-align: center;
 }
 
 .stripLink {

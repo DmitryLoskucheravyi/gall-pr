@@ -1,6 +1,4 @@
 {
-  "taglineWithAuthor": "A curated selection of original paintings by {{author}}. Every work is one of a kind.",
-  "taglineNoAuthor": "A curated selection of original paintings by Ukrainian artists. Every work is one of a kind.",
   "columns": {
     "navigation": "Navigation",
     "account": "Account",
@@ -18,6 +16,9 @@
     "telegramBot": "Telegram bot",
     "login": "Log in",
     "register": "Sign up",
+    "delivery": "Delivery and payment",
+    "returns": "Returns and exchange",
+    "offer": "Public offer",
     "privacy": "Privacy and cookies",
     "cookieSettings": "Cookie settings"
   },

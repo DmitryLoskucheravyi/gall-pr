@@ -15,8 +15,8 @@
 // site, on every frame the value changes — and where properties are defined
 // in terms of each other the substitution nests, so a chain four deep is
 // re-parsed as one expression four levels long by every element under it.
-// The corridor is exactly that shape, and on a phone the re-parsing, rather
-// than any of the blurring, was most of the frame.
+// The hero's stage is exactly that shape, and on a phone the re-parsing,
+// rather than any of the blurring, was most of the frame.
 //
 // Registering them changes nothing about what is drawn. The initial value of
 // each is the same 0 the fallbacks throughout already spell, so an element
@@ -223,6 +223,16 @@ img {
     scrollbar-width: thin;
     scrollbar-color: var(--color-border-strong) transparent;
   }
+}
+
+// Set on <html> for the moment of a theme switch (see Header.tsx): the new
+// palette lands in one step instead of every element fading to it on its own
+// clock, which is what made the page flash after the reveal.
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 // Theme toggle: expanding-circle reveal from the toggle button, driven by

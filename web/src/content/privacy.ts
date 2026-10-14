@@ -1,4 +1,10 @@
-import type { Locale } from '../utils/locale';
+import {
+  OPERATOR,
+  list,
+  p,
+  type LegalContent,
+  type LegalDocument,
+} from './legal';
 
 // The privacy and cookie statement, in both languages.
 //
@@ -7,40 +13,13 @@ import type { Locale } from '../utils/locale';
 // in step with what the site actually stores (see lib/consent.ts and the
 // storage keys it lists). Change a cookie, change this table.
 //
-// The operator's details are placeholders, the same ones the public offer
-// contract still carries. Fill them in here once — every mention on the page
-// reads from this object.
-export const OPERATOR = {
-  name: { ua: '[ПІБ / назва ФОП]', en: '[Full name / sole proprietor]' },
-  taxId: '[ІПН / РНОКПП]',
-  address: { ua: '[юридична адреса]', en: '[registered address]' },
-  email: '[email]',
-};
+// The operator's details, the block types and the page's shape are shared
+// with the other three legal pages — see ./legal.
+export { OPERATOR };
 
-export const PRIVACY_UPDATED = '2026-10-01';
+export const PRIVACY_UPDATED = '2026-10-13';
 
-export type PrivacyBlock =
-  | { kind: 'p'; text: string }
-  | { kind: 'list'; items: string[] }
-  | { kind: 'table'; head: string[]; rows: string[][] }
-  | { kind: 'cookieSettings' };
-
-export type PrivacySection = { id: string; title: string; blocks: PrivacyBlock[] };
-
-export type PrivacyContent = {
-  title: string;
-  description: string;
-  updatedLabel: string;
-  intro: string;
-  tocTitle: string;
-  cookieSettingsButton: string;
-  sections: PrivacySection[];
-};
-
-const p = (text: string): PrivacyBlock => ({ kind: 'p', text });
-const list = (...items: string[]): PrivacyBlock => ({ kind: 'list', items });
-
-const ua: PrivacyContent = {
+const ua: LegalContent = {
   title: 'Політика конфіденційності та cookie',
   description:
     'Які персональні дані збирає галерея Viktorumm, навіщо, кому їх передає, які cookie використовує і як керувати своїми даними.',
@@ -102,6 +81,8 @@ const ua: PrivacyContent = {
           'Cloudinary — зберігання зображень, зокрема завантажених підтверджень оплати.',
           'Поштовий сервіс — надсилання листів про замовлення та відновлення пароля.',
           'Telegram — сповіщення та підтримка, якщо ви підключили бота.',
+          'Sentry — звіти про технічні помилки на сайті: адреса сторінки, браузер, технічний опис збою та IP-адреса. Паролі, токени входу й платіжні дані туди не потрапляють.',
+          'Plausible Analytics — знеособлена статистика відвідувань, лише якщо ви погодилися на аналітику. Не ставить cookie і не зберігає IP-адресу.',
         ),
         p(
           'Деякі з цих сервісів розташовані за межами України. Ми передаємо їм дані лише за умови належного рівня захисту. Також ми можемо розкрити дані на законну вимогу державних органів.',
@@ -129,6 +110,7 @@ const ua: PrivacyContent = {
         ),
         {
           kind: 'table',
+          code: true,
           head: ['Назва', 'Категорія', 'Для чого', 'Строк'],
           rows: [
             ['gall_refresh', 'Необхідні · cookie', 'Тримає вас у системі. Недоступна скриптам сторінки (httpOnly).', '30 днів'],
@@ -136,10 +118,11 @@ const ua: PrivacyContent = {
             ['gall_cookie_consent', 'Необхідні · localStorage', 'Запам’ятовує ваш вибір щодо cookie.', 'Доки ви не очистите браузер'],
             ['gall_theme', 'Необхідні · localStorage', 'Обрана вами тема оформлення — світла чи темна.', 'Доки ви не очистите браузер'],
             ['support-widget-dock', 'Необхідні · localStorage', 'Куди ви перетягнули кнопку підтримки.', 'Доки ви не очистите браузер'],
+            ['plausible_ignore', 'Необхідні · localStorage', 'З’являється, лише якщо ви відкликали згоду на аналітику: зупиняє лічильник без перезавантаження сторінки.', 'До наступної згоди на аналітику'],
           ],
         },
         p(
-          'Необхідні cookie вимкнути не можна — без них сайт не працює. Аналітичних і рекламних cookie на сайті зараз немає. Якщо ми їх додамо, вони запрацюють лише після вашої згоди, а цю таблицю буде оновлено.',
+          'Необхідні cookie вимкнути не можна — без них сайт не працює. Аналітичних і рекламних cookie на сайті немає: лічильник відвідувань (Plausible) cookie не ставить і вмикається лише після вашої згоди на аналітику. Якщо ми додамо щось інше, воно так само запрацює лише після вашої згоди, а цю таблицю буде оновлено.',
         ),
         p(
           'Змінити свій вибір можна будь-коли — кнопкою нижче або посиланням «Налаштування cookie» внизу кожної сторінки. Також cookie можна видалити в налаштуваннях браузера.',
@@ -197,7 +180,7 @@ const ua: PrivacyContent = {
   ],
 };
 
-const en: PrivacyContent = {
+const en: LegalContent = {
   title: 'Privacy and cookie statement',
   description:
     'What personal data the Viktorumm gallery collects, why, who it is shared with, which cookies the site uses and how to manage your data.',
@@ -259,6 +242,8 @@ const en: PrivacyContent = {
           'Cloudinary — image storage, including uploaded proofs of payment.',
           'An email service — order emails and password resets.',
           'Telegram — notifications and support, if you connect the bot.',
+          'Sentry — reports of technical errors on the site: the page address, browser, a technical description of the failure and the IP address. Passwords, sign-in tokens and payment details are not sent.',
+          'Plausible Analytics — anonymous visit statistics, only if you agreed to analytics. It sets no cookies and does not store your IP address.',
         ),
         p(
           'Some of these services are located outside Ukraine. We share data with them only where it is adequately protected. We may also disclose data when lawfully required by public authorities.',
@@ -286,6 +271,7 @@ const en: PrivacyContent = {
         ),
         {
           kind: 'table',
+          code: true,
           head: ['Name', 'Category', 'Purpose', 'Duration'],
           rows: [
             ['gall_refresh', 'Necessary · cookie', 'Keeps you signed in. Not readable by scripts on the page (httpOnly).', '30 days'],
@@ -293,10 +279,11 @@ const en: PrivacyContent = {
             ['gall_cookie_consent', 'Necessary · localStorage', 'Remembers your cookie choice.', 'Until you clear your browser'],
             ['gall_theme', 'Necessary · localStorage', 'The theme you chose — light or dark.', 'Until you clear your browser'],
             ['support-widget-dock', 'Necessary · localStorage', 'Where you dragged the support button.', 'Until you clear your browser'],
+            ['plausible_ignore', 'Necessary · localStorage', 'Only appears if you withdrew analytics consent: stops the counter without a page reload.', 'Until you next agree to analytics'],
           ],
         },
         p(
-          'Necessary cookies cannot be switched off — the site does not work without them. There are no analytics or advertising cookies on the site at the moment. If we add any, they will only run after you agree, and this table will be updated.',
+          'Necessary cookies cannot be switched off — the site does not work without them. There are no analytics or advertising cookies on the site: the visit counter (Plausible) sets no cookies and only runs once you agree to analytics. If we add anything else, it too will only run after you agree, and this table will be updated.',
         ),
         p(
           'You can change your choice at any time with the button below or the “Cookie settings” link at the bottom of every page. You can also delete cookies in your browser settings.',
@@ -354,4 +341,4 @@ const en: PrivacyContent = {
   ],
 };
 
-export const PRIVACY: Record<Locale, PrivacyContent> = { ua, en };
+export const PRIVACY: LegalDocument = { ua, en };

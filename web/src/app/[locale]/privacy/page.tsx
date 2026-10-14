@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
-import PrivacyPage from '@/views/PrivacyPage';
-import { PRIVACY } from '@/content/privacy';
+import LegalPage from '@/views/LegalPage';
+import { PRIVACY, PRIVACY_UPDATED } from '@/content/privacy';
 import { pageMetadata } from '@/lib/metadata';
 import { DEFAULT_LOCALE, isLocale } from '@/utils/locale';
 
@@ -32,5 +32,11 @@ export default async function Page({
 }) {
   const { locale: raw } = await params;
 
-  return <PrivacyPage locale={isLocale(raw) ? raw : DEFAULT_LOCALE} />;
+  return (
+    <LegalPage
+      document={PRIVACY}
+      locale={isLocale(raw) ? raw : DEFAULT_LOCALE}
+      updatedAt={PRIVACY_UPDATED}
+    />
+  );
 }

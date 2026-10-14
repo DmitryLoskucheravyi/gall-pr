@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 
-import PaintingCard from './PaintingCard';
+import SeriesWorkCard from './SeriesWorkCard';
 import PaintingCardSkeleton from './PaintingCardSkeleton';
+import Slider from './ui/Slider';
 import { useSeriesShowcase } from '../hooks/queries/useSeries';
 import { useLocale } from '../hooks/useLocale';
 import { pickLocale } from '../utils/localizedField';
@@ -19,7 +20,7 @@ type Props = {
 // works in it. Not a grid of covers — the point is to see the paintings
 // themselves grouped by the body of work they came from.
 //
-// Each row scrolls horizontally rather than wrapping, so a long series stays
+// Each row is a slider rather than a wrapping grid, so a long series stays
 // one series instead of becoming a wall that buries the next name.
 export default function SeriesShowcase({
   isAdmin,
@@ -37,7 +38,7 @@ export default function SeriesShowcase({
         {Array.from({ length: 2 }).map((_, index) => (
           <section key={index} className={styles.series}>
             <div className={styles.headingSkeleton} />
-            <div className={styles.row}>
+            <div className={styles.skeletonRow}>
               {Array.from({ length: 4 }).map((__, cardIndex) => (
                 <div key={cardIndex} className={styles.cell}>
                   <PaintingCardSkeleton />
@@ -76,10 +77,10 @@ export default function SeriesShowcase({
 
             {description && <p className={styles.description}>{description}</p>}
 
-            <div className={styles.row}>
+            <Slider className={styles.row} label={name} bleed>
               {entry.paintings.map((painting) => (
-                <div key={painting.id} className={styles.cell}>
-                  <PaintingCard
+                <div key={painting.id} className={styles.workCell}>
+                  <SeriesWorkCard
                     painting={painting}
                     isAdmin={isAdmin}
                     onBuy={() => onBuy(painting)}
@@ -96,7 +97,7 @@ export default function SeriesShowcase({
                   {t('series.more', { count: hidden })}
                 </div>
               )}
-            </div>
+            </Slider>
           </section>
         );
       })}

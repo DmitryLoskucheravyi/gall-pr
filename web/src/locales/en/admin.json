@@ -209,7 +209,8 @@
         "title": "Delete this giveaway?",
         "message": "“{{title}}” will be deleted.",
         "confirmLabel": "Delete"
-      }
+      },
+      "deadlinePlaceholder": "Giveaway deadline"
     },
     "news": {
       "imageLabel": "Image (optional)",
@@ -231,7 +232,14 @@
         "title": "Delete this news item?",
         "message": "“{{title}}” will be deleted.",
         "confirmLabel": "Delete"
-      }
+      },
+      "galleryLabel": "Gallery (optional)",
+      "galleryHint_one": "Shown on the homepage as a slider from 3 photos. Now: {{count}}.",
+      "galleryHint_other": "Shown on the homepage as a slider from 3 photos. Now: {{count}}.",
+      "galleryAdd": "+ Add photos",
+      "galleryRemove": "Remove photo",
+      "galleryMoveLeft": "Move earlier",
+      "galleryMoveRight": "Move later"
     }
   },
   "settingsPage": {
@@ -265,7 +273,8 @@
       "phone": "Phone",
       "telegram": "Telegram link",
       "instagram": "Instagram link",
-      "instagramHint": "Shown in the repeat-order window as a way to message directly. Empty — the line just doesn't appear."
+      "instagramHint": "Shown in the repeat-order window as a way to message directly. Empty — the line just doesn't appear.",
+      "facebook": "Facebook"
     },
     "saving": "Saving…",
     "save": "Save",
@@ -383,6 +392,99 @@
       "title": "Delete the series “{{name}}”?",
       "message": "No paintings will be deleted — {{count}} works simply leave the series and stay in the catalogue.",
       "confirmLabel": "Delete series"
+    }
+  },
+  "analyticsPage": {
+    "title": "Analytics",
+    "lead": "Sales, orders, new customers and what people reach for most — over the chosen period, against the same span before it.",
+    "periodLabel": "Period",
+    "periods": {
+      "7": "7 days",
+      "30": "30 days",
+      "90": "Quarter",
+      "365": "Year"
+    },
+    "error": "Couldn’t load analytics. Try reloading the page.",
+    "vsPrevious": "vs previous period",
+    "new": "new",
+    "empty": "Nothing in this period.",
+    "kpi": {
+      "revenue": "Revenue",
+      "orders": "Orders",
+      "averageOrder": "Average order",
+      "newUsers": "New customers",
+      "likes": "Likes",
+      "cancelled": "Cancelled"
+    },
+    "facts": {
+      "pipeline": "In progress",
+      "pipelineNote_one": "{{count}} open order not yet paid",
+      "pipelineNote_other": "{{count}} open orders not yet paid",
+      "inventory": "For sale",
+      "inventoryNote": "available works out of all",
+      "carts": "Carts",
+      "cartsNote": "visitors have something in their cart now",
+      "support": "Support",
+      "supportNote_one": "chats in all, {{count}} unread",
+      "supportNote_other": "chats in all, {{count}} unread"
+    },
+    "trend": {
+      "title": "Revenue and orders",
+      "revenue": "Revenue",
+      "orders": "Orders"
+    },
+    "statuses": "Order status",
+    "payments": "Payment methods",
+    "paymentsEarned": "{{amount}} received",
+    "topLiked": "Most liked",
+    "topLikedHint": "In the chosen period",
+    "topCarted": "Most often in carts",
+    "topCartedHint": "Right now — candidates for a reminder",
+    "likesCount_one": "{{count}} like",
+    "likesCount_other": "{{count}} likes",
+    "cartsCount_one": "in {{count}} cart",
+    "cartsCount_other": "in {{count}} carts",
+    "trafficNote": "Revenue is paid orders plus completed cash-on-delivery ones; cancelled orders are left out. Days are in Kyiv time. Site traffic isn’t shown here: Plausible counts it, and only for visitors who agreed to analytics.",
+    "cumulative": "Revenue, running total",
+    "people": "People: sign-ups, likes, orders",
+    "bySeries": "Sales by series",
+    "byTechnique": "Sales by technique",
+    "noSeries": "No series",
+    "noTechnique": "Not set",
+    "worksCount_one": "{{count}} work",
+    "worksCount_other": "{{count}} works",
+    "activity": "When visitors are active",
+    "activityHint": "Likes, carts, orders and sign-ups by weekday and hour (Kyiv time). Darker means more.",
+    "activityCell": "{{weekday}}, {{hour}}:00 — {{count}}",
+    "less": "less",
+    "more": "more"
+  },
+  "reviewsPage": {
+    "title": "Reviews",
+    "lead": "Every customer review from completed orders. Only those you switch on appear on the site. You can correct the text and rating — the customer can’t.",
+    "tabs": {
+      "pending": "Under review",
+      "published": "Published",
+      "all": "All"
+    },
+    "empty": {
+      "pending": "No new reviews.",
+      "published": "Nothing published yet.",
+      "all": "No reviews yet."
+    },
+    "order": "Order #{{id}}",
+    "rating": "Rating",
+    "show": "Show on site",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "saved": "Saved",
+    "saveFailed": "Couldn’t save",
+    "confirmDelete": {
+      "title": "Delete this review?",
+      "message": "The review by {{author}} will be deleted for good.",
+      "confirmLabel": "Delete"
     }
   }
 }

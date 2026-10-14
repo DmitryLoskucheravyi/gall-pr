@@ -104,6 +104,14 @@ export const queryKeys = {
     all: ['settings'] as const,
     admin: ['settings', 'admin'] as const,
   },
+  reviews: {
+    all: ['reviews'] as const,
+    public: ['reviews', 'public'] as const,
+    admin: ['reviews', 'admin'] as const,
+  },
+  analytics: {
+    overview: (days: number) => ['analytics', 'overview', days] as const,
+  },
   faq: {
     all: ['faq'] as const,
   },

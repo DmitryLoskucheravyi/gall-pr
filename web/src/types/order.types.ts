@@ -1,4 +1,5 @@
 import type { Painting } from './painting.types';
+import type { OrderReview } from './review.types';
 
 export type OrderStatus =
   | 'PENDING'
@@ -62,6 +63,8 @@ export type Order = {
   codFee: string;
   total: string;
   items: OrderItem[];
+  /** The customer's review, once written; only on their own orders. */
+  review?: OrderReview | null;
   createdAt: string;
   updatedAt: string;
 };

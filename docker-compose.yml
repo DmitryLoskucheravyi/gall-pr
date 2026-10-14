@@ -1,20 +1,65 @@
 services:
+  # The shop's own MySQL, replacing TiDB Cloud. The cloud database sat in
+  # Frankfurt, ~145ms of TCP away from wherever the API ran in development,
+  # and every page paid that several times over — a bare `SELECT 1` took a
+  # quarter of a second. Next to the API it is a millisecond.
+  #
+  # Published on 3307, not 3306: the host already runs a MySQL of its own on
+  # the default port. Bound to 127.0.0.1 so nothing outside this machine can
+  # reach it — the credentials below are for local use only, and a deployment
+  # sets its own through the same variables.
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gallery}
+      MYSQL_USER: ${MYSQL_USER:-gallery}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-gallery}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    command:
+      # Matches what the data was written under on TiDB: utf8mb4 throughout,
+      # timestamps in UTC.
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_bin
+      - --default-time-zone=+00:00
+    ports:
+      - '127.0.0.1:3307:3306'
+    volumes:
+      # A named volume, so the data outlives the container: `docker compose
+      # down` keeps it, only `down -v` throws it away.
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
   backend:
     build: ./backend
     env_file:
       - ./backend/.env
+    environment:
+      # Inside the compose network the database is the service above, on its
+      # own port. backend/.env points at 127.0.0.1:3307 instead, which is what
+      # an API started on the host (npm run start:dev) needs.
+      DB_HOST: mysql
+      DB_PORT: 3306
+    depends_on:
+      mysql:
+        condition: service_healthy
     ports:
       - '3001:3001'
     # Docker normally forwards DNS to the host's resolver. Tailscale takes DNS
     # over on the host when MagicDNS is on, and that forwarding chain breaks —
     # the container stops resolving anything public, which shows up as
-    # ENOTFOUND for the TiDB gateway and, downstream, as support sockets that
-    # close the moment they open because their first query throws.
+    # ENOTFOUND for the services below and, downstream, as support sockets
+    # that close the moment they open because their first query throws.
     #
-    # Everything this service talks to is on the public internet (the database,
-    # Cloudinary, Telegram, SMTP, Nova Poshta), so a public resolver is not a
-    # workaround here — it's the correct answer, and it stops the container
-    # depending on whatever the host's DNS happens to be doing.
+    # Everything else this service talks to is on the public internet
+    # (Cloudinary, Telegram, SMTP, Nova Poshta), so a public resolver is not a
+    # workaround here — it's the correct answer. The compose service name
+    # `mysql` still resolves: Docker's embedded DNS answers for the network's
+    # own services and forwards only the rest to these.
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -26,3 +71,6 @@ services:
       # production does, with Caddy terminating TLS in front of it.
       - ./backend/cert:/app/cert:ro
     restart: unless-stopped
+
+volumes:
+  mysql-data:

@@ -110,3 +110,67 @@
     color: #fff;
   }
 }
+
+// ---------- review ----------
+
+.reviewButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  width: 100%;
+  margin-top: $spacing-md;
+  padding: 10px $spacing-lg;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: $radius-md;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-background-alt);
+  }
+}
+
+.review {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  background-color: var(--color-background-alt);
+}
+
+.reviewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.reviewState {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-warning);
+
+  &[data-published] {
+    color: var(--color-success);
+  }
+}
+
+.reviewText {
+  display: -webkit-box;
+  margin-top: $spacing-sm;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}

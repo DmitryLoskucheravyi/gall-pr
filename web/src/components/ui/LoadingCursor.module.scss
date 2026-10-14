@@ -1,0 +1,105 @@
+// Fixed at the top-left and moved by transform to the pointer; the ring itself
+// is offset down and to the right of the hotspot, where the system's own busy
+// companion sits, so it never covers what is being pointed at.
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.ring {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 26px;
+  height: 26px;
+  overflow: visible;
+  color: var(--color-primary);
+  opacity: 0;
+  scale: 0.6;
+  filter: drop-shadow(0 0 1.5px var(--color-background))
+    drop-shadow(0 0 1px var(--color-background));
+  transition:
+    opacity 0.25s ease,
+    scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  // Never shown before the pointer has moved at least once: until then it
+  // would sit in the corner of the screen.
+  .cursor[data-visible][data-placed] & {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+// The loop is inked in and then lifted off again, round and round, while the
+// whole ring turns slowly the other way — so the stroke never quite repeats.
+.loop {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transform-origin: 16px 16px;
+
+  .cursor[data-visible] & {
+    animation:
+      loop-ink 1.6s cubic-bezier(0.55, 0, 0.35, 1) infinite,
+      loop-turn 2.4s linear infinite;
+  }
+}
+
+// The nib: the one point that is always there, where the pen is.
+.dot {
+  fill: currentColor;
+  transform-origin: 16px 16px;
+
+  .cursor[data-visible] & {
+    animation: loop-turn 2.4s linear infinite;
+  }
+}
+
+@keyframes loop-ink {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  55% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes loop-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loop {
+    stroke-dashoffset: 0;
+  }
+
+  .cursor[data-visible] .loop,
+  .cursor[data-visible] .dot {
+    animation: none;
+  }
+
+  // Still answers: a slow breath instead of a spin.
+  .cursor[data-visible] .ring {
+    animation: breathe 1.4s ease-in-out infinite alternate;
+  }
+
+  @keyframes breathe {
+    to {
+      opacity: 0.45;
+    }
+  }
+}

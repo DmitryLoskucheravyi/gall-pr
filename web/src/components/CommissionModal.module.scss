@@ -15,37 +15,70 @@
   align-items: flex-start;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.6);
-  padding: $spacing-lg;
-  // Clear of the home indicator, and of the bottom bar this sits over.
-  padding-bottom: max(#{$spacing-lg}, env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
+
+  // A phone gets a sheet from the bottom edge, full width.
+  padding: $spacing-xxxl 0 0;
+
+  @include respond-up($breakpoint-md) {
+    padding: $spacing-lg;
+    padding-bottom: max(#{$spacing-lg}, env(safe-area-inset-bottom));
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: fade 0.25s ease both;
+  }
 }
 
-// Height comes from the content and nothing else. Giving it a max-height of
-// its own is what produced the blank space under a short panel: the box stayed
-// viewport-sized while what was in it had shrunk.
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
 .dialog {
   position: relative;
   width: 100%;
-  max-width: 460px;
-  margin: auto 0;
-  border-radius: $radius-lg;
+  margin: auto 0 0;
+  border-radius: $radius-xl $radius-xl 0 0;
   background-color: var(--color-surface);
-  padding: $spacing-xxl;
+  padding: $spacing-xl $spacing-lg max(#{$spacing-xl}, env(safe-area-inset-bottom));
   box-shadow: var(--shadow-lg);
+
+  @include respond-up($breakpoint-md) {
+    max-width: 980px;
+    margin: auto 0;
+    border-radius: $radius-xl;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 .close {
   position: absolute;
   top: $spacing-md;
   right: $spacing-md;
+  z-index: 2;
   display: flex;
   height: 36px;
   width: 36px;
   align-items: center;
   justify-content: center;
+  border: 0;
   border-radius: $radius-pill;
+  background-color: var(--color-surface);
   font-size: 22px;
   line-height: 1;
   color: var(--color-text-secondary);
@@ -53,35 +86,184 @@
 
   &:hover {
     background-color: var(--color-background-alt);
-    color: var(--color-text);
   }
 }
 
-.title {
+// ---------- layout ----------
+
+.layout {
+  display: grid;
+
+  @include respond-up($breakpoint-md) {
+    grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.4fr);
+  }
+}
+
+// The work and the way this goes. A full column on a desktop; on a phone a
+// compact row — thumbnail and title — above the form.
+.aside {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: $spacing-md $spacing-lg;
   padding-right: $spacing-xxl;
+  padding-bottom: $spacing-lg;
+  border-bottom: 1px solid var(--color-border);
+
+  @include respond-up($breakpoint-md) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: $spacing-xl;
+    padding: $spacing-xxl;
+    border-bottom: 0;
+    border-right: 1px solid var(--color-border);
+    background-color: var(--color-background-alt);
+  }
+}
+
+.work {
+  margin: 0;
+  overflow: hidden;
+  border-radius: $radius-md;
+  aspect-ratio: 1;
+  background-color: var(--color-background-alt);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @include respond-up($breakpoint-md) {
+    aspect-ratio: 4 / 5;
+    box-shadow: 0 14px 30px rgb(0 0 0 / 14%);
+  }
+}
+
+.workMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.title {
   font-family: $font-display;
-  font-size: 24px;
+  font-size: 20px;
+  font-weight: normal;
+  color: var(--color-text);
+
+  @include respond-up($breakpoint-md) {
+    margin-top: $spacing-xs;
+    font-size: 26px;
+  }
+}
+
+.workTitle {
+  overflow: hidden;
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+}
+
+.floor {
+  margin-top: $spacing-xs;
+  font-family: $font-display;
+  font-size: 15px;
   color: var(--color-text);
 }
 
+// How it goes, in three lines — desktop only; on a phone the lead says enough.
+.howto {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @include respond-up($breakpoint-md) {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: $spacing-sm;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+}
+
+.howtoNumber {
+  font-family: $font-display;
+  font-size: 13px;
+  color: var(--color-accent-text);
+}
+
+// ---------- form ----------
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+  padding-top: $spacing-lg;
+
+  @include respond-up($breakpoint-md) {
+    padding: $spacing-xxl $spacing-xxl $spacing-xxl;
+  }
+}
+
 .lead {
-  margin-top: $spacing-sm;
+  padding-right: $spacing-xxl;
   font-size: 14px;
   line-height: 1.6;
   color: var(--color-text-secondary);
 }
 
-.form {
+.section {
   display: flex;
-  margin-top: $spacing-xl;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: $spacing-sm;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: $spacing-sm;
+  padding: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+// Two fields a row where there is room for two.
+.grid {
+  display: grid;
+  gap: $spacing-sm;
+
+  @include respond-up($breakpoint-sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .input {
   @include input-base;
-  // 16px or larger, or iOS Safari zooms the page on focus and the dialog
-  // never quite recovers its position.
+  width: 100%;
   font-size: 16px;
 }
 
@@ -93,92 +275,11 @@
   resize: vertical;
 }
 
-.optional {
-  margin-top: $spacing-sm;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-
-.submit {
-  @include button-primary;
-  margin-top: $spacing-sm;
-  width: 100%;
-}
-
-.error {
-  font-size: 13px;
-  color: var(--color-danger, #b3261e);
-}
-
-// The way out, given the same weight as the form rather than tucked under it:
-// plenty of people would sooner write two lines in a direct message than fill
-// in anything, and burying this loses them.
-.alternative {
-  display: flex;
-  margin-top: $spacing-xl;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-md;
-  border-top: 1px solid var(--color-border);
-  padding-top: $spacing-lg;
-}
-
-.or {
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: $spacing-sm;
-}
-
-.link {
-  border-radius: $radius-pill;
-  border: 1px solid var(--color-border-strong);
-  padding: $spacing-sm $spacing-lg;
-  font-size: 14px;
-  color: var(--color-text);
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease;
-
-  &:hover {
-    border-color: var(--color-primary);
-    background-color: var(--color-primary);
-    color: var(--color-on-primary);
-  }
-}
-
-.done {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-.note {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--color-text-secondary);
-}
-
-// The amount and its currency sit on one line, so the field reads as money
-// rather than as any other number.
 .amountRow {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-}
-
-.amountRow .input {
-  flex: 1;
+  max-width: 320px;
 }
 
 .currency {
@@ -193,5 +294,113 @@
 .amountHint {
   font-size: 12px;
   line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.submit {
+  @include button-primary;
+  width: 100%;
+
+  @include respond-up($breakpoint-md) {
+    align-self: flex-start;
+    width: auto;
+    padding-inline: $spacing-xxxxl;
+  }
+}
+
+.error {
+  font-size: 13px;
+  color: var(--color-danger, #b3261e);
+}
+
+// The way out, given the same weight as the form rather than tucked under it:
+// plenty of people would sooner write two lines in a direct message than fill
+// in anything, and burying this loses them.
+.alternative {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-sm;
+
+  @include respond-up($breakpoint-md) {
+    margin-top: auto;
+    padding-top: $spacing-lg;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.altDesktop {
+  display: none;
+
+  @include respond-up($breakpoint-md) {
+    display: flex;
+  }
+}
+
+.altMobile {
+  padding-top: $spacing-lg;
+  border-top: 1px solid var(--color-border);
+
+  @include respond-up($breakpoint-md) {
+    display: none;
+  }
+}
+
+.or {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.link {
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-border-strong);
+  padding: $spacing-sm $spacing-lg;
+  font-size: 14px;
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
+
+// ---------- sent ----------
+
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: $spacing-xl 0;
+  text-align: center;
+
+  @include respond-up($breakpoint-md) {
+    padding: $spacing-huge $spacing-xxl;
+  }
+
+  .title {
+    padding-right: 0;
+  }
+}
+
+.note {
+  font-size: 14px;
+  line-height: 1.7;
   color: var(--color-text-secondary);
 }

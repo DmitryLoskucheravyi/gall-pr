@@ -7,9 +7,11 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
 } from 'typeorm';
 
 import { User } from '../../users/entities/user.entity';
+import { Review } from '../../reviews/entities/review.entity';
 import { OrderItem } from './order-item.entity';
 
 export enum OrderStatus {
@@ -169,6 +171,11 @@ export class Order {
     cascade: true,
   })
   items: OrderItem[];
+
+  // The customer's review, once they have written one — at most one per
+  // order. Not eager: loaded where it is shown (the customer's own orders).
+  @OneToOne(() => Review, (review) => review.order)
+  review?: Review | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

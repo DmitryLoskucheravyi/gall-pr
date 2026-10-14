@@ -9,6 +9,11 @@
     "next": "Next page",
     "page": "Page {{page}}"
   },
+  "slider": {
+    "prev": "Previous",
+    "next": "Next",
+    "page": "Go to {{page}} of {{total}}"
+  },
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",
@@ -57,5 +62,27 @@
       "text": "Help us understand which pages are visited and how they are used, so we can improve the site. Not connected yet — your choice will apply if they are ever added."
     },
     "confirm": "Confirm my choices"
+  },
+  "number": {
+    "decrease": "Decrease",
+    "increase": "Increase"
+  },
+  "dateTime": {
+    "placeholder": "Pick a date and time",
+    "time": "Time",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "clear": "Clear",
+    "done": "Done",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "stars_one": "{{count}} star",
+  "stars_other": "{{count}} stars",
+  "starsOf": "Rated {{value}} out of {{max}}",
+  "share": {
+    "label": "Share",
+    "copied": "Link copied",
+    "failed": "Couldn’t copy the link"
   }
 }

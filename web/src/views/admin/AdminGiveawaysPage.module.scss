@@ -186,3 +186,85 @@
     opacity: 0.8;
   }
 }
+
+// ---------- news gallery ----------
+
+.galleryHint {
+  margin: -#{$spacing-xs} 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: $spacing-md;
+}
+
+.galleryItem {
+  position: relative;
+  aspect-ratio: 4 / 3;
+}
+
+.galleryThumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: $radius-md;
+  object-fit: cover;
+}
+
+.galleryIndex {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: $radius-pill;
+  background-color: rgba(0, 0, 0, 0.6);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+}
+
+.galleryActions {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: $radius-pill;
+    background-color: rgba(0, 0, 0, 0.6);
+    font-size: 13px;
+    color: #fff;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+}
+
+.galleryAdd {
+  aspect-ratio: 4 / 3;
+  border: 1px dashed var(--color-border);
+  border-radius: $radius-md;
+  background: transparent;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}

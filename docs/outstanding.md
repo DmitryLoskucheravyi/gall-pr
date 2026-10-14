@@ -123,7 +123,7 @@ SPA видалено, `web-next/` перейменовано на `web/`, раз
 `ErrorBoundary.componentDidCatch` чесно написано, що звітувати нікуди.
 
 - Sentry на бекенд і фронт
-- UptimeRobot на `https://api.viktorumm.com/` і на головну
+- UptimeRobot на `https://api.viktorumm.com/health` (а не на `/` — корінь відповідає 200, навіть коли БД лежить) і на головну
 - Обидва мають писати в той самий Telegram, куди вже йдуть замовлення
 
 Без цього про падіння ви дізнаєтесь від покупця.

@@ -14,6 +14,7 @@ import Checkbox from '../../components/ui/Checkbox';
 import Skeleton from '../../components/ui/Skeleton';
 import type { Series, SeriesInput } from '../../types/series.types';
 import styles from './AdminSeriesPage.module.scss';
+import NumberInput from '../../components/ui/NumberInput';
 
 const EMPTY: SeriesInput = {
   name: '',
@@ -163,12 +164,11 @@ export default function AdminSeriesPage() {
             placeholder={t('seriesPage.form.coverImage')}
             className={styles.input}
           />
-          <input
-            type="number"
+          <NumberInput
             min={0}
             value={draft.sortOrder ?? 0}
-            onChange={(e) =>
-              setDraft({ ...draft, sortOrder: Number(e.target.value) })
+            onChange={(v) =>
+              setDraft({ ...draft, sortOrder: Number(v) })
             }
             placeholder={t('seriesPage.form.sortOrder')}
             className={styles.input}

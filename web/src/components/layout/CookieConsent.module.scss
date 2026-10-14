@@ -9,12 +9,11 @@
   z-index: 60;
   display: flex;
   justify-content: center;
-  padding: $spacing-md;
-  // Clears the phone's bottom bar and the home indicator under it, the same
-  // way ContinuePrompt does — BottomNav publishes its own height.
-  padding-bottom: calc(
-    var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom) + #{$spacing-md}
-  );
+  // Edge to edge: a band across the bottom of the screen, not a floating
+  // card. It still clears the phone's bottom bar (BottomNav publishes its
+  // own height).
+  padding: 0;
+  padding-bottom: var(--bottom-nav-height, 0px);
   // The wrapper spans the full width only to position the card; clicks on
   // the empty part must reach the page underneath.
   pointer-events: none;
@@ -43,13 +42,22 @@
   flex-direction: column;
   gap: $spacing-md;
   width: 100%;
-  max-width: 880px;
-  padding: $spacing-lg $spacing-xl;
-  border: 1px solid var(--color-border);
-  border-radius: $radius-lg;
+  // Full width as a band; the contents stay in the page's column.
+  padding: $spacing-lg max(#{$spacing-lg}, calc((100% - #{$container-max-width}) / 2 + #{$container-padding}));
+  padding-bottom: calc(#{$spacing-lg} + env(safe-area-inset-bottom));
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
   background-color: var(--color-surface);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 -8px 28px rgb(0 0 0 / 10%);
   pointer-events: auto;
+
+  @include respond-up($breakpoint-md) {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    column-gap: $spacing-xl;
+  }
 }
 
 .brand {
@@ -81,9 +89,15 @@
 
 .text {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--color-text-secondary);
+
+  @include respond-up($breakpoint-md) {
+    flex: 1;
+    min-width: 280px;
+    font-size: 0.9rem;
+  }
 }
 
 .policyLink,
@@ -114,6 +128,19 @@
 
 .secondary {
   @include button-secondary;
+}
+
+// Square, like the rest of the shop's buttons now, and a size smaller on a
+// phone where three of them share two rows.
+.actions .primary,
+.actions .secondary {
+  border-radius: 0;
+
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    min-height: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
 }
 
 // ── Settings panel ────────────────────────────────────────────────────────

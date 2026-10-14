@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Order, OrderStatus } from '../types/order.types';
@@ -7,6 +7,8 @@ import { useLocale } from '../hooks/useLocale';
 import { useExchangeRate } from '../hooks/queries/useExchangeRate';
 import { formatPrice } from '../utils/formatPrice';
 import { plural, pluralForms } from '../utils/plural';
+import ReviewModal from './ReviewModal';
+import StarRating from './ui/StarRating';
 import styles from './OrderPreviewCard.module.scss';
 
 function statusClass(status: OrderStatus) {
@@ -25,14 +27,24 @@ function statusClass(status: OrderStatus) {
 type Props = {
   order: Order;
   onCancel?: () => void;
+  /** Open the review form straight away — the thank-you letter's link. */
+  openReview?: boolean;
 };
 
-export default function OrderPreviewCard({ order, onCancel }: Props) {
+export default function OrderPreviewCard({ order, onCancel, openReview = false }: Props) {
   const { t } = useTranslation('orders');
   const locale = useLocale();
   const { data: usdRate } = useExchangeRate();
   const uploadProof = useUploadPaymentProofMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // A delivered order can be reviewed once; after that the review shows here
+  // in place of the button, as written — the customer cannot change it.
+  const reviewable = order.status === 'COMPLETED' && !order.review;
+  // null until the customer opens or closes it themselves; until then the
+  // letter's link decides.
+  const [reviewChoice, setReviewing] = useState<boolean | null>(null);
+  const reviewing = reviewChoice ?? (openReview && reviewable);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -99,6 +111,25 @@ export default function OrderPreviewCard({ order, onCancel }: Props) {
             </button>
           </div>
         ))}
+
+      {order.review ? (
+        <div className={styles.review}>
+          <div className={styles.reviewHead}>
+            <StarRating value={order.review.rating} size={15} />
+            <span className={styles.reviewState} data-published={order.review.isPublished || undefined}>
+              {order.review.isPublished ? t('review.published') : t('review.pending')}
+            </span>
+          </div>
+          <p className={styles.reviewText}>{order.review.text}</p>
+        </div>
+      ) : reviewable ? (
+        <button type="button" className={styles.reviewButton} onClick={() => setReviewing(true)}>
+          <StarRating value={0} size={14} />
+          {t('review.leave')}
+        </button>
+      ) : null}
+
+      {reviewing ? <ReviewModal order={order} onClose={() => setReviewing(false)} /> : null}
 
       {onCancel && (order.status === 'PENDING' || order.status === 'CONFIRMED') && (
         <button onClick={onCancel} className={styles.cancelButton}>

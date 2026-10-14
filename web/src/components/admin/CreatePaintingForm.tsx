@@ -18,6 +18,7 @@ import Checkbox from '../ui/Checkbox';
 import Radio from '../ui/Radio';
 import styles from './CreatePaintingForm.module.scss';
 import { apiErrorMessage } from '../../utils/apiError';
+import NumberInput from '../ui/NumberInput';
 
 type Props = {
   painting?: Painting;
@@ -635,31 +636,28 @@ export default function CreatePaintingForm({
             className={styles.input}
           />
 
-          <input
+          <NumberInput
             required
-            type="number"
             placeholder={t('paintingForm.pricePlaceholder')}
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            onChange={(v) => setPrice(v)}
             className={styles.input}
           />
 
-          <input
-            type="number"
-            step="0.01"
+          <NumberInput
+            step={0.01}
             placeholder={t('paintingForm.weightPlaceholder')}
             value={weight}
-            onChange={(e) => setWeight(e.target.value)}
+            onChange={(v) => setWeight(v)}
             className={styles.input}
           />
 
-          <input
-            type="number"
+          <NumberInput
             min={0}
-            step="1"
+            step={1}
             placeholder={t('paintingForm.amountPlaceholder')}
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(v) => setAmount(v)}
             className={styles.input}
           />
 
@@ -685,18 +683,16 @@ export default function CreatePaintingForm({
           />
 
           <div className={styles.row3}>
-            <input
-              type="number"
+            <NumberInput
               placeholder={t('paintingForm.widthPlaceholder')}
               value={width}
-              onChange={(e) => setWidth(e.target.value)}
+              onChange={(v) => setWidth(v)}
               className={styles.input}
             />
-            <input
-              type="number"
+            <NumberInput
               placeholder={t('paintingForm.heightPlaceholder')}
               value={height}
-              onChange={(e) => setHeight(e.target.value)}
+              onChange={(v) => setHeight(v)}
               className={styles.input}
             />
             <Select

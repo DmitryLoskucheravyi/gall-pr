@@ -1,6 +1,8 @@
 .card {
   @include card;
   @include card-hover;
+  // A product card is a print on the wall, not a chip: square corners.
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -112,6 +114,14 @@
   margin-top: $spacing-md;
   display: flex;
   gap: $spacing-sm;
+}
+
+// Square corners on every button in the card, to match the card itself.
+.detailsButton,
+.buyButton,
+.editButton,
+.deleteButton {
+  border-radius: 0 !important;
 }
 
 .buttonIcon {

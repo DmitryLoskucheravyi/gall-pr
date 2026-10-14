@@ -15,6 +15,20 @@
   // full-height layouts account for it rather than guessing.
   padding-bottom: env(safe-area-inset-bottom);
 
+  // A strip of the bar's own colour running on below the screen's bottom
+  // edge. iOS Safari slides its toolbar in and out while scrolling and the
+  // fixed bar can lag a frame behind, leaving a gap the page showed through;
+  // this fills it whatever the toolbar is doing.
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background-color: inherit;
+  }
+
   @include respond-up($breakpoint-lg) {
     display: none;
   }

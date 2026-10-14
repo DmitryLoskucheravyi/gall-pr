@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMyOrders } from '../hooks/queries/useOrders';
@@ -16,6 +17,17 @@ export default function OrdersPage() {
   const { data: orders = [], isLoading: loading } = useMyOrders();
   const cancelOrder = useCancelOrderMutation();
   const confirm = useConfirm();
+
+  // The thank-you letter links here with ?review=<id>: that order's card
+  // opens its review form. Read from the address rather than through
+  // useSearchParams, which would need a Suspense boundary on a static page;
+  // empty on the server, so hydration agrees.
+  const search = useSyncExternalStore(
+    () => () => {},
+    () => window.location.search,
+    () => '',
+  );
+  const reviewId = Number(new URLSearchParams(search).get('review')) || null;
 
   const handleCancel = async (order: Order) => {
     const ok = await confirm({
@@ -65,6 +77,7 @@ export default function OrdersPage() {
               key={order.id}
               order={order}
               onCancel={() => handleCancel(order)}
+              openReview={order.id === reviewId}
             />
           ))}
         </div>

@@ -36,6 +36,7 @@ export default function AdminSettingsPage() {
   const [supportPhone, setSupportPhone] = useState('');
   const [supportTelegramUrl, setSupportTelegramUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
   // Three hero slots, held as one array so the picker below is a loop rather
   // than three near-identical blocks.
   const [heroPaintingIds, setHeroPaintingIds] = useState<Array<number | null>>([
@@ -73,6 +74,7 @@ export default function AdminSettingsPage() {
       setSupportPhone(settings.supportPhone);
       setSupportTelegramUrl(settings.supportTelegramUrl);
       setInstagramUrl(settings.instagramUrl);
+      setFacebookUrl(settings.facebookUrl ?? '');
       setHeroPaintingIds([
         settings.heroPaintingId1,
         settings.heroPaintingId2,
@@ -93,6 +95,7 @@ export default function AdminSettingsPage() {
       supportPhone: supportPhone.trim(),
       supportTelegramUrl: supportTelegramUrl.trim(),
       instagramUrl: instagramUrl.trim(),
+      facebookUrl: facebookUrl.trim(),
       heroPaintingId1: heroPaintingIds[0],
       heroPaintingId2: heroPaintingIds[1],
       heroPaintingId3: heroPaintingIds[2],
@@ -281,6 +284,23 @@ export default function AdminSettingsPage() {
                 />
                 <p className={styles.hint}>{t('settingsPage.support.instagramHint')}</p>
               </div>
+
+              {(
+                [
+                  ['facebook', facebookUrl, setFacebookUrl, 'https://facebook.com/viktorumm'],
+                ] as const
+              ).map(([key, value, set, placeholder]) => (
+                <div key={key}>
+                  <label className={styles.label}>{t(`settingsPage.support.${key}`)}</label>
+                  <input
+                    type="url"
+                    value={value}
+                    onChange={(e) => set(e.target.value)}
+                    placeholder={placeholder}
+                    className={styles.input}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>

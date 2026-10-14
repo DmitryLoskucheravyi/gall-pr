@@ -1,12 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 
 import '@/styles/global.scss';
 
 import Providers from '../providers';
+import Analytics from '@/components/Analytics';
 import Layout from '@/components/layout/Layout';
 import { LOCALES, isLocale, type Locale } from '@/utils/locale';
+import { serverFetchOrNull } from '@/lib/api-server';
+import type { PublicAppSettings } from '@/types/settings.types';
 
 // This is the root layout: every route on the site carries a locale, so there
 // is nothing above it to own <html> and <body>. That is the documented shape
@@ -20,6 +23,15 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://viktorumm.com';
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
+
+// viewport-fit=cover is what makes iOS report its safe areas at all: without
+// it env(safe-area-inset-bottom) is 0, the bottom bar cannot pad itself over
+// the home indicator, and the page shows through the strip beneath it.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -37,6 +49,12 @@ export const metadata: Metadata = {
     images: [{ url: '/og-cover.jpg', width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image' },
+  // Google Search Console's ownership check. Next renders the meta tag only
+  // when the token is set, so nothing appears until the property is actually
+  // claimed — and the token itself stays out of the repository.
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export default async function LocaleLayout({
@@ -52,6 +70,17 @@ export default async function LocaleLayout({
   // bad one means something went around it — a 404 rather than a silent
   // fallback to Ukrainian, which would let /de/catalog answer 200 forever.
   if (!isLocale(locale)) notFound();
+
+  // The site settings every page reads — the author's name, the Telegram
+  // link, the footer's contacts. Fetched once here and put into the query
+  // cache before anything renders, on the server and in the browser alike.
+  // Left to each component's own query, the header, the footer and the page
+  // filled it at different moments in the two passes, and whatever depended on
+  // it (the footer's bot link, the author line) failed hydration.
+  const settings = await serverFetchOrNull<PublicAppSettings>('/settings', {
+    revalidate: 3600,
+    tags: ['settings'],
+  });
 
   return (
     <html lang={locale === 'en' ? 'en' : 'uk'} suppressHydrationWarning>
@@ -71,9 +100,10 @@ export default async function LocaleLayout({
         />
       </head>
       <body>
-        <Providers locale={locale as Locale}>
+        <Providers locale={locale as Locale} settings={settings}>
           <Layout>{children}</Layout>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );

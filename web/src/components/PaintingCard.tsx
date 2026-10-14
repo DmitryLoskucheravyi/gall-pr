@@ -11,6 +11,7 @@ import LikeButton from './ui/LikeButton';
 import styles from './PaintingCard.module.scss';
 import { cdnImage } from '../utils/imageUrl';
 import { editionLabel } from '../utils/edition';
+import { inStock } from '../utils/stock';
 
 type Props = {
   painting: Painting;
@@ -29,6 +30,7 @@ export default function PaintingCard({
   onDelete,
   compact,
 }: Props) {
+  const available = inStock(painting);
   const { t } = useTranslation('common');
   const locale = useLocale();
   const authorName = useAuthorName();
@@ -47,7 +49,7 @@ export default function PaintingCard({
             decoding="async"
             className={styles.image}
           />
-          {!painting.isAvailable && (
+          {!available && (
             <div className={styles.badges}>
               <span className={styles.soldBadge}>{t('sold')}</span>
               <span
@@ -91,17 +93,21 @@ export default function PaintingCard({
               aria-label={t('details')}
               className={styles.detailsButton}
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className={styles.buttonIcon}>
-                <circle cx="5" cy="12" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="19" cy="12" r="2" />
+              <svg viewBox="0 0 24 24" fill="none" className={styles.buttonIcon}>
+                <path
+                  d="M8 16 16 8M9.5 8H16v6.5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               <span className={styles.buttonText}>{t('details')}</span>
             </Link>
             <button
               onClick={onBuy}
-              disabled={!painting.isAvailable}
-              aria-label={painting.isAvailable ? t('buy') : t('sold')}
+              disabled={!available}
+              aria-label={available ? t('buy') : t('sold')}
               className={styles.buyButton}
             >
               <svg
@@ -120,7 +126,7 @@ export default function PaintingCard({
                 <circle cx="17" cy="21" r="1.4" fill="currentColor" />
               </svg>
               <span className={styles.buttonText}>
-                {painting.isAvailable ? t('addToCart') : t('sold')}
+                {available ? t('addToCart') : t('sold')}
               </span>
             </button>
           </div>

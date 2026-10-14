@@ -69,15 +69,6 @@
   grid-template-columns: 1fr;
   gap: $spacing-huge $spacing-xxxl;
   padding-bottom: $spacing-huge;
-
-  @include respond-up($breakpoint-lg) {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr);
-    gap: $spacing-huge;
-  }
-}
-
-.brand {
-  max-width: 400px;
 }
 
 .logo {
@@ -95,12 +86,6 @@
     content: '.';
     color: var(--color-accent-text);
   }
-}
-
-.tagline {
-  color: rgba(237, 234, 226, 0.6);
-  line-height: 1.65;
-  font-size: 14px;
 }
 
 // Link columns: 2-up on phones (compact, no tall single stack),
@@ -121,6 +106,23 @@
   align-items: flex-start;
   gap: $spacing-md;
   min-width: 0;
+
+  // On a phone the third column would sit alone in the left half of a second
+  // row, a long list hugging one edge. It takes the whole row instead, with
+  // its own links in two columns.
+  &:nth-child(3) {
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+      gap: $spacing-md $spacing-lg;
+
+      > :first-child {
+        grid-column: 1 / -1;
+      }
+    }
+  }
 }
 
 .columnTitle {
@@ -166,7 +168,8 @@
 
 .info {
   display: grid;
-  grid-template-columns: 1fr;
+  // Two up on a phone rather than one long column of short facts.
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $spacing-lg;
   border-top: 1px solid rgba(237, 234, 226, 0.14);
   padding: $spacing-xxl 0;

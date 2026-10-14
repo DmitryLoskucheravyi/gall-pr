@@ -131,56 +131,35 @@
 // they have to fade back out on their own after a moment of stillness, and
 // because a touch device never hovers at all.
 .navArrow {
+  // ArrowButton over a photograph: white ink with a soft shadow under the
+  // line, which is what keeps it legible on a light painting without putting
+  // a box over the work.
+  --arrow-size: 48px;
+  --arrow-fg: rgba(255, 255, 255, 0.92);
+  --arrow-accent: #fff;
+
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: 50%;
   z-index: 2;
-  display: flex;
-  width: 56px;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: none;
-  color: #fff;
-  cursor: pointer;
+  translate: 0 -50%;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 8px rgba(0, 0, 0, 0.25));
   opacity: 0;
   pointer-events: none;
-  transition:
-    opacity 0.45s ease,
-    transform 0.25s ease;
+  transition: opacity 0.45s ease;
 
   &.visible {
-    opacity: 0.85;
-    pointer-events: auto;
-  }
-
-  &:hover {
     opacity: 1;
-  }
-
-  svg {
-    height: 40px;
-    width: 40px;
-    // Without this the chevron disappears against a light painting. Cheaper
-    // and less intrusive than putting a box behind it.
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+    pointer-events: auto;
   }
 }
 
 .navArrowLeft {
-  left: 0;
-
-  &:hover {
-    transform: translateX(-2px);
-  }
+  left: $spacing-md;
 }
 
 .navArrowRight {
-  right: 0;
-
-  &:hover {
-    transform: translateX(2px);
-  }
+  right: $spacing-md;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -361,6 +340,19 @@
 // Takes the buy button's place when the work is gone and won't be repeated.
 // Not a disabled button: there's nothing to press, and a greyed-out one only
 // invites the attempt.
+.soldButton,
+.soldButton:disabled {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: not-allowed;
+  opacity: 1;
+  box-shadow: none;
+  transform: none;
+}
+
 .soldNotice {
   margin-top: $spacing-lg;
   border-radius: $radius-sm;
@@ -530,4 +522,18 @@
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.75);
   font-variant-numeric: tabular-nums;
+}
+
+.titleActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+// The slide's edges step through the photos; the cursor says so.
+@media (hover: hover) {
+  .slide {
+    cursor: zoom-in;
+  }
 }

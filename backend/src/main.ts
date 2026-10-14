@@ -1,3 +1,7 @@
+// First, before anything else: the Sentry SDK patches the libraries below as
+// they are loaded, so it has to run before they are. See ./instrument.
+import './instrument';
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
@@ -75,7 +79,12 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 3001;
 
-  await app.listen(port, '0.0.0.0');
+  // No host: Node then listens dual-stack (`::`, accepting IPv4 too) where
+  // IPv6 exists, and on 0.0.0.0 where it does not, as in some containers.
+  // Pinning 0.0.0.0 made the server IPv4-only, and on Windows `localhost`
+  // tries ::1 first — every request that named it, Tailscale serve's proxy
+  // included, waited ~200ms for that refusal before falling back.
+  await app.listen(port);
 
   console.log(
     `HTTP${hasCert ? 'S' : ''} server running on http${hasCert ? 's' : ''}://localhost:${port}`,

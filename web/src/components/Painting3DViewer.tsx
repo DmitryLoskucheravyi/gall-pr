@@ -219,19 +219,58 @@ export default function Painting3DViewer({
             <div className={styles.glare} />
           </div>
 
-          <div className={styles.faceBack}>
-            <div className={styles.frame}>
-              <div className={styles.canvasBack}>
-                <span className={styles.strutH} />
-                <span className={styles.strutV} />
-              </div>
-            </div>
-            {title && (
-              <span className={styles.sticker}>
-                {title}
-                <em>{t('stretcherLabel')}</em>
+          {/* The reverse of a stretched canvas, built the way one is: raw
+              linen across the back, a pine stretcher mitred at the corners
+              with a cross-brace and corner keys, the primed canvas folded
+              over the bars and stapled, a hanging wire, and the gallery's
+              label. Painted from back to front — each layer sits on the one
+              before it, as the real thing does. Purely decorative. */}
+          <div className={styles.faceBack} aria-hidden="true">
+            <div className={styles.back}>
+              <span className={styles.field} />
+
+              <span className={`${styles.brace} ${styles.braceH}`} />
+              <span className={`${styles.brace} ${styles.braceV}`} />
+
+              <span className={`${styles.bar} ${styles.barTop}`} />
+              <span className={`${styles.bar} ${styles.barBottom}`} />
+              <span className={`${styles.bar} ${styles.barLeft}`} />
+              <span className={`${styles.bar} ${styles.barRight}`} />
+
+              <span className={styles.keys}>
+                <span className={styles.key} data-corner="tl" />
+                <span className={styles.key} data-corner="tr" />
+                <span className={styles.key} data-corner="bl" />
+                <span className={styles.key} data-corner="br" />
               </span>
-            )}
+
+              <span className={styles.foldShadow}>
+                <span className={styles.fold} />
+              </span>
+
+              <span className={`${styles.staples} ${styles.staplesTop}`} />
+              <span className={`${styles.staples} ${styles.staplesBottom}`} />
+              <span className={`${styles.staples} ${styles.staplesLeft}`} />
+              <span className={`${styles.staples} ${styles.staplesRight}`} />
+
+              <svg
+                className={styles.wire}
+                viewBox="0 0 100 10"
+                preserveAspectRatio="none"
+              >
+                <path d="M0 1 Q50 13 100 1" vectorEffect="non-scaling-stroke" />
+              </svg>
+              <span className={styles.ring} data-side="left" />
+              <span className={styles.ring} data-side="right" />
+
+              {title && (
+                <span className={styles.label}>
+                  <span className={styles.labelMark}>{t('common:brand')}</span>
+                  <span className={styles.labelTitle}>{title}</span>
+                  <span className={styles.labelMeta}>{t('stretcherLabel')}</span>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* The stretcher sides. Each carries a mirrored sliver of the

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -35,6 +37,9 @@ import { TechniquesModule } from './techniques/techniques.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { SettingsModule } from './settings/settings.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { Review } from './reviews/entities/review.entity';
 import { LikesModule } from './likes/likes.module';
 import { SupportModule } from './support/support.module';
 import { GiveawaysModule } from './giveaways/giveaways.module';
@@ -50,6 +55,11 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
+    // Reports every unhandled exception that reaches the framework. Inert
+    // unless SENTRY_DSN is set — see src/instrument.ts, which decides that
+    // and runs long before this module is built.
+    SentryModule.forRoot(),
 
     // A baseline ceiling on everything, so no route is completely unmetered
     // just because nobody thought about it. Routes worth guarding harder —
@@ -85,11 +95,19 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
         MailOutbox,
         RefreshSession,
         PasswordReset,
+        Review,
       ],
 
       synchronize: false,
 
-      ssl: { rejectUnauthorized: true },
+      // TLS to the database, verified, unless DB_SSL=false. A managed cloud
+      // database (TiDB Cloud, until 2026-10) requires it; the local MySQL in
+      // docker-compose.yml speaks plain TCP on a loopback-only port, where
+      // there is no network in between to protect.
+      ssl:
+        process.env.DB_SSL === 'false'
+          ? undefined
+          : { rejectUnauthorized: true },
     }),
     UsersModule,
 
@@ -109,6 +127,10 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
 
     SettingsModule,
 
+    AnalyticsModule,
+
+    ReviewsModule,
+
     LikesModule,
 
     SupportModule,
@@ -127,6 +149,10 @@ import { HttpOnlyThrottlerGuard } from './common/throttler.guard';
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: HttpOnlyThrottlerGuard },
+    // Catches what the framework would otherwise only log, and forwards it to
+    // Sentry before handing it on to Nest's own handling — so the response a
+    // client gets is unchanged, down to the status code.
+    { provide: APP_FILTER, useClass: SentryGlobalFilter },
   ],
 })
 export class AppModule {}

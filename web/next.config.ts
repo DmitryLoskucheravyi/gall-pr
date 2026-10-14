@@ -37,13 +37,39 @@ const WS_ORIGIN = API_ORIGIN.replace(/^http/, 'ws');
 // Policy directive", thrown from @next/react-refresh-utils.
 const DEV = process.env.NODE_ENV === 'development';
 
+// Where the analytics script is fetched from and where it reports to — the
+// same origin for both. Only reaches the policy when a counter is configured
+// at all, so a deployment without one keeps the tighter policy.
+// `||` rather than `??`, matching components/Analytics.tsx: an empty
+// NEXT_PUBLIC_PLAUSIBLE_HOST means the cloud default, not "no origin".
+const ANALYTICS_ORIGIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+  ? originOf(process.env.NEXT_PUBLIC_PLAUSIBLE_HOST || 'https://plausible.io')
+  : '';
+
+// Where the browser SDK posts its error reports: the DSN's own host, e.g.
+// o123.ingest.de.sentry.io. Without it in connect-src the SDK initialises
+// fine and every report it sends is refused by the policy, silently.
+const SENTRY_ORIGIN = process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? originOf(process.env.NEXT_PUBLIC_SENTRY_DSN)
+  : '';
+
+function originOf(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return '';
+  }
+}
+
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self' https://www.liqpay.ua https://secure.wayforpay.com",
-  `script-src 'self' 'unsafe-inline'${DEV ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline'${ANALYTICS_ORIGIN ? ` ${ANALYTICS_ORIGIN}` : ''}${
+    DEV ? " 'unsafe-eval'" : ''
+  }`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "media-src 'self' https://res.cloudinary.com",
@@ -51,7 +77,9 @@ const CSP = [
   // The last two are the dev server's own HMR socket; harmless in production,
   // where nothing listens on them, but omitted anyway to keep the policy
   // honest about what it permits.
-  `connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN}${DEV ? ' ws: wss:' : ''}`,
+  `connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN}${
+    ANALYTICS_ORIGIN ? ` ${ANALYTICS_ORIGIN}` : ''
+  }${SENTRY_ORIGIN ? ` ${SENTRY_ORIGIN}` : ''}${DEV ? ' ws: wss:' : ''}`,
   'upgrade-insecure-requests',
 ].join('; ');
 

@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 
+import ArrowButton from './ArrowButton';
 import styles from './Pagination.module.scss';
 
 type PaginationProps = {
@@ -37,17 +38,13 @@ export default function Pagination({ page, totalPages, onChange }: PaginationPro
 
   return (
     <nav className={styles.pagination} aria-label={t('pagination.aria')}>
-      <button
-        type="button"
+      <ArrowButton
+        direction="prev"
         className={styles.step}
         onClick={() => onChange(page - 1)}
         disabled={page <= 1}
         aria-label={t('pagination.prev')}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M15 6l-6 6 6 6" />
-        </svg>
-      </button>
+      />
 
       <ul className={styles.pages}>
         {pageItems(page, totalPages).map((item, index) =>
@@ -71,17 +68,13 @@ export default function Pagination({ page, totalPages, onChange }: PaginationPro
         )}
       </ul>
 
-      <button
-        type="button"
+      <ArrowButton
+        direction="next"
         className={styles.step}
         onClick={() => onChange(page + 1)}
         disabled={page >= totalPages}
         aria-label={t('pagination.next')}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M9 6l6 6-6 6" />
-        </svg>
-      </button>
+      />
     </nav>
   );
 }

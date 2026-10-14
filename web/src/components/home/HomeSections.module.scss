@@ -13,54 +13,6 @@
   color: var(--color-text);
 }
 
-.body {
-  margin-top: $spacing-md;
-  max-width: 560px;
-  line-height: 1.7;
-  color: var(--color-text-secondary);
-}
-
-// ---------- about ----------
-
-.about {
-  display: grid;
-  gap: $spacing-xxl;
-  margin-top: $spacing-huge;
-
-  @include respond-up($breakpoint-lg) {
-    grid-template-columns: 1.3fr 1fr;
-    align-items: end;
-    gap: $spacing-huge;
-  }
-}
-
-.stats {
-  display: grid;
-  margin: 0;
-  border-top: 1px solid var(--color-border);
-}
-
-.stat {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: $spacing-lg;
-  padding: $spacing-lg 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.statLabel {
-  color: var(--color-text-secondary);
-}
-
-.statValue {
-  margin: 0;
-  font-family: $font-display;
-  font-size: clamp(26px, 3vw, 36px);
-  color: var(--color-text);
-  text-align: right;
-}
-
 // ---------- how to buy ----------
 
 .steps {
@@ -68,8 +20,10 @@
 }
 
 .stepList {
+  --gap: #{$spacing-lg};
+
   display: grid;
-  gap: $spacing-lg;
+  gap: var(--gap);
   margin: $spacing-xxl 0 0;
   padding: 0;
   list-style: none;
@@ -84,20 +38,76 @@
   }
 }
 
+// Dealt out like cards from a hand: every card starts stacked under the
+// first, and slides out to its own place, left to right, each a beat after
+// the one before. The earlier card sits on top, so each one is seen coming
+// out from beneath its neighbour. On a phone, where they stack, they slide
+// down from under each other instead.
 .step {
   @include card;
-  padding: $spacing-xl;
+  position: relative;
+  z-index: calc(10 - var(--i));
+  overflow: hidden;
+  padding: $spacing-xxl $spacing-xl $spacing-xl;
+  isolation: isolate;
+
+  @media (prefers-reduced-motion: no-preference) {
+    opacity: 0;
+    transform: translateY(calc(-100% * var(--i) - var(--gap) * var(--i)));
+    transition:
+      transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i) * 0.14s),
+      opacity 0.45s ease calc(var(--i) * 0.14s);
+
+    @include respond-up($breakpoint-lg) {
+      transform: translateX(calc(-100% * var(--i) - var(--gap) * var(--i)));
+    }
+
+    // The first card is the top of the deck: it only fades up.
+    &:first-child {
+      transform: translateY(16px);
+    }
+
+    .stepList[data-shown] & {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
+// A numeral the height of the card, outlined in a hairline and set behind
+// the text — read as the card's watermark rather than as a label. In the dark
+// theme the line is lighter, so it stays visible against the dark card.
 .stepNumber {
-  display: block;
+  position: absolute;
+  right: 0.16em;
+  bottom: 0.06em;
+  z-index: -1;
   font-family: $font-display;
-  font-size: 32px;
-  color: var(--color-accent);
+  font-size: clamp(64px, 5.4vw, 88px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--color-accent) 40%, transparent);
+  pointer-events: none;
+  user-select: none;
+  transition: -webkit-text-stroke-color 0.4s ease;
+
+  :global(.dark) & {
+    -webkit-text-stroke-color: color-mix(in srgb, var(--color-text) 38%, transparent);
+  }
+
+  .step:hover & {
+    -webkit-text-stroke-color: var(--color-accent);
+  }
+
+  :global(.dark) .step:hover & {
+    -webkit-text-stroke-color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  }
 }
 
 .stepTitle {
-  margin-top: $spacing-md;
+  margin-top: 0;
+  max-width: 80%;
   font-size: 18px;
   color: var(--color-text);
 }
@@ -135,37 +145,53 @@
 .closingActions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: $spacing-md;
-  margin-top: $spacing-xl;
+  align-items: center;
+  justify-content: space-between;
+  // Wide enough for its links in either language: the English pair is longer
+  // than 420px and wrapped onto two lines. At least the hero's width, so the
+  // hairline matches it; centred whatever it comes to.
+  gap: $spacing-lg $spacing-xxxl;
+  width: fit-content;
+  min-width: min(420px, 100%);
+  max-width: 100%;
+  margin: $spacing-xl auto 0;
+  padding-top: $spacing-lg;
+  border-top: 1px solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
 }
 
+// Matches .ctaButton / .ctaGhost in HomePage.module.scss: the hero's links,
+// in the band's colour.
 .primary,
 .secondary {
-  padding: 13px 30px;
-  border-radius: $radius-pill;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-family: $font-sans;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   text-decoration: none;
-  letter-spacing: 0.03em;
-  transition:
-    background-color $duration-fast $ease-out,
-    color $duration-fast $ease-out,
-    border-color $duration-fast $ease-out;
-}
-
-.primary {
-  background: var(--color-on-primary);
-  color: var(--color-primary);
-
-  &:hover {
-    opacity: 0.9;
-  }
-}
-
-.secondary {
-  border: 1px solid currentColor;
   color: var(--color-on-primary);
+  white-space: nowrap;
+  transition: opacity $duration-fast ease;
+
+  svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+  }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    opacity: 0.7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-on-primary);
+    outline-offset: 4px;
+  }
+
+  @include respond-up($breakpoint-lg) {
+    font-size: 14px;
   }
 }

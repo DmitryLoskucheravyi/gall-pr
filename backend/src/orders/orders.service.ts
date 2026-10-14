@@ -831,6 +831,9 @@ export class OrdersService {
   findAllForIdentity(identity: Identity): Promise<Order[]> {
     return this.ordersRepository.find({
       where: identityWhere(identity),
+      // Their review comes along, so the page knows which delivered orders
+      // still have one to give.
+      relations: { review: true },
       order: { createdAt: 'DESC' },
     });
   }
@@ -838,6 +841,7 @@ export class OrdersService {
   async findOne(identity: Identity, id: number): Promise<Order> {
     const order = await this.ordersRepository.findOne({
       where: { id, ...identityWhere(identity) },
+      relations: { review: true },
     });
 
     if (!order) {

@@ -7,8 +7,8 @@ import { useLocale } from './useLocale';
 import { stripLocale } from '../utils/locale';
 
 // A handful of pages read as one continuous walk rather than separate
-// destinations: the homepage's corridor closes into the catalog, and the
-// catalog opens onto the full gallery. Scrolling past the very bottom of
+// destinations: the homepage closes into the catalog, and the catalog opens
+// onto the full gallery. Scrolling past the very bottom of
 // one — past the footer, past everything — carries the reader on to the
 // next rather than just stopping. Not a site-wide thing: most pages have
 // nowhere further to go, and stay silent here.

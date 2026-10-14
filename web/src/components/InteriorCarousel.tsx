@@ -105,7 +105,18 @@ export default function InteriorCarousel({ images }: Props) {
         ))}
       </div>
 
-      <div className={styles.frame}>
+      {/* The left half steps back, the right half on — the same as tapping
+          the edge of a photo anywhere else on the page. */}
+      <div
+        className={styles.frame}
+        data-many={images.length > 1 || undefined}
+        onClick={(event) => {
+          if (images.length < 2) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const forward = event.clientX - rect.left > rect.width / 2;
+          goTo((active + (forward ? 1 : -1) + images.length) % images.length);
+        }}
+      >
         {images.map((url, index) => (
           <img
             key={url}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { PaintingSort } from '../lib/queryKeys';
 import styles from './CatalogFilters.module.scss';
+import NumberInput from './ui/NumberInput';
 
 type Range = { min: number; max: number };
 
@@ -132,30 +133,30 @@ export default function CatalogFilters({
           <p className={styles.panelTitle}>{t('filters.priceLabel')}</p>
 
           <div className={styles.inputsRow}>
-            <input
-              type="number"
+            <NumberInput
               min={priceBounds.min}
               max={draftMax}
               value={draftMin}
-              onChange={(e) =>
+              onChange={(v) =>
                 setDraftMin(
-                  clamp(Number(e.target.value), priceBounds.min, draftMax),
+                  clamp(Number(v), priceBounds.min, draftMax),
                 )
               }
               className={styles.numberInput}
+              bare
             />
             <span className={styles.dash}>—</span>
-            <input
-              type="number"
+            <NumberInput
               min={draftMin}
               max={priceBounds.max}
               value={draftMax}
-              onChange={(e) =>
+              onChange={(v) =>
                 setDraftMax(
-                  clamp(Number(e.target.value), draftMin, priceBounds.max),
+                  clamp(Number(v), draftMin, priceBounds.max),
                 )
               }
               className={styles.numberInput}
+              bare
             />
           </div>
 

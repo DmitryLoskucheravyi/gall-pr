@@ -8,6 +8,7 @@ import LikeButton from './ui/LikeButton';
 import styles from './GalleryCard.module.scss';
 import { cdnImage } from '../utils/imageUrl';
 import { editionLabel } from '../utils/edition';
+import { inStock } from '../utils/stock';
 
 type Props = {
   painting: Painting;
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export default function GalleryCard({ painting, natural = false }: Props) {
+  const available = inStock(painting);
   const { t } = useTranslation('common');
   const locale = useLocale();
   const title = pickLocale(painting, 'title', locale);
@@ -35,7 +37,7 @@ export default function GalleryCard({ painting, natural = false }: Props) {
         {/* Only once it's gone. While a work is still for sale, whether it's
             unique is a detail; the moment it isn't, whether another one can
             be had is the only thing the viewer wants to know. */}
-        {!painting.isAvailable && (
+        {!available && (
           <div className={styles.badges}>
             <span className={styles.soldBadge}>{t('sold')}</span>
             <span

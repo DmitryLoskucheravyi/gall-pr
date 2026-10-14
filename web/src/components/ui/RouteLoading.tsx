@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 
 import Loader from './Loader';
+import { useBusyWhileMounted } from '../../hooks/useBusyWhileMounted';
 import styles from './RouteLoading.module.scss';
 
 // What a route's loading.tsx renders while its page is on the way: the
@@ -15,6 +16,8 @@ import styles from './RouteLoading.module.scss';
 // shared boundary in Layout.tsx was removed for. painting/[id] must not get one.
 export default function RouteLoading() {
   const { t } = useTranslation('common');
+  // The pointer shows it too, not only the middle of the page.
+  useBusyWhileMounted();
 
   return (
     <div className={styles.wrap}>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Drives a pinned sequence: one tall scroll track with a sticky, viewport-
 // sized stage inside it. Scrolling the track doesn't move the stage — it
@@ -18,7 +18,6 @@ const EASE = 0.1;
 // Below this the layers are within a fraction of a pixel, and the playhead
 // within a fraction of a frame, of where they're headed.
 const SETTLED = 0.0005;
-const FRAME = 1 / 48;
 // Progress is 0..1 across a track several screens tall, so a hundredth of a
 // percent of it is around a pixel of scrolling — close enough to call
 // arrived.
@@ -27,27 +26,44 @@ const PROGRESS_SETTLED = 0.0001;
 // of the clamp() in .heroText.
 const HERO_COPY_GONE = 0.55;
 
-// How long to give a scrub video to produce metadata before giving up on it
-// and taking the frame strip instead. Generous: it only has to beat a slow
-// connection, and the poster is up the whole time.
-const METADATA_GRACE_MS = 8000;
+// Below this the two frames either side of the playhead are blended closely
+// enough that redrawing would put the same picture on the canvas.
+const MIX_SETTLED = 0.01;
 
-// The same footage twice, because a phone cannot scrub the first one.
+// How the footage is dimmed, and why it is a rectangle rather than a filter.
 //
-// Scrubbing a video means setting currentTime on it while it is paused, and
-// mobile browsers — iOS Safari above all — will not paint a frame that
-// arrives that way for a video the user has never played. The element simply
-// goes blank the moment the scroll touches it.
+// The stylesheet used to do it with filter: brightness(0.66) on the element,
+// which re-filtered the whole viewport on every frame. Moving the same filter
+// onto the 2D context was not the answer either — a canvas filter puts every
+// drawImage on a slower path, and it cost 32 frames in 205 over 32ms against
+// 20 with it off.
 //
-// Autoplaying a loop instead does work, but it throws away the whole point:
-// the footage stops answering the finger. So a touch device gets the same
-// move made out of stills — a strip of frames drawn to a canvas, one per
-// scroll position. No playback, so no autoplay policy to lose to, no Low
-// Power Mode to be refused by, and the picture tracks the finger exactly as
-// it does a wheel on the desktop.
+// Black at 34% over the frame is the same arithmetic with none of that:
+// source-over composites to src × 0.66 + 0 × 0.34, which is exactly what
+// brightness(0.66) computes, as one fill of a 900×506 rectangle.
 //
-// It is also lighter: the hero's frames come to about a megabyte against the
-// 1.6 MB of its all-keyframe video, and the other two to far less.
+// The saturate(0.92) that went with it is gone. Eight per cent of saturation
+// is not visible on footage this desaturated to begin with, and it is the
+// only part of the old filter that a rectangle cannot express.
+const FOOTAGE_DIM = 'rgba(0, 0, 0, 0.34)';
+
+// The footage is a strip of stills drawn to a canvas, and only that.
+//
+// It used to be a video on the desktop and stills everywhere else, because a
+// phone cannot scrub a video at all: iOS will not paint a frame that arrives
+// from a seek on a paused video the user has never played. The desktop half
+// of that is gone now, because scrubbing a video is not smooth anywhere.
+//
+// Seeking is not drawing. Every `currentTime =` asks the browser to find a
+// keyframe, decode to it and present — tens of milliseconds, and only one can
+// be in flight at a time, so a wheel that turns at 60 Hz gets a picture that
+// changes maybe a dozen times a second. All-keyframe encoding makes each seek
+// cheaper without making it free, and the ceiling stays where it is.
+//
+// Blitting a decoded image costs a fraction of a millisecond, so the strip
+// tracks the wheel exactly, on every device. The cost is that there are only
+// as many stills as were cut — see paint(), which dissolves between each pair
+// rather than stepping from one to the next.
 type FrameStrip = {
   // Directory the numbered frames live in, without a trailing slash.
   base: string;
@@ -55,26 +71,9 @@ type FrameStrip = {
   count: number;
 };
 
-type Sources = {
-  // All-keyframe cut, seekable frame-accurately. Pointer devices only.
-  scrub: string;
-  // The same seconds as stills, for everywhere else.
-  frames: FrameStrip;
-};
-
-// Which of the two the sequence is currently running on. The component reads
-// it to decide whether to mount a <video> or a <canvas>; it can change after
-// mount, because the guess below is only a guess (see canScrubVideo).
-export type SequenceMode = 'video' | 'frames';
-
 type Options = {
   // Skip the pointer tilt. Set for coarse pointers: there is no hovering
   // cursor to follow.
-  //
-  // This used to decide the footage as well, and the two are not the same
-  // question — see canScrubVideo. A touchscreen laptop has no hover worth
-  // following and scrubs video perfectly well; an iPad with a keyboard case
-  // reports a hovering pointer and cannot scrub at all.
   noPointer?: boolean;
   // Progress past which the track carries data-past="true". What that means
   // is the stylesheet's business — a section uses it to take something out of
@@ -82,7 +81,7 @@ type Options = {
   // arrived.
   pastAt?: number;
   // The footage. Left unset for a section that has none.
-  sources?: Sources;
+  frames?: FrameStrip;
   // Fetch immediately rather than waiting for the track to come within a
   // screen and a half. True for the hero, which is the first screen; false
   // for anything further down, whose megabyte has no business competing with
@@ -106,73 +105,16 @@ function framePath(strip: FrameStrip, index: number): string {
   return `${strip.base}/${String(index + 1).padStart(3, '0')}.jpg`;
 }
 
-// Whether this browser will actually paint a frame that arrives from a seek
-// on a paused video it has never played.
-//
-// It comes down to iOS and iPadOS, which will not, and which is the whole
-// reason a frame strip exists. Asking `(hover: none)` for it was close but
-// not the same question, and it was wrong at both ends: an iPad with a
-// keyboard case reports a hovering pointer and was handed the video path it
-// cannot draw — a hero that stayed on its poster for the entire scroll —
-// while a Windows laptop with a touchscreen reported none and was handed
-// frames it had no need of.
-//
-// A guess either way, which is why it is only the starting position: a video
-// that errors or never produces metadata downgrades itself to the strip at
-// runtime, and that is what covers the devices this list doesn't name.
-function canScrubVideo(): boolean {
-  // Never called during the first render any more — see the mount effect
-  // below — but the guard stays, because a function that reads `navigator`
-  // should say what it does without one rather than throw.
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-    return true;
-  }
-
-  const ua = navigator.userAgent;
-  if (/iPhone|iPod|iPad/.test(ua)) return false;
-  // iPadOS 13 and up report themselves as a Mac. The touch points are what
-  // give them away — a Mac reports none, with or without a touchscreen
-  // display plugged into it.
-  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false;
-
-  // Anything else without hover is a phone or a tablet, and the strip is
-  // both safer and lighter there regardless of what it could have managed.
-  return !window.matchMedia('(hover: none)').matches;
-}
-
 export function useHeroSequence({
   noPointer = false,
   pastAt = HERO_COPY_GONE,
-  sources,
+  frames: footage,
   eager = false,
   loops = 1,
 }: Options = {}) {
   const trackRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // 'frames' on the first render, always — on the server and in the browser
-  // alike — and upgraded once mounted if this device can actually scrub video.
-  //
-  // It used to call canScrubVideo() straight from this initialiser, which is a
-  // device check the server cannot make. Under SSR that is not merely a wrong
-  // guess: mode picks between a <canvas> and a <video>, two different elements,
-  // so a server that guessed one and a client that rendered the other made
-  // React throw the server's markup away for this subtree.
-  //
-  // Starting at 'frames' is the safe half of the guess. The strip is only
-  // fetched by the effect below, which runs after the upgrade has settled, so
-  // a device that can scrub never downloads the frames it won't use.
-  const [mode, setMode] = useState<SequenceMode>('frames');
-  const modeDecided = useRef(false);
-
-  useEffect(() => {
-    if (modeDecided.current) return;
-    modeDecided.current = true;
-
-    if (sources && canScrubVideo()) setMode('video');
-  }, [sources]);
 
   const tilt = useRef({ x: 0, y: 0 });
   const tiltTarget = useRef({ x: 0, y: 0 });
@@ -199,82 +141,42 @@ export function useHeroSequence({
   // Without it a reader who scrolls to a section and stops before its strip
   // has arrived would sit looking at the poster until they moved again.
   const wakeRef = useRef<() => void>(() => {});
-  const painted = useRef(-1);
+  // What is on the canvas: the pair of frames last blended onto it, and how
+  // far between them. Three numbers rather than one, because the picture now
+  // changes without the nearer frame changing.
+  const painted = useRef({ a: -1, b: -1, mix: -1 });
+  const context = useRef<CanvasRenderingContext2D | null>(null);
 
   const reduced =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const scrubbing = mode === 'video';
 
-  // Gives up on the video and takes the strip instead. Called when the
-  // element reports an error — a codec this browser won't decode, a file
-  // that 404s — or when metadata simply never arrives.
-  //
-  // Idempotent, and one-way: nothing ever upgrades back to video, because
-  // whatever went wrong the first time is unlikely to have improved and a
-  // sequence that flips back and forth is worse than one that settles.
-  const downgrade = useCallback(() => {
-    // Also closes the door on the mount upgrade above: whatever went wrong
-    // with the video will not have improved by the next render.
-    modeDecided.current = true;
-
-    setMode((was) => {
-      if (was === 'frames') return was;
-      // Whatever is on the canvas now belongs to a different element.
-      painted.current = -1;
-      return 'frames';
-    });
-  }, []);
-
-  // Fetches the footage, in whichever form this device can actually use.
-  // Separate from the sequence effect below so it runs even for a
-  // reduced-motion visitor, who still needs a first frame to look at.
+  // Fetches the strip. Separate from the sequence effect below so it runs
+  // even for a reduced-motion visitor, who still needs a first frame to look
+  // at.
   useEffect(() => {
     const el = trackRef.current;
-    if (!el || !sources) return;
+    if (!el || !footage) return;
 
     let cancelled = false;
     let attached = false;
-    let grace = 0;
-
-    const video = videoRef.current;
-
-    const onVideoError = () => downgrade();
-    const onMetadata = () => window.clearTimeout(grace);
 
     const attach = () => {
       if (cancelled || attached) return;
       attached = true;
 
-      if (scrubbing) {
-        if (!video) return;
-        video.addEventListener('error', onVideoError);
-        video.addEventListener('loadedmetadata', onMetadata);
-        video.src = sources.scrub;
-        // Nothing here ever plays on its own; the playhead is moved by hand.
-        video.pause();
-        // A source the browser accepts but never gets anywhere with looks
-        // exactly like one that is merely slow, right up until the reader
-        // has scrolled the whole section past a frozen poster. Past this it
-        // is treated as the former and the strip takes over.
-        grace = window.setTimeout(() => {
-          if (video.readyState < HTMLMediaElement.HAVE_METADATA) downgrade();
-        }, METADATA_GRACE_MS);
-        return;
-      }
-
       // Every frame is requested at once and they arrive in whatever order
       // the network gives them. The draw below always falls back to the
       // nearest one that has landed, so the sequence is usable from the first
       // arrival rather than after the last.
-      painted.current = -1;
-      strip.current = Array.from({ length: sources.frames.count }, (_, i) => {
+      painted.current = { a: -1, b: -1, mix: -1 };
+      strip.current = Array.from({ length: footage.count }, (_, i) => {
         const img = new Image();
         img.decoding = 'async';
         // Each arrival is a chance to improve on whatever the canvas is
-        // currently showing — paint() always draws the nearest frame it has.
+        // currently showing — paint() always draws the nearest frames it has.
         img.onload = () => wakeRef.current();
-        img.src = framePath(sources.frames, i);
+        img.src = framePath(footage, i);
         return img;
       });
     };
@@ -289,10 +191,10 @@ export function useHeroSequence({
     // coming back costs a few hundred kilobytes that are already in the HTTP
     // cache.
     const release = () => {
-      if (!attached || scrubbing) return;
+      if (!attached) return;
       for (const img of strip.current) img.onload = null;
       strip.current = [];
-      painted.current = -1;
+      painted.current = { a: -1, b: -1, mix: -1 };
       attached = false;
     };
 
@@ -302,9 +204,6 @@ export function useHeroSequence({
       if (!eager) attach();
       return () => {
         cancelled = true;
-        window.clearTimeout(grace);
-        video?.removeEventListener('error', onVideoError);
-        video?.removeEventListener('loadedmetadata', onMetadata);
       };
     }
 
@@ -318,12 +217,9 @@ export function useHeroSequence({
     observer.observe(el);
     return () => {
       cancelled = true;
-      window.clearTimeout(grace);
       observer.disconnect();
-      video?.removeEventListener('error', onVideoError);
-      video?.removeEventListener('loadedmetadata', onMetadata);
     };
-  }, [sources, scrubbing, eager, downgrade]);
+  }, [footage, eager]);
 
   useEffect(() => {
     const el = trackRef.current;
@@ -334,10 +230,8 @@ export function useHeroSequence({
     // the stylesheet's own fallbacks (0) apply throughout.
     if (reduced) return;
 
-    const video = scrubbing ? videoRef.current : null;
-    // The canvas element changes identity when the mode does, so nothing
-    // already drawn can be assumed to still be on it.
-    painted.current = -1;
+    painted.current = { a: -1, b: -1, mix: -1 };
+    context.current = null;
 
     // How far down the viewport the stage pins, in px. Read from the
     // stylesheet rather than agreed with it, but read once per layout rather
@@ -369,45 +263,86 @@ export function useHeroSequence({
       return Math.min(1, Math.max(0, (pinTop - rect.top) / travel));
     };
 
-    // Puts the wanted frame on the canvas, or the nearest one that has
-    // arrived. Searching outward matters while the strip is still loading:
-    // without it the canvas would stay empty until the exact frame landed,
-    // and the reader would scroll through nothing.
-    const paint = (want: number) => {
+    // The nearest frame to `want` that has actually arrived. Searching
+    // outward matters while the strip is still loading: without it the canvas
+    // would stay empty until the exact frame landed, and the reader would
+    // scroll through nothing.
+    const nearestReady = (want: number) => {
       const images = strip.current;
-      if (images.length === 0) return;
-
-      let found = -1;
       for (let step = 0; step < images.length; step++) {
         const before = want - step;
         const after = want + step;
-        if (before >= 0 && images[before].complete) {
-          found = before;
-          break;
-        }
-        if (after < images.length && images[after].complete) {
-          found = after;
-          break;
-        }
+        if (before >= 0 && images[before]?.complete) return before;
+        if (after < images.length && images[after]?.complete) return after;
       }
-      if (found < 0 || found === painted.current) return;
+      return -1;
+    };
+
+    // Puts the playhead on the canvas — which falls between two frames far
+    // more often than on one.
+    //
+    // The strip is 48 stills spread over a couple of thousand pixels of
+    // scrolling, so stepping from whole frame to whole frame means the
+    // picture changes about once every forty pixels. That is what reads as a
+    // low frame rate even when the loop itself is running at 60: the motion
+    // is quantised, not dropped.
+    //
+    // So the two frames either side are blended by however far between them
+    // the playhead is. It is a dissolve rather than real intermediate
+    // motion, but the footage is slow macro paint with no hard edges, which
+    // is exactly the material a dissolve is invisible on. Two drawImage calls
+    // of a decoded 900px still cost a fraction of a millisecond.
+    const paint = (pos: number) => {
+      const images = strip.current;
+      if (images.length === 0) return;
+
+      const lower = Math.floor(pos);
+      const mix = pos - lower;
+
+      const a = nearestReady(lower);
+      if (a < 0) return;
+      // Past the last frame, or close enough to one, there is nothing to
+      // blend towards.
+      const b = mix > MIX_SETTLED ? nearestReady(lower + 1) : a;
+
+      const was = painted.current;
+      if (was.a === a && was.b === b && Math.abs(was.mix - mix) < MIX_SETTLED) {
+        return;
+      }
 
       const canvas = canvasRef.current;
-      const image = images[found];
+      const image = images[a];
       if (!canvas || !image.naturalWidth) return;
 
       // The canvas takes the frames' own pixel size once, and CSS scales it
       // to the stage. Drawing at native size and letting the compositor do
-      // the rest is cheaper than resizing 64 images by hand.
+      // the rest is cheaper than resizing 48 images by hand.
       if (canvas.width !== image.naturalWidth) {
         canvas.width = image.naturalWidth;
         canvas.height = image.naturalHeight;
+        // A resize drops the context's state along with its contents.
+        context.current = null;
       }
 
-      const context = canvas.getContext('2d');
-      if (!context) return;
-      context.drawImage(image, 0, 0);
-      painted.current = found;
+      // Held between frames: fetching it is cheap, but not free, and this
+      // runs sixty times a second for the length of the scroll.
+      const ctx = (context.current ??= canvas.getContext('2d'));
+      if (!ctx) return;
+
+      ctx.globalAlpha = 1;
+      ctx.drawImage(image, 0, 0);
+      if (b >= 0 && b !== a) {
+        ctx.globalAlpha = mix;
+        ctx.drawImage(images[b], 0, 0);
+        ctx.globalAlpha = 1;
+      }
+
+      // Over the blend, not under it: dimming each frame separately and then
+      // cross-fading them would dim the overlap twice.
+      ctx.fillStyle = FOOTAGE_DIM;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      painted.current = { a, b, mix };
     };
 
     const step = () => {
@@ -448,41 +383,12 @@ export function useHeroSequence({
       // loop into a long walk.
       const phase = loops === 1 ? progress.current : (progress.current * loops) % 1;
 
-      if (video) {
-        const duration = video.duration;
-        // Metadata hasn't landed yet — duration is NaN until it does, and
-        // seeking against that would throw the playhead back to the start.
-        if (Number.isFinite(duration) && duration > 0) {
-          // Straight to where the clock says, not eased toward it: the clock
-          // is already smoothed, and easing again on top of it would leave
-          // the footage trailing the copy it is meant to move with. The
-          // deadband is only there to skip seeks too small to show.
-          //
-          // One seek at a time, though. Chrome absorbs a stream of them by
-          // dropping all but the last; Firefox and Safari queue them, and a
-          // scroll that issues one per frame leaves the picture running
-          // whole seconds behind the wheel — long enough, on a flick down a
-          // corridor, to read as stuck. Skipping while one is in flight and
-          // letting `seeked` wake the loop gives every browser Chrome's
-          // behaviour, and the target it then re-reads is the current one
-          // rather than a stale queued guess.
-          if (
-            !video.seeking &&
-            Math.abs(phase * duration - video.currentTime) > FRAME
-          ) {
-            video.currentTime = phase * duration;
-          }
-        }
-        // No `busy` while duration is still NaN. It is NaN for as long as the
-        // element has no source at all — which, for the sections below the
-        // fold, is until the reader comes near them — and spinning a frame
-        // loop against that pins a core for the whole visit doing nothing.
-        // The loadedmetadata listener below wakes the loop when there is
-        // actually something to seek.
-      } else if (strip.current.length > 0) {
+      if (strip.current.length > 0) {
         // No easing of its own: the clock above is already smoothed, and
-        // easing a second time on top of it only adds lag.
-        paint(Math.round(phase * (strip.current.length - 1)));
+        // easing a second time on top of it only adds lag. Not rounded
+        // either — the fraction is the blend, and it is the whole reason the
+        // sequence moves rather than steps.
+        paint(phase * (strip.current.length - 1));
       }
 
       if (busy) frame.current = requestAnimationFrame(step);
@@ -534,10 +440,6 @@ export function useHeroSequence({
     // Place the playhead once on mount too: a reload partway down the track
     // restores the scroll position, and without this the sequence would sit on
     // frame one while it is already halfway through.
-    video?.addEventListener('loadedmetadata', onScroll);
-    // Picks up the seek that the deadband above skipped while one was
-    // already in flight.
-    video?.addEventListener('seeked', wake);
     measure();
     onScroll();
 
@@ -546,17 +448,15 @@ export function useHeroSequence({
       window.removeEventListener('pointerout', onPointerOut);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
-      video?.removeEventListener('loadedmetadata', onScroll);
-      video?.removeEventListener('seeked', wake);
       if (frame.current) cancelAnimationFrame(frame.current);
       frame.current = 0;
       wakeRef.current = () => {};
     };
-  }, [noPointer, pastAt, scrubbing, reduced, loops]);
+  }, [noPointer, pastAt, reduced, loops]);
 
   // How long a track is — and so how much scrolling its sequence takes — is
   // left entirely to the stylesheet, which varies it by breakpoint. The sums
   // above read the rendered geometry rather than any agreed number, so there
   // is nothing here to keep in step with it.
-  return { trackRef, stickyRef, videoRef, canvasRef, mode };
+  return { trackRef, stickyRef, canvasRef };
 }
