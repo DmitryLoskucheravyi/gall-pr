@@ -36,3 +36,17 @@
   height: 56px;
   width: 56px;
 }
+
+.guestNote {
+  margin-bottom: $spacing-lg;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.guestLink {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+

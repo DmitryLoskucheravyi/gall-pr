@@ -4,8 +4,13 @@
 // so every buy button on the site — the catalogue card, a series row, the
 // painting's own page — gets it without passing anything in.
 //
-// The target is whichever cart icon is on screen: the header's on a desktop,
-// the bottom bar's on a phone. Both carry data-cart-target.
+// The target is whichever cart on screen carries data-cart-target: the
+// header's icon on a desktop, the floating cart (components/cart/FloatingCart)
+// on a phone. With an empty cart a phone has neither on screen yet, so
+// the flight first asks it to appear (CART_INCOMING) and waits a frame or two
+// for it to mount.
+
+export const CART_INCOMING = 'gall:cart-incoming';
 
 let lastPress: { x: number; y: number } | null = null;
 let listening = false;
@@ -55,10 +60,23 @@ function bump(target: HTMLElement): Promise<void> {
 // jump — so the caller can say "added" then, not over the top of it. On a
 // phone the toast sits right on the bottom bar's cart icon, and shown at once
 // it hid the very moment this exists for.
-export function flyToCart(imageUrl: string): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-  const target = visibleTarget();
-  if (!target) return Promise.resolve();
+function nextFrames(n: number): Promise<void> {
+  return new Promise((resolve) => {
+    const tick = (left: number) =>
+      left <= 0 ? resolve() : requestAnimationFrame(() => tick(left - 1));
+    tick(n);
+  });
+}
+
+export async function flyToCart(imageUrl: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  let target = visibleTarget();
+  if (!target) {
+    window.dispatchEvent(new Event(CART_INCOMING));
+    await nextFrames(3);
+    target = visibleTarget();
+  }
+  if (!target) return;
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced || !lastPress) return bump(target);

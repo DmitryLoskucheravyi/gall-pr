@@ -42,5 +42,7 @@
   },
   "checkoutButton": "Place order",
   "checkingOut": "Placing order…",
-  "remove": "Remove"
+  "remove": "Remove",
+  "fabLabel": "Order",
+  "fabAria": "Cart: {{count}} — go to checkout"
 }

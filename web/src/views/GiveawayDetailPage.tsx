@@ -8,6 +8,7 @@ import { useGiveawayJoinMutation } from '../hooks/mutations/useGiveawayJoinMutat
 import { useAppSelector } from '../store/hooks';
 import { useLocale, type Locale } from '../hooks/useLocale';
 import { useLocalizedNavigate } from '../hooks/useLocalizedNavigate';
+import { useBack } from '../hooks/useBack';
 import { pickLocale } from '../utils/localizedField';
 import { cdnImage } from '../utils/imageUrl';
 import { plural, pluralForms } from '../utils/plural';
@@ -44,6 +45,7 @@ export default function GiveawayDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const navigate = useLocalizedNavigate();
+  const goBack = useBack('/');
   const user = useAppSelector((state) => state.auth.user);
 
   const giveawayId = id ? Number(id) : undefined;
@@ -100,7 +102,7 @@ export default function GiveawayDetailPage() {
         <div className={styles.frame}>
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className={styles.backButton}
             aria-label={t('detail.backAria')}
           >

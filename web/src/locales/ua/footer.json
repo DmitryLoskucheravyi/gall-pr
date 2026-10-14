@@ -33,5 +33,6 @@
   "copyright": "© {{year}} {{author}}. Усі права захищено.",
   "toTop": "Нагору",
   "toTopAria": "Нагору",
-  "continueLabel": "Далі"
+  "continueLabel": "Далі",
+  "continueRelease": "Відпустіть — далі"
 }

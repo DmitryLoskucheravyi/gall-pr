@@ -27,6 +27,10 @@ import { stripLocale } from '../utils/locale';
 //
 // The thank-you letter's link (?review=<id>) is the exception: the customer
 // asked for the form, so it opens for that order at once, snoozed or not.
+//
+// At most once per visit. Whatever the answer — "not now", close, send — the
+// prompt is done until the next page load: no reopening the same order, and
+// no moving straight on to ask about the next one.
 
 const DELAY_MS = 2500;
 const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -67,10 +71,17 @@ export default function ReviewPrompt() {
   );
   const linked = Number(new URLSearchParams(search).get('review')) || null;
 
+  // Set the moment the customer answers the prompt in any way. Local state,
+  // not just the stored snooze: the candidate below is memoised on the order
+  // list and would never re-read storage on its own, so a "not now" used to
+  // pick the very same order again and reopen it seconds later.
+  const [answered, setAnswered] = useState(false);
+
   const candidate = useMemo(() => {
+    if (answered) return null;
     const open = orders?.filter((o) => o.status === 'COMPLETED' && !o.review) ?? [];
     return (linked ? open.find((o) => o.id === linked) : undefined) ?? open.find((o) => !snoozed(o.id)) ?? null;
-  }, [orders, linked]);
+  }, [orders, linked, answered]);
 
   const path = stripLocale(pathname ?? '/');
   const quiet = QUIET_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
@@ -87,19 +98,33 @@ export default function ReviewPrompt() {
   const order = orders?.find((o) => o.id === open) ?? null;
   if (!order) return null;
 
+  const finish = (stored: string) => {
+    writeStored(snoozeKey(order.id), stored);
+    setAnswered(true);
+    setOpen(null);
+    // Drop the letter's ?review=<id> too, or a reload would open it again.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('review')) {
+      url.searchParams.delete('review');
+      window.history.replaceState(window.history.state, '', url);
+    }
+  };
+
   return (
     <ReviewModal
       order={order}
       prompted
+      // "Not now" is about being asked at all, not about this one order:
+      // every order still waiting for a review waits a week.
       onLater={() => {
-        writeStored(snoozeKey(order.id), String(Date.now() + SNOOZE_MS));
-        setOpen(null);
+        const until = String(Date.now() + SNOOZE_MS);
+        for (const o of orders ?? []) {
+          if (o.status === 'COMPLETED' && !o.review && !snoozed(o.id)) writeStored(snoozeKey(o.id), until);
+        }
+        finish(until);
       }}
-      onClose={() => {
-        // Closed (or sent): don't ask about this order again.
-        writeStored(snoozeKey(order.id), 'done');
-        setOpen(null);
-      }}
+      // Closed (or sent): don't ask about this order again.
+      onClose={() => finish('done')}
     />
   );
 }

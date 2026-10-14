@@ -10,6 +10,8 @@ type Props = {
   // useScrollContinue. Renders nothing when there's nowhere to go.
   nextPath?: string;
   progress: number;
+  // The bar is full and the finger is still down: lifting it turns the page.
+  ready: boolean;
 };
 
 // How far into the gesture before the prompt reveals itself. Small enough
@@ -24,7 +26,7 @@ const REVEAL_AT = 0.05;
 // actually push past it, with a touch of haptic feedback to mark the
 // moment — the sort of thing a native "you've reached the end, keep going"
 // gesture would give for free and the web has to ask for by hand.
-export default function ContinuePrompt({ nextPath, progress }: Props) {
+export default function ContinuePrompt({ nextPath, progress, ready }: Props) {
   const { t } = useTranslation('footer');
   const [revealed, setRevealed] = useState(false);
   const wasRevealed = useRef(false);
@@ -45,9 +47,10 @@ export default function ContinuePrompt({ nextPath, progress }: Props) {
       to={nextPath}
       className={styles.prompt}
       data-revealed={revealed}
+      data-ready={ready}
       style={{ '--progress': progress } as CSSProperties}
     >
-      <span className={styles.label}>{t('continueLabel')}</span>
+      <span className={styles.label}>{t(ready ? 'continueRelease' : 'continueLabel')}</span>
       <span className={styles.track} aria-hidden="true">
         <span className={styles.fill} />
       </span>

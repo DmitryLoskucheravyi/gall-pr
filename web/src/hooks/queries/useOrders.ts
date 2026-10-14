@@ -4,18 +4,28 @@ import { ordersService } from '../../api/orders.api';
 import { queryKeys } from '../../lib/queryKeys';
 import { useAppSelector } from '../../store/hooks';
 import type { AdminOrderTab } from '../../types/order.types';
+import { peekGuestToken } from '../../utils/guestToken';
 
 export function useOrdersIdentity(): number | 'guest' {
   const userId = useAppSelector((state) => state.auth.user?.id);
   return userId ?? 'guest';
 }
 
+// The visitor's own orders — signed in or not. Waits for the session check,
+// so a signed-in visitor is not shown a guest's empty list for a moment; and a
+// guest who has never ordered (no guest token yet) gets an empty list without
+// a request, which would otherwise mint a token just to ask.
 export function useMyOrders() {
   const identity = useOrdersIdentity();
+  const isBootstrapped = useAppSelector((state) => state.auth.isBootstrapped);
 
   return useQuery({
     queryKey: queryKeys.orders.mine(identity),
-    queryFn: () => ordersService.getOrders(),
+    queryFn: () =>
+      identity === 'guest' && !peekGuestToken()
+        ? Promise.resolve([])
+        : ordersService.getOrders(),
+    enabled: isBootstrapped,
   });
 }
 

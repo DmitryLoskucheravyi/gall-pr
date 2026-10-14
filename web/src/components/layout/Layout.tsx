@@ -9,6 +9,7 @@ import ContinuePrompt from './ContinuePrompt';
 import CookieConsent from './CookieConsent';
 import ScrollToTop from './ScrollToTop';
 import SupportWidget from '../support/SupportWidget';
+import FloatingCart from '../cart/FloatingCart';
 import ErrorBoundary from '../ErrorBoundary';
 import { useAppSelector } from '../../store/hooks';
 import { useScrollContinue } from '../../hooks/useScrollContinue';
@@ -39,7 +40,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   // Scrolling past the bottom of a handful of pages carries the reader on to
   // the next one — see the hook for which. Owned here, not by Footer, so the
   // handover veil below can sit above the whole page rather than just it.
-  const { nextPath, progress, leaving } = useScrollContinue();
+  const { nextPath, progress, leaving, ready } = useScrollContinue();
 
   return (
     <div className={styles.page}>
@@ -72,13 +73,14 @@ export default function Layout({ children }: { children: ReactNode }) {
       )}
       {/* Footer's own continue row hides itself on a phone — this is what
           takes over there. See ContinuePrompt for why. */}
-      {showChrome && <ContinuePrompt nextPath={nextPath} progress={progress} />}
+      {showChrome && <ContinuePrompt nextPath={nextPath} progress={progress} ready={ready} />}
       {/* Phones reach support from the header instead — the launcher would
           only fight the bottom bar for the same corner. Hidden there by CSS
           rather than unmounted so the desktop instance keeps its state.
           Shown to guests too; only the admin, who answers these, has no use
           for it. */}
       {showChrome && userRole !== 'ADMIN' && <SupportWidget />}
+      {showChrome && <FloatingCart />}
       {/* The handover between chained pages. Same ink as the footer it
           launches from, so the screen simply goes to that colour and the
           next page arrives out of it. */}

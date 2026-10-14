@@ -1,0 +1,208 @@
+// Position (left/top) comes from FloatingCart.tsx. Keep the box in sync with
+// SIZE there. The button itself is only the round hit area; .pill paints the
+// background and is what grows when the "Order" label opens out.
+.launcher {
+  --size: 52px;
+  position: fixed;
+  z-index: 41;
+  width: var(--size);
+  height: var(--size);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-on-primary);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  // Not drawn (no outline-style): FloatingCart.tsx reads it back as the
+  // launcher's own colour, resolved to rgb(), to spot a background that
+  // matches it.
+  outline-color: var(--color-primary);
+  animation: arrive 0.55s $ease-spring both;
+  transition:
+    left 0.35s $ease-spring,
+    top 0.35s $ease-spring;
+
+  &:active .pill {
+    transform: scale(0.95);
+  }
+}
+
+.pill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  width: var(--size);
+  border-radius: 999px;
+  background-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    width 0.5s $ease-out,
+    transform 0.3s $ease-spring,
+    box-shadow 0.25s ease,
+    background-color 0.35s ease,
+    color 0.35s ease;
+
+  .launcher[data-side='right'] & {
+    right: 0;
+    justify-content: flex-start;
+    padding-left: 20px;
+  }
+
+  .launcher[data-side='left'] & {
+    left: 0;
+    justify-content: flex-end;
+    padding-right: 20px;
+  }
+
+  .launcher[data-expanded='true'] & {
+    width: calc(var(--size) + 104px);
+  }
+}
+
+// The light, slow breathing — a ring that swells out from the round button
+// and fades. On the button rather than the pill, which clips its overflow;
+// paused while the label is open.
+.launcher::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  animation: breathe 2.8s ease-out infinite;
+  pointer-events: none;
+}
+
+.launcher[data-expanded='true']::before {
+  animation: none;
+}
+
+.label {
+  font-family: $font-accent;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.3s $ease-out;
+
+  .launcher[data-expanded='true'] & {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.18s;
+  }
+}
+
+.icon {
+  position: absolute;
+  top: 0;
+  width: var(--size);
+  height: var(--size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .launcher[data-side='right'] & {
+    right: 0;
+  }
+
+  .launcher[data-side='left'] & {
+    left: 0;
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--color-on-primary);
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// Over a background its own colour: the same shape, colours swapped.
+.launcher[data-blend='true'] {
+  .pill {
+    background-color: var(--color-on-primary);
+    color: var(--color-primary);
+  }
+
+  .icon {
+    color: var(--color-primary);
+  }
+
+  .badge {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
+
+.dragging {
+  cursor: grabbing;
+  animation: none;
+
+  .pill {
+    transform: scale(1.06);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes breathe {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+
+@media (hover: hover) {
+  .launcher:hover .pill {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launcher,
+  .launcher::before {
+    animation: none;
+  }
+
+  .pill,
+  .label {
+    transition: opacity 0.2s ease;
+  }
+}

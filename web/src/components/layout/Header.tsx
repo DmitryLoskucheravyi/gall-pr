@@ -499,8 +499,10 @@ export default function Header({ compact = false }: Props) {
         </nav>
 
         <div className={styles.mobileActions}>
-          {/* Everything else lives in the drawer; the cart stays out here,
-              one tap away — and it is where an added painting flies to. */}
+          {/* Everything else lives in the drawer. On a phone the cart has
+              no icon up here (the desktop header keeps one): the floating
+              cart (cart/FloatingCart) takes over as soon as there is
+              something in it. */}
           <button
             onClick={handleThemeToggle}
             aria-label={t('themeToggle')}
@@ -563,18 +565,6 @@ export default function Header({ compact = false }: Props) {
               {profileIcon}
             </NavLink>
           )}
-
-          <NavLink
-            to="/cart"
-            data-cart-target
-            aria-label={t('cartAria')}
-            className={({ isActive }) =>
-              `${styles.cartButton} ${isActive ? styles.active : ''}`
-            }
-          >
-            {cartIcon}
-            {cartCount > 0 && <span className={styles.cartBadge}>{cartCount}</span>}
-          </NavLink>
 
           <button
             type="button"

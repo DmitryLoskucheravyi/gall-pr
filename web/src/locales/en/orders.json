@@ -44,5 +44,7 @@
     "pending": "Under review",
     "published": "Published",
     "failed": "Couldn’t send the review"
-  }
+  },
+  "guestNote": "You’re not signed in — these are the orders placed from this device.",
+  "guestLogin": "Sign in to see all your orders."
 }

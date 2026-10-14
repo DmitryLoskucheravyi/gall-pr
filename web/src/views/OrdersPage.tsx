@@ -10,11 +10,14 @@ import Skeleton from '../components/ui/Skeleton';
 import OrderPreviewCard from '../components/OrderPreviewCard';
 import cardStyles from '../components/OrderPreviewCard.module.scss';
 import { useConfirm } from '../components/ui/ConfirmDialog';
+import { LocalizedLink as Link } from '../components/ui/LocalizedLink';
+import { useAppSelector } from '../store/hooks';
 import styles from './OrdersPage.module.scss';
 
 export default function OrdersPage() {
   const { t } = useTranslation('orders');
-  const { data: orders = [], isLoading: loading } = useMyOrders();
+  const { data: orders = [], isPending: loading } = useMyOrders();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const cancelOrder = useCancelOrderMutation();
   const confirm = useConfirm();
 
@@ -67,6 +70,17 @@ export default function OrdersPage() {
   return (
     <div>
       <h1 className={styles.title}>{t('title')}</h1>
+
+      {!isAuthenticated && (
+        // A guest's orders live with this browser; signing in brings them
+        // into the account (POST /orders/claim-guest on login).
+        <p className={styles.guestNote}>
+          {t('guestNote')}{' '}
+          <Link to="/login" className={styles.guestLink}>
+            {t('guestLogin')}
+          </Link>
+        </p>
+      )}
 
       {orders.length === 0 ? (
         <p className={styles.muted}>{t('empty')}</p>

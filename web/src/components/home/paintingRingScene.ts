@@ -474,7 +474,7 @@ export class PaintingRingScene {
   // the ring turns through its beam, and that alone is what lights the active
   // work and lets the others fall into shade.
   private buildLamp(compact: boolean) {
-    const lamp = new SpotLight(LAMP_COLOR, 130, 14, 0.46, 0.85, 1.7);
+    const lamp = new SpotLight(LAMP_COLOR, 55, 14, 0.46, 0.85, 1.7);
     lamp.position.set(0.4, 2.7, this.radius + 1.9);
     lamp.castShadow = true;
     lamp.shadow.mapSize.set(compact ? 512 : 1024, compact ? 512 : 1024);
@@ -701,8 +701,10 @@ export class PaintingRingScene {
     this.camera.aspect = w / h;
 
     // Pull the camera back on narrow screens so the active work and a sliver
-    // of its neighbours always fit across.
-    const fitWidth = MAX_WIDTH + 1.4;
+    // of its neighbours always fit across. On a portrait phone the margin is
+    // much tighter: the neighbours only peek in, and the work itself gets
+    // the width.
+    const fitWidth = MAX_WIDTH + (this.camera.aspect < 1 ? 0.45 : 1.4);
     const fovH = 2 * Math.atan(Math.tan((this.camera.fov * Math.PI) / 360) * this.camera.aspect);
     const distance = Math.max(4.4, fitWidth / 2 / Math.tan(fovH / 2) + 0.4);
 

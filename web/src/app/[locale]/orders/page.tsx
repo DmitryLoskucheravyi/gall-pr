@@ -1,18 +1,15 @@
 import type { Metadata } from 'next';
 
-import ProtectedRoute from '@/components/ProtectedRoute';
 import View from '@/views/OrdersPage';
 
-// Behind a login, or with nothing to rank for. robots.txt disallows
-// these too; this is the half a crawler that ignores robots.txt sees.
+// Open to everyone: a guest's orders are theirs too, found by the guest token
+// they ordered with. Not indexed — there is nothing here to rank for.
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
 export default function Page() {
   return (
-    <ProtectedRoute>
-      <View />
-    </ProtectedRoute>
+    <View />
   );
 }

@@ -14,6 +14,7 @@ import Toast from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 import LoadingCursor from '@/components/ui/LoadingCursor';
 import ReviewPrompt from '@/components/ReviewPrompt';
+import NavigationTracker from '@/components/NavigationTracker';
 import type { Locale } from '@/utils/locale';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PublicAppSettings } from '@/types/settings.types';
@@ -67,6 +68,7 @@ export default function Providers({
           <I18nextProvider i18n={i18n}>
             <ConfirmProvider>
               {children}
+              <NavigationTracker />
               <Toast />
               {/* Suspense because it reads the search params, which a
                   statically rendered page only has on the client. */}

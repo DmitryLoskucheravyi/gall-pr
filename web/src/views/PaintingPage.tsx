@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 
 import { useLocale } from '../hooks/useLocale';
+import { useBack } from '../hooks/useBack';
 import { pickLocale } from '../utils/localizedField';
 import { useExchangeRate } from '../hooks/queries/useExchangeRate';
 import { formatPrice } from '../utils/formatPrice';
@@ -35,7 +36,7 @@ export default function PaintingPage() {
   const user = useAppSelector((state) => state.auth.user);
   const params = useParams<{ id: string }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const router = useRouter();
+  const goBack = useBack('/catalog');
   const addToCart = useAddToCart();
   const authorName = useAuthorName();
   const { data: usdRate } = useExchangeRate();
@@ -245,7 +246,7 @@ export default function PaintingPage() {
         <div className={styles.grid}>
           <div className={styles.imageWrap}>
             <button
-              onClick={() => router.back()}
+              onClick={goBack}
               className={styles.backButton}
               aria-label={t('backAria')}
             >
@@ -300,7 +301,7 @@ export default function PaintingPage() {
             onPointerLeave={() => setArrowsVisible(false)}
           >
             <button
-              onClick={() => router.back()}
+              onClick={goBack}
               className={styles.backButton}
               aria-label={t('backAria')}
             >

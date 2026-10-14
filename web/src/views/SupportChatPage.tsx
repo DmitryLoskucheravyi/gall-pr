@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useLocalizedNavigate } from '../hooks/useLocalizedNavigate';
+import { useBack } from '../hooks/useBack';
 import { supportService } from '../api/support.api';
 import type { SupportMessage } from '../types/support.types';
 import { useSupportSocket } from '../hooks/useSupportSocket';
@@ -20,7 +20,7 @@ export default function SupportChatPage() {
 
   const socket = useSupportSocket(true);
   const { data: settings } = useSettings();
-  const navigate = useLocalizedNavigate();
+  const goBack = useBack('/support');
   const scrollToTopAfterKeyboard = useScrollToTopAfterKeyboard();
 
   const hasContacts =
@@ -78,7 +78,7 @@ export default function SupportChatPage() {
               <div className={styles.chatHeader}>
                 <button
                   type="button"
-                  onClick={() => navigate(-1)}
+                  onClick={goBack}
                   className={styles.backButton}
                   aria-label={t('backAria')}
                 >

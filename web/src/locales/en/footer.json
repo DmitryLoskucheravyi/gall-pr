@@ -33,5 +33,6 @@
   "copyright": "© {{year}} {{author}}. All rights reserved.",
   "toTop": "Top",
   "toTopAria": "Back to top",
-  "continueLabel": "Next"
+  "continueLabel": "Next",
+  "continueRelease": "Release to continue"
 }
