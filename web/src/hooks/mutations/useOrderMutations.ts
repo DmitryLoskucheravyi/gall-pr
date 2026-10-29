@@ -5,6 +5,7 @@ import { queryKeys } from '../../lib/queryKeys';
 import { store } from '../../store';
 import { showToast } from '../../store/slices/toastSlice';
 import type { OrderStatus, PaymentStatus } from '../../types/order.types';
+import type { MailEdits } from '../../types/mail.types';
 import { apiErrorMessage } from '../../utils/apiError';
 
 export function useCancelOrderMutation() {
@@ -88,7 +89,8 @@ export function useSendStatusMailMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (orderId: number) => ordersService.sendStatusMail(orderId),
+    mutationFn: ({ orderId, edits }: { orderId: number; edits?: MailEdits }) =>
+      ordersService.sendStatusMail(orderId, edits),
     onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.mail.all });
       store.dispatch(showToast({ message }));
@@ -108,7 +110,8 @@ export function useSendApologyMailMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (orderId: number) => ordersService.sendApologyMail(orderId),
+    mutationFn: ({ orderId, edits }: { orderId: number; edits?: MailEdits }) =>
+      ordersService.sendApologyMail(orderId, edits),
     onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.mail.all });
       store.dispatch(showToast({ message }));

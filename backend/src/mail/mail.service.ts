@@ -13,7 +13,25 @@ export type OrderMailItem = { title: string; quantity: number; price: number };
 
 // `force` sends the letter even when this order has already had one of the
 // same kind — the admin asking for it by hand.
-export type SendOptions = { force?: boolean };
+//
+// `preview` composes the letter and hands it back without queuing anything:
+// the admin's "show me what they'll get". `override` is the other half — the
+// same letter after the admin edited it in that preview, sent instead of the
+// template's own wording.
+export type SendOptions = {
+  force?: boolean;
+  preview?: boolean;
+  override?: { subject?: string; html?: string };
+};
+
+// A letter as it would leave: what the preview shows and what is queued.
+export type ComposedLetter = {
+  kind: MailKind;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+};
 
 export type OrderMailData = {
   id: number;
@@ -32,6 +50,51 @@ const ACCENT = '#551126';
 const INK = '#1c1a16';
 const MUTED = '#6d6961';
 const PAPER = '#f6f4ef';
+
+// The logo at the top of every letter: web/public/brand/logo-email.png, served
+// by the web app. Baked onto white (the card's colour) rather than transparent,
+// so a mail client that darkens the page in dark mode still shows it on its
+// own white chip instead of black ink on black. Without WEB_URL there is no
+// address to point at, and the letter falls back to the name in type.
+function brandHeader(): string {
+  const base = (process.env.WEB_URL ?? '').replace(/\/$/, '');
+
+  if (!base) {
+    return `<div style="font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:${MUTED};">${BRAND}</div>`;
+  }
+
+  return `<a href="${base}/ua" style="display:inline-block;text-decoration:none;"><img src="${base}/brand/logo-email.png" width="118" height="44" alt="${BRAND} art" style="display:block;width:118px;height:44px;border:0;outline:none;font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:${MUTED};" /></a>`;
+}
+
+// The plain-text part for a letter whose HTML the admin edited by hand. The
+// template's own text version no longer matches it, and a client that only
+// shows text must still show what the admin wrote — so it is rebuilt from the
+// HTML: blocks become lines, links keep their address, tags go.
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, '')
+    .replace(
+      /<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
+      (_, href: string, label: string) => {
+        const text = label.replace(/<[^>]+>/g, '').trim();
+        return text && text !== href ? `${text} (${href})` : href;
+      },
+    )
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 function money(value: number): string {
   return `${Number(value).toLocaleString('uk-UA')} ₴`;
@@ -93,13 +156,27 @@ export class MailService {
     html: string,
     orderId: number | null,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
+    if (options.override?.subject?.trim()) {
+      subject = options.override.subject.trim();
+    }
+    if (options.override?.html?.trim()) {
+      html = options.override.html;
+      text = htmlToText(html);
+    }
+
+    const letter: ComposedLetter = { kind, to, subject, text, html };
+
+    if (options.preview) {
+      return letter;
+    }
+
     if (!options.force && orderId !== null) {
       if (await this.alreadySent(kind, orderId)) {
         this.logger.log(
           `Skipped "${subject}" for ${to} — already sent for order ${orderId}`,
         );
-        return;
+        return null;
       }
     }
 
@@ -131,12 +208,14 @@ export class MailService {
         `Failed to queue "${subject}" for ${to}`,
         error as Error,
       );
-      return;
+      return null;
     }
 
     // Nudge the dispatcher instead of waiting for its tick, so the ordinary
     // path is as immediate as sending inline was.
     if (configured) void this.dispatcher.drain();
+
+    return letter;
   }
 
   // Shared shell so the mails read as one voice. Inline styles and a table-free
@@ -146,8 +225,8 @@ export class MailService {
     return `
       <div style="margin:0;padding:24px 12px;background:${PAPER};font-family:Georgia,'Times New Roman',serif;">
         <div style="max-width:560px;margin:0 auto;background:#fff;padding:32px;">
-          <div style="font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:${MUTED};">${BRAND}</div>
-          <h1 style="margin:12px 0 24px;font-size:23px;font-weight:normal;color:${INK};">${heading}</h1>
+          ${brandHeader()}
+          <h1 style="margin:20px 0 24px;font-size:23px;font-weight:normal;color:${INK};">${heading}</h1>
           ${body}
           <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e6e2d8;font-size:12px;line-height:1.6;color:${MUTED};">
             Це автоматичний лист про ваше замовлення. Якщо щось незрозуміло —
@@ -210,7 +289,7 @@ export class MailService {
     order: OrderMailData,
     cardTransferIban?: string | null,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const greeting = order.customerName
       ? `Дякуємо, ${order.customerName}!`
       : 'Дякуємо за замовлення!';
@@ -256,7 +335,7 @@ export class MailService {
       .filter(Boolean)
       .join('\n');
 
-    await this.send(
+    return this.send(
       MailKind.ORDER_PLACED,
       to,
       `Замовлення №${order.id} прийнято — ${BRAND}`,
@@ -283,7 +362,7 @@ export class MailService {
       deliveryPlace?: string | null;
       comment?: string | null;
     },
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     // Reading back their own number matters more than the reference one: it's
     // what they decided, and seeing it repeated is how they know it arrived
     // intact. The original is only worth naming when the two differ.
@@ -334,7 +413,7 @@ export class MailService {
       .filter(Boolean)
       .join('\n');
 
-    await this.send(
+    return this.send(
       MailKind.COMMISSION_PLACED,
       to,
       `Замовлення повтору «${commission.paintingTitle}» — ${BRAND}`,
@@ -350,14 +429,14 @@ export class MailService {
     to: string,
     orderId: number,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const heading = 'Отримали ваш переказ';
     const body = `
       <p style="font-size:15px;line-height:1.7;color:${INK};">
         Ми побачили скріншот оплати до замовлення <strong>№${orderId}</strong> і перевіряємо надходження.
         Щойно підтвердимо — надішлемо окремий лист.
       </p>`;
-    await this.send(
+    return this.send(
       MailKind.PAYMENT_PROOF_RECEIVED,
       to,
       `Скріншот оплати до замовлення №${orderId} отримано — ${BRAND}`,
@@ -372,14 +451,14 @@ export class MailService {
     to: string,
     orderId: number,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const heading = 'Оплату підтверджено';
     const body = `
       <p style="font-size:15px;line-height:1.7;color:${INK};">
         Оплату замовлення <strong>№${orderId}</strong> зараховано. Готуємо роботу до відправки
         і повідомимо, щойно передамо її в Нову пошту.
       </p>`;
-    await this.send(
+    return this.send(
       MailKind.PAYMENT_CONFIRMED,
       to,
       `Оплату замовлення №${orderId} підтверджено — ${BRAND}`,
@@ -396,7 +475,7 @@ export class MailService {
     to: string,
     orderId: number,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const heading = 'Оплата не пройшла';
     const body = `
       <p style="font-size:15px;line-height:1.7;color:${INK};">
@@ -407,7 +486,7 @@ export class MailService {
         Саме замовлення ми поки тримаємо за вами. Спробуйте оплатити ще раз у кабінеті
         або відповідайте на цей лист — розберемося разом.
       </p>`;
-    await this.send(
+    return this.send(
       MailKind.PAYMENT_FAILED,
       to,
       `Оплата замовлення №${orderId} не пройшла — ${BRAND}`,
@@ -426,7 +505,7 @@ export class MailService {
     trackingNumber: string,
     deliveryPlace?: string | null,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const heading = 'Замовлення відправлено';
     const body = `
       <p style="font-size:15px;line-height:1.7;color:${INK};">
@@ -440,7 +519,7 @@ export class MailService {
       <p style="font-size:14px;line-height:1.7;color:${MUTED};">
         Відстежити рух посилки можна за цим номером на сайті або в застосунку Нової пошти.
       </p>`;
-    await this.send(
+    return this.send(
       MailKind.ORDER_SHIPPED,
       to,
       `Замовлення №${orderId} відправлено — ${BRAND}`,
@@ -458,7 +537,7 @@ export class MailService {
     to: string,
     order: OrderMailData,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const heading = order.customerName
       ? `Дякуємо, ${order.customerName}!`
       : 'Дякуємо!';
@@ -520,7 +599,7 @@ export class MailService {
       reviewLink,
     ].join('\n');
 
-    await this.send(
+    return this.send(
       MailKind.ORDER_COMPLETED,
       to,
       `Дякуємо за замовлення №${order.id} — ${BRAND}`,
@@ -537,7 +616,7 @@ export class MailService {
     to: string,
     orderId: number,
     options: SendOptions = {},
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const heading = 'Замовлення скасовано';
     const body = `
       <p style="font-size:15px;line-height:1.7;color:${INK};">
@@ -547,7 +626,7 @@ export class MailService {
         Якщо оплата вже пройшла, ми повернемо кошти тим самим способом. Якщо скасування —
         непорозуміння, відповідайте на цей лист, і ми все відновимо.
       </p>`;
-    await this.send(
+    return this.send(
       MailKind.ORDER_CANCELLED,
       to,
       `Замовлення №${orderId} скасовано — ${BRAND}`,
@@ -562,7 +641,11 @@ export class MailService {
   // duplicate charge, a work that turned out to be gone. It deliberately
   // promises only a human — inventing details here would make things worse —
   // and is never sent automatically, so it always goes out on purpose.
-  async sendOrderApology(to: string, orderId: number): Promise<void> {
+  async sendOrderApology(
+    to: string,
+    orderId: number,
+    options: SendOptions = {},
+  ): Promise<ComposedLetter | null> {
     const heading = 'Вибачте — сталася помилка';
     const body = `
       <p style="font-size:15px;line-height:1.7;color:${INK};">
@@ -575,7 +658,7 @@ export class MailService {
         написати першими, просто відповідайте на цей лист.
       </p>`;
 
-    await this.send(
+    return this.send(
       MailKind.ORDER_APOLOGY,
       to,
       `Щодо вашого замовлення №${orderId} — ${BRAND}`,
@@ -583,7 +666,7 @@ export class MailService {
       this.layout(heading, body),
       orderId,
       // Always by hand, and sometimes twice — never deduplicated.
-      { force: true },
+      { ...options, force: true },
     );
   }
 
@@ -599,7 +682,7 @@ export class MailService {
     name: string | null,
     link: string,
     minutes: number,
-  ): Promise<void> {
+  ): Promise<ComposedLetter | null> {
     const heading = name
       ? `${escapeHtml(name)}, змінімо пароль`
       : 'Зміна пароля';
@@ -623,7 +706,7 @@ export class MailService {
         залишиться чинним, і ніхто нічого не дізнається.
       </p>`;
 
-    await this.send(
+    return this.send(
       MailKind.PASSWORD_RESET,
       to,
       `Зміна пароля — ${BRAND}`,

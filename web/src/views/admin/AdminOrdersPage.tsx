@@ -22,6 +22,8 @@ import type {
 } from '../../types/order.types';
 import Skeleton from '../../components/ui/Skeleton';
 import { useConfirm } from '../../components/ui/ConfirmDialog';
+import MailPreviewDialog from '../../components/admin/MailPreviewDialog';
+import { ordersService } from '../../api/orders.api';
 import styles from './AdminOrdersPage.module.scss';
 
 const STATUS_OPTIONS: OrderStatus[] = [
@@ -77,6 +79,11 @@ export default function AdminOrdersPage() {
   const sendStatusMail = useSendStatusMailMutation();
   const sendApologyMail = useSendApologyMailMutation();
   const confirm = useConfirm();
+  // Which letter is open in the preview, if any. Sending happens from there.
+  const [mailPreview, setMailPreview] = useState<{
+    orderId: number;
+    kind: 'status' | 'apology';
+  } | null>(null);
 
   const handleStatusChange = (order: Order, status: OrderStatus) => {
     if (status === order.status) return;
@@ -122,30 +129,14 @@ export default function AdminOrdersPage() {
   const recipientOf = (order: Order) =>
     order.user?.email ?? order.guestEmail ?? null;
 
-  const handleSendStatusMail = async (order: Order) => {
-    const ok = await confirm({
-      title: t(`ordersPage.statusMail.${order.status}`, {
-        defaultValue: t('ordersPage.confirmStatusMail.title'),
-      }),
-      message: t('ordersPage.confirmStatusMail.message', {
-        email: recipientOf(order),
-      }),
-      confirmLabel: t('ordersPage.confirmStatusMail.confirmLabel'),
-    });
-    if (!ok) return;
-    sendStatusMail.mutate(order.id);
+  // Both open the letter first: the preview is the confirmation, and the
+  // place to change the wording before it goes.
+  const handleSendStatusMail = (order: Order) => {
+    setMailPreview({ orderId: order.id, kind: 'status' });
   };
 
-  const handleSendApologyMail = async (order: Order) => {
-    const ok = await confirm({
-      title: t('ordersPage.confirmApologyMail.title', { id: order.id }),
-      message: t('ordersPage.confirmApologyMail.message', {
-        email: recipientOf(order),
-      }),
-      confirmLabel: t('ordersPage.confirmApologyMail.confirmLabel'),
-    });
-    if (!ok) return;
-    sendApologyMail.mutate(order.id);
+  const handleSendApologyMail = (order: Order) => {
+    setMailPreview({ orderId: order.id, kind: 'apology' });
   };
 
   const handleArchive = async (order: Order) => {
@@ -532,6 +523,21 @@ export default function AdminOrdersPage() {
             {t('ordersPage.pager.next')}
           </button>
         </div>
+      )}
+      {mailPreview && (
+        <MailPreviewDialog
+          queryKey={['mail-preview', mailPreview.kind, mailPreview.orderId]}
+          load={() =>
+            mailPreview.kind === 'status'
+              ? ordersService.previewStatusMail(mailPreview.orderId)
+              : ordersService.previewApologyMail(mailPreview.orderId)
+          }
+          send={(edits) =>
+            (mailPreview.kind === 'status' ? sendStatusMail : sendApologyMail)
+              .mutateAsync({ orderId: mailPreview.orderId, edits })
+          }
+          onClose={() => setMailPreview(null)}
+        />
       )}
     </div>
   );

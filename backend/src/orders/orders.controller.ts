@@ -24,6 +24,7 @@ import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { CheckoutDto } from './dto/checkout.dto';
 import { ClaimGuestOrdersDto } from './dto/claim-guest-orders.dto';
 import { CreateCommissionDto } from './dto/create-commission.dto';
+import { OrderMailDto } from './dto/order-mail.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -179,16 +180,37 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @Get(':id/status-mail/preview')
+  previewStatusMailAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.previewStatusMailAdmin(id);
+  }
+
+  // The body carries the admin's edits from the preview, if any.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Post(':id/status-mail')
-  sendStatusMailAdmin(@Param('id', ParseIntPipe) id: number) {
-    return this.ordersService.sendStatusMailAdmin(id);
+  sendStatusMailAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: OrderMailDto,
+  ) {
+    return this.ordersService.sendStatusMailAdmin(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get(':id/apology-mail/preview')
+  previewApologyMailAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.previewApologyMailAdmin(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Post(':id/apology-mail')
-  sendApologyMailAdmin(@Param('id', ParseIntPipe) id: number) {
-    return this.ordersService.sendApologyMailAdmin(id);
+  sendApologyMailAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: OrderMailDto,
+  ) {
+    return this.ordersService.sendApologyMailAdmin(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

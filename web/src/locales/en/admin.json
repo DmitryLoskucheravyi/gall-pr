@@ -160,16 +160,6 @@
       "message": "The order will be permanently deleted.",
       "confirmLabel": "Delete"
     },
-    "confirmStatusMail": {
-      "title": "Send this email?",
-      "message": "An email about the current status will go to {{email}}. If it was already sent, the customer will get it a second time.",
-      "confirmLabel": "Send"
-    },
-    "confirmApologyMail": {
-      "title": "Send an apology email for order #{{id}}?",
-      "message": "An email will go to {{email}}: something went wrong, we're looking into it and will be in touch soon. It has no details — you'll share those yourself.",
-      "confirmLabel": "Send"
-    },
     "confirmArchive": {
       "title": "Remove order #{{id}} from view?",
       "message": "It will disappear from the active list, but stay available under the \"Completed\" tab.",
@@ -485,6 +475,27 @@
       "title": "Delete this review?",
       "message": "The review by {{author}} will be deleted for good.",
       "confirmLabel": "Delete"
+    }
+  },
+  "mailPreview": {
+    "title": "Email preview",
+    "aria": "Email preview before sending",
+    "to": "To:",
+    "close": "Close",
+    "subject": "Subject",
+    "frameTitle": "The email the customer will receive",
+    "hint": "This is how the email will look in the customer's inbox. Click any text to change it.",
+    "loadError": "Couldn't compose the email",
+    "sendError": "Couldn't send the email",
+    "reset": "Undo edits",
+    "cancel": "Close",
+    "send": "Send",
+    "sendEdited": "Send with edits",
+    "sending": "Sending…",
+    "discard": {
+      "title": "Close without sending?",
+      "message": "Your edits to this email will be lost.",
+      "confirmLabel": "Close"
     }
   }
 }

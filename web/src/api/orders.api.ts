@@ -9,6 +9,7 @@ import type {
   OrderStatus,
   PaymentStatus,
 } from '../types/order.types';
+import type { ComposedLetter, MailEdits } from '../types/mail.types';
 
 class OrdersService {
   async checkout(dto: CheckoutDto): Promise<CheckoutResponse> {
@@ -59,13 +60,29 @@ class OrdersService {
     return response.data;
   }
 
-  async sendStatusMail(id: number): Promise<{ message: string }> {
-    const response = await api.post(`/orders/${id}/status-mail`);
+  async previewStatusMail(id: number): Promise<ComposedLetter> {
+    const response = await api.get(`/orders/${id}/status-mail/preview`);
     return response.data;
   }
 
-  async sendApologyMail(id: number): Promise<{ message: string }> {
-    const response = await api.post(`/orders/${id}/apology-mail`);
+  async sendStatusMail(
+    id: number,
+    edits: MailEdits = {},
+  ): Promise<{ message: string }> {
+    const response = await api.post(`/orders/${id}/status-mail`, edits);
+    return response.data;
+  }
+
+  async previewApologyMail(id: number): Promise<ComposedLetter> {
+    const response = await api.get(`/orders/${id}/apology-mail/preview`);
+    return response.data;
+  }
+
+  async sendApologyMail(
+    id: number,
+    edits: MailEdits = {},
+  ): Promise<{ message: string }> {
+    const response = await api.post(`/orders/${id}/apology-mail`, edits);
     return response.data;
   }
 

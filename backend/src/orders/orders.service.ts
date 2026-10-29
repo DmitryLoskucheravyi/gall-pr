@@ -33,7 +33,13 @@ import { UpstreamError } from '../common/http.util';
 import { UsersService } from '../users/users.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { UploadsService } from '../uploads/uploads.service';
-import { MailService, type OrderMailData } from '../mail/mail.service';
+import {
+  MailService,
+  type ComposedLetter,
+  type OrderMailData,
+  type SendOptions,
+} from '../mail/mail.service';
+import { OrderMailDto } from './dto/order-mail.dto';
 import { SettingsService } from '../settings/settings.service';
 import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
 
@@ -1061,7 +1067,41 @@ export class OrdersService {
   // The admin's "send it anyway" button. Automatic sends are deduplicated per
   // status, so a corrected waybill or a status flipped back and forth needs a
   // deliberate way to reach the customer again — this is it.
-  async sendStatusMailAdmin(id: number): Promise<{ message: string }> {
+  // The letter for the order's current status, shown to the admin before it
+  // goes. Exactly what sendStatusMailAdmin would queue — same template, same
+  // data — so what they read is what the customer will get.
+  async previewStatusMailAdmin(id: number): Promise<ComposedLetter> {
+    return this.statusMail(id, { preview: true }) as Promise<ComposedLetter>;
+  }
+
+  async sendStatusMailAdmin(
+    id: number,
+    edits: OrderMailDto = {},
+  ): Promise<{ message: string }> {
+    const letter = await this.statusMail(id, { force: true, override: edits });
+
+    return { message: `Лист надіслано на ${letter?.to ?? ''}` };
+  }
+
+  async previewApologyMailAdmin(id: number): Promise<ComposedLetter> {
+    return this.apologyMail(id, { preview: true }) as Promise<ComposedLetter>;
+  }
+
+  async sendApologyMailAdmin(
+    id: number,
+    edits: OrderMailDto = {},
+  ): Promise<{ message: string }> {
+    const letter = await this.apologyMail(id, { override: edits });
+
+    return { message: `Лист-вибачення надіслано на ${letter?.to ?? ''}` };
+  }
+
+  // One path for preview and send, so the two can never disagree about which
+  // template a status gets or what data goes into it.
+  private async statusMail(
+    id: number,
+    options: SendOptions,
+  ): Promise<ComposedLetter | null> {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
@@ -1084,13 +1124,12 @@ export class OrdersService {
             ? (await this.settingsService.get()).cardTransferIban || null
             : null;
 
-        await this.mailService.sendOrderPlaced(
+        return this.mailService.sendOrderPlaced(
           recipient.email,
           mailData,
           iban,
-          { force: true },
+          options,
         );
-        break;
       }
 
       case OrderStatus.SHIPPED: {
@@ -1100,38 +1139,40 @@ export class OrdersService {
           );
         }
 
-        await this.mailService.sendOrderShipped(
+        return this.mailService.sendOrderShipped(
           recipient.email,
           order.id,
           order.trackingNumber,
           this.deliveryPlaceOf(order),
-          { force: true },
+          options,
         );
-        break;
       }
 
       case OrderStatus.COMPLETED:
-        await this.mailService.sendOrderCompleted(recipient.email, mailData, {
-          force: true,
-        });
-        break;
+        return this.mailService.sendOrderCompleted(
+          recipient.email,
+          mailData,
+          options,
+        );
 
       case OrderStatus.CANCELLED:
-        await this.mailService.sendOrderCancelled(recipient.email, order.id, {
-          force: true,
-        });
-        break;
+        return this.mailService.sendOrderCancelled(
+          recipient.email,
+          order.id,
+          options,
+        );
 
       // CONFIRMED has no letter of its own: it lands minutes after the receipt
       // and would only repeat it.
       default:
         throw new BadRequestException('Для цього статусу листа не передбачено');
     }
-
-    return { message: `Лист надіслано на ${recipient.email}` };
   }
 
-  async sendApologyMailAdmin(id: number): Promise<{ message: string }> {
+  private async apologyMail(
+    id: number,
+    options: SendOptions,
+  ): Promise<ComposedLetter | null> {
     const order = await this.ordersRepository.findOne({ where: { id } });
 
     if (!order) {
@@ -1145,9 +1186,11 @@ export class OrdersService {
       );
     }
 
-    await this.mailService.sendOrderApology(recipient.email, order.id);
-
-    return { message: `Лист-вибачення надіслано на ${recipient.email}` };
+    return this.mailService.sendOrderApology(
+      recipient.email,
+      order.id,
+      options,
+    );
   }
 
   private async notifyUserOfStatusChange(order: Order) {
