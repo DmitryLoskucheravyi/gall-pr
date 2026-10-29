@@ -12,7 +12,6 @@ export default function PaintingCardSkeleton({ compact }: Props) {
 
       <div className={styles.body}>
         <Skeleton className={styles.title} />
-        {!compact && <Skeleton className={styles.author} />}
         <Skeleton className={styles.price} />
 
         {!compact && (

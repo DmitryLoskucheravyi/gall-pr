@@ -37,7 +37,15 @@ export default function Painting3DViewer({
   // One sized URL for both the front face and the edge slivers — same cache
   // entry, and no 3 MB original for what is at most a 640px-wide box.
   const src = cdnImage(imageUrl, 1280);
-  const [rotation, setRotation] = useState<Rotation>({ x: 0, y: 0 });
+  // The pose lives in a ref and is written straight to the DOM, once per
+  // frame (see paint()). It used to be React state: every pointermove and
+  // every frame of a flick re-rendered the component and reset a handful of
+  // custom properties that the whole box inherits — and with them the
+  // brightness filters on the painting and on the textured back, which made
+  // the browser re-rasterise the most expensive layers on the page sixty
+  // times a second. Now a frame touches only transforms and opacities, which
+  // the compositor handles without repainting anything.
+  const rotationRef = useRef<Rotation>({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(DEFAULT_ASPECT);
@@ -47,6 +55,11 @@ export default function Painting3DViewer({
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const glareRef = useRef<HTMLDivElement>(null);
+  const shadeFrontRef = useRef<HTMLDivElement>(null);
+  const shadeBackRef = useRef<HTMLDivElement>(null);
+  const paintFrameRef = useRef(0);
+  const draggingRef = useRef(false);
   const dragRef = useRef<{
     pointerId: number;
     startX: number;
@@ -80,9 +93,51 @@ export default function Painting3DViewer({
     return () => observer.disconnect();
   }, []);
 
-  // The inertia loop lives outside React's event flow — cancel it on
-  // unmount, not just on the next grab.
-  useEffect(() => () => cancelAnimationFrame(spinFrameRef.current), []);
+  // Writes the current pose and its lighting to the DOM. A fixed light up and
+  // to the left: the sheen slides across the canvas as it turns and the faces
+  // dim as they turn away. This response to a stable light source is most of
+  // what reads as "an object", rather than "a picture on a turntable".
+  const paint = () => {
+    paintFrameRef.current = 0;
+    const card = cardRef.current;
+    if (!card) return;
+    const { x, y } = rotationRef.current;
+    const scale = draggingRef.current ? 1.03 : 1;
+    card.style.transform = `rotateX(${x}deg) rotateY(${y}deg) scale(${scale})`;
+
+    const yawRad = (y * Math.PI) / 180;
+    const facing = Math.cos(yawRad); // 1 = front to viewer, -1 = back
+    // Dimming as a black veil's opacity rather than a brightness filter: same
+    // look (brightness 0.68 at worst), but compositor-only.
+    if (shadeFrontRef.current) {
+      shadeFrontRef.current.style.opacity = String(0.32 * (1 - Math.max(0, facing)));
+    }
+    if (shadeBackRef.current) {
+      shadeBackRef.current.style.opacity = String(0.32 * (1 - Math.max(0, -facing)));
+    }
+    // The sheen is a band 2.8× the face's width, slid across it by
+    // transform — the old background-position repainted it every frame.
+    if (glareRef.current) {
+      const pos = clamp(0.5 + Math.sin(yawRad) * 1.1, -0.6, 1.6);
+      glareRef.current.style.transform = `translate3d(${(-pos * 1.8 * 100) / 2.8}%, 0, 0)`;
+      glareRef.current.style.opacity = String(Math.max(0, facing) * 0.55);
+    }
+  };
+
+  const schedulePaint = () => {
+    if (!paintFrameRef.current) paintFrameRef.current = requestAnimationFrame(paint);
+  };
+
+  useEffect(() => {
+    paint();
+    // The inertia loop and any pending paint live outside React's event
+    // flow — cancel them on unmount, not just on the next grab.
+    return () => {
+      cancelAnimationFrame(spinFrameRef.current);
+      cancelAnimationFrame(paintFrameRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stopSpin = () => {
     cancelAnimationFrame(spinFrameRef.current);
@@ -95,6 +150,8 @@ export default function Painting3DViewer({
     stopSpin();
     (event.currentTarget as Element).setPointerCapture(event.pointerId);
     setDragging(true);
+    draggingRef.current = true;
+    const rotation = rotationRef.current;
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -102,6 +159,7 @@ export default function Painting3DViewer({
       startRotation: rotation,
     };
     velocityRef.current = { v: 0, lastY: rotation.y, lastT: performance.now() };
+    schedulePaint();
   };
 
   const handlePointerMove = (event: React.PointerEvent) => {
@@ -125,10 +183,11 @@ export default function Painting3DViewer({
       sample.lastT = now;
     }
 
-    setRotation({
+    rotationRef.current = {
       y: nextY,
       x: clamp(drag.startRotation.x - dy * 0.4, -MAX_TILT, MAX_TILT),
-    });
+    };
+    schedulePaint();
   };
 
   const endDrag = (event: React.PointerEvent, withInertia: boolean) => {
@@ -137,6 +196,8 @@ export default function Painting3DViewer({
 
     dragRef.current = null;
     setDragging(false);
+    draggingRef.current = false;
+    schedulePaint();
 
     // Turn a fast release into a free spin that winds itself down.
     let v = withInertia && !prefersReducedMotion() ? velocityRef.current.v * 16 : 0;
@@ -149,7 +210,8 @@ export default function Painting3DViewer({
         setSpinning(false);
         return;
       }
-      setRotation((prev) => ({ ...prev, y: prev.y + v }));
+      rotationRef.current = { ...rotationRef.current, y: rotationRef.current.y + v };
+      paint();
       spinFrameRef.current = requestAnimationFrame(step);
     };
     spinFrameRef.current = requestAnimationFrame(step);
@@ -160,20 +222,10 @@ export default function Painting3DViewer({
     // To the nearest full turn, not to literal zero — after a few spins the
     // raw angle is huge, and resetting to 0 would animate back through every
     // one of them.
-    setRotation((prev) => ({ x: 0, y: Math.round(prev.y / 360) * 360 }));
+    const prev = rotationRef.current;
+    rotationRef.current = { x: 0, y: Math.round(prev.y / 360) * 360 };
+    schedulePaint();
   };
-
-  const yawRad = (rotation.y * Math.PI) / 180;
-  const facing = Math.cos(yawRad); // 1 = front to viewer, -1 = back
-
-  // A fixed light up and to the left: the sheen slides across the canvas as
-  // it turns and the faces dim as they turn away. This response to a stable
-  // light source is most of what reads as "an object", rather than "a
-  // picture on a turntable".
-  const glarePos = 50 + Math.sin(yawRad) * 110;
-  const glareOpacity = Math.max(0, facing) * 0.55;
-  const frontBright = 0.68 + 0.32 * Math.max(0, facing);
-  const backBright = 0.68 + 0.32 * Math.max(0, -facing);
 
   const interacting = dragging || spinning;
 
@@ -187,7 +239,7 @@ export default function Painting3DViewer({
       >
         <div
           ref={cardRef}
-          className={styles.card}
+          className={`${styles.card} ${interacting ? styles.live : ''}`}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={(event) => endDrag(event, true)}
@@ -197,26 +249,19 @@ export default function Painting3DViewer({
             {
               aspectRatio: `${aspectRatio}`,
               '--ar': aspectRatio,
-              transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale(${
-                dragging ? 1.03 : 1
-              })`,
-              transition: interacting
-                ? 'none'
-                : 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
               '--w': `${size.w}px`,
               '--h': `${size.h}px`,
               '--d': `${DEPTH}px`,
               '--img': `url("${src}")`,
-              '--glare-pos': `${glarePos}%`,
-              '--glare-o': glareOpacity,
-              '--front-bright': frontBright,
-              '--back-bright': backBright,
             } as React.CSSProperties
           }
         >
           <div className={styles.face}>
             <img src={src} alt="" draggable={false} className={styles.image} />
-            <div className={styles.glare} />
+            <div ref={shadeFrontRef} className={styles.shade} />
+            <div className={styles.glareTrack}>
+              <div ref={glareRef} className={styles.glare} />
+            </div>
           </div>
 
           {/* The reverse of a stretched canvas, built the way one is: raw
@@ -271,6 +316,7 @@ export default function Painting3DViewer({
                 </span>
               )}
             </div>
+            <div ref={shadeBackRef} className={styles.shade} />
           </div>
 
           {/* The stretcher sides. Each carries a mirrored sliver of the

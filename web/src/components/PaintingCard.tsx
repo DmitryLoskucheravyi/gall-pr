@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 
 import { LocalizedLink as Link } from './ui/LocalizedLink';
 import type { Painting } from '../types/painting.types';
-import { useAuthorName } from '../hooks/queries/useSettings';
 import { useLocale } from '../hooks/useLocale';
 import { useExchangeRate } from '../hooks/queries/useExchangeRate';
 import { pickLocale } from '../utils/localizedField';
@@ -33,7 +32,6 @@ export default function PaintingCard({
   const available = inStock(painting);
   const { t } = useTranslation('common');
   const locale = useLocale();
-  const authorName = useAuthorName();
   const { data: usdRate } = useExchangeRate();
   const price = Number(painting.price);
   const title = pickLocale(painting, 'title', locale);
@@ -76,7 +74,6 @@ export default function PaintingCard({
           {title}
         </Link>
 
-        {!!authorName && <span className={styles.author}>{authorName}</span>}
 
         {!compact && painting.width && painting.height && (
           <span className={styles.size}>

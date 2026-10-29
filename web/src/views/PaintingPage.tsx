@@ -21,7 +21,6 @@ import Skeleton from '../components/ui/Skeleton';
 import { usePainting } from '../hooks/queries/usePainting';
 import { useRelatedPaintings } from '../hooks/queries/useRelatedPaintings';
 import { useAddToCart } from '../hooks/mutations/useAddToCart';
-import { useAuthorName } from '../hooks/queries/useSettings';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useAppSelector } from '../store/hooks';
 import { cdnImage } from '../utils/imageUrl';
@@ -38,7 +37,6 @@ export default function PaintingPage() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const goBack = useBack('/catalog');
   const addToCart = useAddToCart();
-  const authorName = useAuthorName();
   const { data: usdRate } = useExchangeRate();
 
   const { data: painting, isLoading: loading } = usePainting(
@@ -404,7 +402,6 @@ export default function PaintingPage() {
             </div>
           </div>
 
-          {!!authorName && <p className={styles.author}>{authorName}</p>}
 
           <p className={styles.price}>{formatPrice(price, locale, usdRate)}</p>
 
@@ -450,7 +447,6 @@ export default function PaintingPage() {
           />
           {isCharOpen && (
             <dl className={styles.specList}>
-              {!!authorName && <Row label={t('specs.author')} value={authorName} />}
               {painting.year && (
                 <Row label={t('specs.year')} value={String(painting.year)} />
               )}
