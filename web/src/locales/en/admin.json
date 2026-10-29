@@ -107,8 +107,6 @@
       "COMPLETED": "Completed"
     },
     "paymentProvider": {
-      "LIQPAY": "LiqPay",
-      "WAYFORPAY": "WayForPay",
       "CASH_ON_DELIVERY": "Cash on delivery",
       "CARD_TRANSFER": "Card transfer",
       "ON_AGREEMENT": "By agreement"

@@ -23,7 +23,6 @@ decide whether the protections in the code actually do anything:
 | `NODE_ENV` | `production` | `config/cors.ts` keeps allowing localhost and private-range origins |
 | `CORS_ORIGINS` | `https://viktorumm.com` | the frontend can't call the API at all, or anyone can |
 | `TRUST_PROXY` | `2` | see below |
-| `PAYMENTS_CALLBACK_URL` | the public API URL | payment gateways can't call back and orders never settle |
 | `WEB_URL` | `https://viktorumm.com` | password-reset links in email point nowhere |
 
 `TRUST_PROXY=2` because there are two hops: Cloudflare, then Caddy. It has to
@@ -146,9 +145,5 @@ with.
   rather than quietly shipping for free, which is what it used to do.
 - Set `SMTP_*`. Password resets are email and nothing else: without a working
   SMTP host, a customer who forgets their password has no way back in.
-- Decide about `LIQPAY_*` / `WAYFORPAY_*`. The cart offers card payment only
-  when the server reports keys for a gateway (`GET /payments/methods`), so
-  leaving them unset simply means cash on delivery and card transfer — which is
-  a choice, not a bug, but make it deliberately.
 - Replace `web/public/og-cover.jpg`. It's currently a crop of the hero still;
   it is what every shared link renders as.

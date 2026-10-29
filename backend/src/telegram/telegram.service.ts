@@ -34,7 +34,7 @@ function clip(text: string, limit: number): string {
 // Thin wrapper around the Telegram Bot API (via grammy), long-polling so it
 // needs no public URL/webhook — works the same in dev and prod. Every method
 // is a no-op (logged, never thrown) when TELEGRAM_BOT_TOKEN is unset, mirroring
-// MailService/PaymentsService: the feature builds against the real, documented
+// MailService: the feature builds against the real, documented
 // API and just lights up once a token is dropped into .env.
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {

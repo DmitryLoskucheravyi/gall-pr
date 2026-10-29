@@ -76,7 +76,6 @@ const ua: LegalContent = {
         p('Лише сервісам, без яких сайт або замовлення не можуть працювати, і лише в потрібному їм обсязі:'),
         list(
           '«Нова пошта» та інші служби доставки — ім’я, телефон і адреса для відправлення.',
-          'Платіжні сервіси (LiqPay, WayForPay) — дані, потрібні для проведення оплати, якщо ви оплачуєте онлайн.',
           'Хмарна база даних (TiDB Cloud) — зберігання даних сайту.',
           'Cloudinary — зберігання зображень, зокрема завантажених підтверджень оплати.',
           'Поштовий сервіс — надсилання листів про замовлення та відновлення пароля.',
@@ -237,7 +236,6 @@ const en: LegalContent = {
         p('Only with services the site or your order cannot work without, and only as much as each needs:'),
         list(
           'Nova Poshta and other carriers — name, phone and address for shipping.',
-          'Payment providers (LiqPay, WayForPay) — the data needed to take a payment, if you pay online.',
           'Cloud database (TiDB Cloud) — storage of the site’s data.',
           'Cloudinary — image storage, including uploaded proofs of payment.',
           'An email service — order emails and password resets.',

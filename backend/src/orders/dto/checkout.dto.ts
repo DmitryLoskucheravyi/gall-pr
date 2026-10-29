@@ -19,8 +19,6 @@ import { DeliveryMethod, PaymentProvider } from '../entities/order.entity';
 // painting that owed nothing and had no way to be paid — the enum was the only
 // thing gating it, and the enum included it.
 export const CHECKOUT_PAYMENT_PROVIDERS = [
-  PaymentProvider.LIQPAY,
-  PaymentProvider.WAYFORPAY,
   PaymentProvider.CASH_ON_DELIVERY,
   PaymentProvider.CARD_TRANSFER,
 ] as const;

@@ -8,8 +8,6 @@ export type OrderStatus =
   | 'CANCELLED'
   | 'COMPLETED';
 export type PaymentProvider =
-  | 'LIQPAY'
-  | 'WAYFORPAY'
   | 'CASH_ON_DELIVERY'
   | 'CARD_TRANSFER'
   // Commissioned repeats only: the work doesn't exist yet, so its price and
@@ -69,12 +67,7 @@ export type Order = {
   updatedAt: string;
 };
 
-export type PaymentForm = {
-  actionUrl: string;
-  fields: Record<string, string | string[]>;
-} | null;
-
-export type CheckoutResponse = Order & { paymentForm: PaymentForm };
+export type CheckoutResponse = Order;
 
 export type CheckoutDto = {
   guestName?: string;

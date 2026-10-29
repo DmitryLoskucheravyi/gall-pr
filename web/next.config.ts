@@ -75,7 +75,7 @@ const CSP = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "form-action 'self' https://www.liqpay.ua https://secure.wayforpay.com",
+  "form-action 'self'",
   `script-src 'self' 'unsafe-inline'${ANALYTICS_ORIGIN ? ` ${ANALYTICS_ORIGIN}` : ''}${
     GOOGLE_GSI ? ` ${GOOGLE_GSI}client` : ''
   }${DEV ? " 'unsafe-eval'" : ''}`,

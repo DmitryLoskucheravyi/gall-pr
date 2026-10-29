@@ -22,9 +22,10 @@ export enum OrderStatus {
   COMPLETED = 'COMPLETED',
 }
 
+// Manual methods only: online card payment (LiqPay, WayForPay) was taken out
+// on 2026-10-29 until there is a merchant account to point it at — see git
+// history for the gateways, and temp/2026-10-remove-online-payments.sql.
 export enum PaymentProvider {
-  LIQPAY = 'LIQPAY',
-  WAYFORPAY = 'WAYFORPAY',
   CASH_ON_DELIVERY = 'CASH_ON_DELIVERY',
   CARD_TRANSFER = 'CARD_TRANSFER',
   // Commissioned repeats only. The work doesn't exist yet, so its price and
@@ -140,9 +141,6 @@ export class Order {
     default: PaymentStatus.PENDING,
   })
   paymentStatus: PaymentStatus;
-
-  @Column({ name: 'payment_transaction_id', type: 'varchar', nullable: true })
-  paymentTransactionId: string | null;
 
   // Screenshot the buyer attaches as proof of a manual card transfer. Set via
   // POST /orders/:id/payment-proof; forwarded to the admin's Telegram on upload.

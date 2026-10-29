@@ -18,12 +18,10 @@ import { useCart } from '../hooks/queries/useCart';
 import { useRemoveCartItemMutation } from '../hooks/mutations/useCartMutations';
 import { useCheckoutMutation } from '../hooks/mutations/useCheckoutMutation';
 import { useCardTransferIban } from '../hooks/queries/useSettings';
-import { useOnlinePaymentMethods } from '../hooks/queries/usePaymentMethods';
 import {
   useNovaPoshtaWarehouses,
   useNovaPoshtaDeliveryPrice,
 } from '../hooks/queries/useNovaPoshta';
-import { submitPaymentForm } from '../utils/submitPaymentForm';
 import Skeleton from '../components/ui/Skeleton';
 import Select from '../components/ui/Select';
 import NovaPoshtaCityPicker from '../components/ui/NovaPoshtaCityPicker';
@@ -86,25 +84,9 @@ export default function CartPage() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
-  // The two manual methods are always on offer — they need no gateway, only a
-  // human. The card options are added when the server says it actually has
-  // keys for them: LiqPay and WayForPay were fully implemented on the backend
-  // and unreachable from here, because this list was a hard-coded pair.
-  //
-  // Offering a gateway that isn't configured would be worse than not offering
-  // it: the order is placed, no payment form comes back, and the customer is
-  // left holding something they cannot pay for.
-  const { data: onlineMethods = [] } = useOnlinePaymentMethods();
-
-  const ONLINE_LABELS: Partial<Record<PaymentProvider, string>> = {
-    LIQPAY: t('payment.liqpay'),
-    WAYFORPAY: t('payment.wayforpay'),
-  };
-
+  // Manual methods only — they need no gateway, only a human. Online card
+  // payment is out until there is a merchant account to run it under.
   const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
-    ...onlineMethods
-      .filter((method) => ONLINE_LABELS[method])
-      .map((method) => ({ value: method, label: ONLINE_LABELS[method]! })),
     { value: 'CASH_ON_DELIVERY', label: t('payment.cod') },
     { value: 'CARD_TRANSFER', label: t('payment.cardTransfer') },
   ];
@@ -214,11 +196,6 @@ export default function CartPage() {
               ...novaPoshtaExtra,
             },
       );
-
-      if (order.paymentForm) {
-        submitPaymentForm(order.paymentForm);
-        return;
-      }
 
       if (isAuthenticated) {
         dispatch(

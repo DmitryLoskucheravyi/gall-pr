@@ -157,15 +157,14 @@ const ua: LegalContent = {
       blocks: [
         p('5.1. Оплата здійснюється одним зі способів, доступних на Сайті на момент оформлення Замовлення:'),
         list(
-          'банківською карткою онлайн через платіжну систему LiqPay (передоплата в повному розмірі);',
           'переказом на банківський рахунок Продавця за реквізитами, вказаними в розділі 14 та на сторінці Замовлення (передоплата в повному розмірі);',
           'накладеним платежем — оплата при отриманні у відділенні перевізника, якщо цей спосіб доступний для обраного Товару та напрямку доставки.',
         ),
         p(
-          '5.2. Для Покупців-нерезидентів оплата здійснюється карткою міжнародних платіжних систем (Visa, Mastercard); сума списується в гривнях відповідно до пп. 3.3–3.4.',
+          '5.2. Покупці-нерезиденти здійснюють оплату переказом на банківський рахунок Продавця; сума сплачується в гривнях відповідно до пп. 3.3–3.4.',
         ),
         p(
-          '5.3. Моментом здійснення оплати вважається момент надходження коштів на рахунок Продавця, підтверджений відповідним статусом від платіжного провайдера або банку.',
+          '5.3. Моментом здійснення оплати вважається момент надходження коштів на рахунок Продавця, підтверджений банком.',
         ),
         p(
           '5.4. Розрахунковий документ надається Покупцеві на його вимогу в обсязі, передбаченому законодавством України для обраної Продавцем системи оподаткування.',
@@ -460,15 +459,14 @@ const en: LegalContent = {
       blocks: [
         p('5.1. Payment is made by one of the methods available on the Site when the Order is placed:'),
         list(
-          'by bank card online through the LiqPay payment system (payment in full, in advance);',
           'by transfer to the Seller’s bank account, using the details in section 14 and on the Order page (payment in full, in advance);',
           'cash on delivery — payment on collection at the carrier’s branch, where that method is available for the chosen Work and destination.',
         ),
         p(
-          '5.2. Buyers outside Ukraine pay by international card (Visa, Mastercard); the amount is debited in hryvnia under clauses 3.3–3.4.',
+          '5.2. Buyers outside Ukraine pay by transfer to the Seller’s bank account; the amount is paid in hryvnia under clauses 3.3–3.4.',
         ),
         p(
-          '5.3. Payment is treated as made when the funds reach the Seller’s account, as confirmed by the status reported by the payment provider or the bank.',
+          '5.3. Payment is treated as made when the funds reach the Seller’s account, as confirmed by the bank.',
         ),
         p(
           '5.4. A settlement document is provided to the Buyer on request, to the extent required by the law of Ukraine for the tax regime the Seller operates under.',

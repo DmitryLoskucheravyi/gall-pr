@@ -27,7 +27,6 @@ import { Painting } from '../paintings/entities/painting.entity';
 import { CheckoutDto } from './dto/checkout.dto';
 import { CreateCommissionDto } from './dto/create-commission.dto';
 import { Identity } from '../common/identity.util';
-import { PaymentsService } from '../payments/payments.service';
 import { NovaPoshtaService } from '../nova-poshta/nova-poshta.service';
 import { UpstreamError } from '../common/http.util';
 import { UsersService } from '../users/users.service';
@@ -41,7 +40,6 @@ import {
 } from '../mail/mail.service';
 import { OrderMailDto } from './dto/order-mail.dto';
 import { SettingsService } from '../settings/settings.service';
-import type { PaymentInitResult } from '../payments/gateways/payment-gateway.interface';
 
 // Which slice of the order book the admin is looking at. Filtering happens
 // on the server now, so the page it asks for is the page it gets.
@@ -50,8 +48,6 @@ export type AdminOrderTab = 'active' | 'completed';
 export const ADMIN_ORDERS_PAGE_SIZE = 25;
 
 const PAYMENT_PROVIDER_LABEL: Record<PaymentProvider, string> = {
-  [PaymentProvider.LIQPAY]: 'LiqPay',
-  [PaymentProvider.WAYFORPAY]: 'WayForPay',
   [PaymentProvider.CASH_ON_DELIVERY]: 'Оплата при отриманні',
   [PaymentProvider.CARD_TRANSFER]: 'Переказ на карту',
   [PaymentProvider.ON_AGREEMENT]: 'За домовленістю',
@@ -115,7 +111,6 @@ export class OrdersService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
 
-    private readonly paymentsService: PaymentsService,
     private readonly novaPoshtaService: NovaPoshtaService,
     private readonly usersService: UsersService,
     private readonly telegramService: TelegramService,
@@ -140,10 +135,7 @@ export class OrdersService {
     }
   }
 
-  async checkout(
-    identity: Identity,
-    dto: CheckoutDto,
-  ): Promise<Order & { paymentForm: PaymentInitResult | null }> {
+  async checkout(identity: Identity, dto: CheckoutDto): Promise<Order> {
     const isGuest = !('userId' in identity);
 
     // Email carries every update a guest will get about this order, so it's
@@ -239,8 +231,8 @@ export class OrdersService {
       const orderItems: OrderItem[] = [];
       // Accumulated in integer cents. price is DECIMAL(10,2) and arrives as a
       // string; summing it as a float is how a two-item order ends up a
-      // hundredth of a hryvnia off the number the gateway settles, which is
-      // the reason the callback reconciliation needed a tolerance at all.
+      // hundredth of a hryvnia off the true total — on the receipt, and in
+      // what the customer is asked to transfer.
       let totalCents = 0;
 
       // Two checkouts for the last copy of a painting both used to pass the
@@ -321,10 +313,7 @@ export class OrdersService {
     this.notifyAdminOfNewOrder(savedOrder.id).catch(() => {});
     this.emailOrderPlaced(savedOrder.id).catch(() => {});
 
-    return {
-      ...savedOrder,
-      paymentForm: this.paymentsService.createPayment(savedOrder),
-    };
+    return savedOrder;
   }
 
   // Re-fetches by id (rather than using the freshly-saved entity) so eager

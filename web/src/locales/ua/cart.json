@@ -3,9 +3,7 @@
   "empty": "Кошик порожній",
   "payment": {
     "cod": "Оплата при отриманні",
-    "cardTransfer": "Переказ на карту",
-    "liqpay": "Карткою онлайн (LiqPay)",
-    "wayforpay": "Карткою онлайн (WayForPay)"
+    "cardTransfer": "Переказ на карту"
   },
   "toasts": {
     "guestFieldsRequired": "Вкажіть ім'я, телефон та email для оформлення замовлення",

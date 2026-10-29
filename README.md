@@ -47,7 +47,7 @@
         │ TypeORM (MySQL-протокол, SSL)      │ зовнішні сервіси
         ▼                                    ▼
 ┌────────────────────────┐   ┌─────────────────────────────────────┐
-│  TiDB / MySQL, 16      │   │ Cloudinary · LiqPay · WayForPay     │
+│  TiDB / MySQL, 16      │   │ Cloudinary · Google                 │
 │  таблиць (db.sql)      │   │ Нова пошта · SMTP · Telegram Bot    │
 └────────────────────────┘   └─────────────────────────────────────┘
 ```
@@ -92,7 +92,6 @@ backend/
 │   ├── techniques/             # довідник технік
 │   ├── cart/                   # кошик користувача і гостя
 │   ├── orders/                 # оформлення, статуси, підтвердження оплати, замовлення на роботу
-│   ├── payments/               # LiqPay / WayForPay + перевірка підписів колбеків
 │   ├── nova-poshta/            # міста, відділення, вартість доставки
 │   ├── support/                # чат підтримки (HTTP + WebSocket-шлюз)
 │   ├── giveaways/              # розіграші та учасники
@@ -130,9 +129,10 @@ access-токен структурно не міг зійти за refresh. `Opt
 оплати завантаженим скріншотом, адмінські статуси, архівація, лист-вибачення,
 а також окремий тип замовлення — картина на замовлення (`POST /orders/commission`).
 
-**`payments/`** — спільний інтерфейс шлюзу. Шлюз без ключів просто не
-пропонується, а його колбек відхиляється, а не приймається на віру: непідписаний
-ключ не може перевірити підпис. Суми звіряються в копійках з допуском 1 копійка.
+**Онлайн-оплати немає.** LiqPay і WayForPay прибрано з проєкту 29.10.2026 —
+до появи договору еквайрингу. Лишаються оплата при отриманні й переказ на
+карту, обидва підтверджує людина. Код шлюзів (підписані форми, перевірені
+колбеки, звірка сум) — в історії git, останній коміт із ним `72be15c`.
 
 **`support/`** — чат на socket.io. Гість ідентифікується `X-Guest-Token`,
 адресу клієнта беруть за тим самим правилом, що й HTTP-throttler (заголовки
@@ -251,9 +251,8 @@ Order {
   userId?: number | guestToken?: string     // замовлення гостя
   guestName?, guestEmail?, guestPhone?, guestAddress?
   status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'CANCELLED' | 'COMPLETED'
-  paymentProvider: 'LIQPAY' | 'WAYFORPAY' | 'CASH_ON_DELIVERY'
-                 | 'CARD_TRANSFER' | 'ON_AGREEMENT'
-  paymentStatus: 'PENDING' | 'PAID' | 'FAILED'; paymentTransactionId?: string
+  paymentProvider: 'CASH_ON_DELIVERY' | 'CARD_TRANSFER' | 'ON_AGREEMENT'
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED'
   paymentProofUrl?: string
   deliveryMethod: 'NOVA_POSHTA'
   novaPoshtaCity?, novaPoshtaWarehouse?, trackingNumber?
@@ -320,8 +319,8 @@ POST /auth/register | /auth/login
   → ref міста й відділення резолвляться на сервері (ціна доставки й адреса
     мають походити з одного джерела)
   → створення Order + OrderItem, списання наявності
-  → LIQPAY/WAYFORPAY: форма оплати; колбек із перевіркою підпису й суми
-    → payment_status = PAID
+  → оплата вручну: адмін позначає payment_status = PAID (для переказу —
+    після скріншота від клієнта)
   → лист у mail_outbox + сповіщення в Telegram
 ```
 
@@ -379,7 +378,6 @@ POST /auth/register | /auth/login
 | PATCH | `/orders/:id/status` · `/payment-status` · `/archive` 👑 | Адмінські зміни |
 | POST | `/orders/:id/status-mail` · `/apology-mail` 👑 | Листи клієнту |
 | DELETE | `/orders/:id` 👑 | Видалення |
-| POST | `/payments/liqpay/callback` · `/payments/wayforpay/callback` | Колбеки шлюзів |
 
 ### Доставка
 
@@ -543,8 +541,6 @@ mysql -h <host> -P 4000 -u <user> -p <database> < db.sql
 | `CORS_ORIGINS` / `WEB_URL` | Дозволені origin-и, через кому |
 | `TRUST_PROXY` | Кількість проксі попереду (`2` у продакшні) |
 | `CLOUDINARY_*` | Завантаження зображень |
-| `LIQPAY_*`, `WAYFORPAY_*` | Платіжні шлюзи (необовʼязкові) |
-| `PAYMENTS_CALLBACK_URL` | Публічна адреса для колбеків |
 | `NOVA_POSHTA_API_KEY` | Міста, відділення, тарифи |
 | `SMTP_*` | Пошта; без них листи позначаються пропущеними |
 | `TELEGRAM_BOT_TOKEN` | Без нього сповіщення — залоговані no-op |

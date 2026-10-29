@@ -34,7 +34,7 @@ export function isAllowedOrigin(origin: string): boolean {
 
 // The shape both Express's cors middleware and socket.io accept. A missing
 // origin means the request didn't come from a browser page — curl, a mobile
-// app, a payment gateway posting a callback — and there is no cross-origin
+// app, a server-to-server call — and there is no cross-origin
 // boundary to enforce for those.
 export function corsOriginDelegate(
   origin: string | undefined,

@@ -107,8 +107,6 @@
       "COMPLETED": "Виконано"
     },
     "paymentProvider": {
-      "LIQPAY": "LiqPay",
-      "WAYFORPAY": "WayForPay",
       "CASH_ON_DELIVERY": "Оплата при отриманні",
       "CARD_TRANSFER": "Переказ на карту",
       "ON_AGREEMENT": "За домовленістю"

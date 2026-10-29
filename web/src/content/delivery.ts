@@ -73,7 +73,6 @@ const ua: LegalContent = {
       blocks: [
         p('На сайті доступні такі способи оплати:'),
         list(
-          'Банківська картка онлайн — через платіжну систему LiqPay. Повна передоплата; дані картки обробляє платіжна система, сайт їх не бачить і не зберігає.',
           'Переказ на рахунок — за реквізитами, які ви побачите на сторінці замовлення. Повна передоплата; підтвердження оплати можна завантажити туди ж.',
           'Накладений платіж — оплата при отриманні у відділенні «Нової пошти», якщо цей спосіб доступний для обраної роботи.',
         ),
@@ -150,7 +149,6 @@ const en: LegalContent = {
       blocks: [
         p('The site offers:'),
         list(
-          'Bank card online — through the LiqPay payment system. Paid in full in advance; the card details are handled by the payment system, and the site neither sees nor stores them.',
           'Bank transfer — using the details shown on your order page. Paid in full in advance; proof of payment can be uploaded there as well.',
           'Cash on delivery — paid on collection at a Nova Poshta branch, where that method is available for the chosen work.',
         ),
