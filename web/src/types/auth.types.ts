@@ -6,6 +6,10 @@ export type User = {
   phone: string;
   role: string;
   telegramLinked: boolean;
+  // False for an account opened through Google that never set a password —
+  // the profile then offers to set one instead of asking for the current one.
+  hasPassword: boolean;
+  googleLinked: boolean;
 };
 
 export type RegisterDto = {
@@ -17,6 +21,26 @@ export type RegisterDto = {
 };
 
 export type LoginDto = { email: string; password: string };
+
+// The ID token from Google Identity Services, plus — only on the second step
+// of a first sign-up — the details Google doesn't give us.
+export type GoogleAuthDto = {
+  credential: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+};
+
+// What Google told the server about a newcomer, shown back on the phone step.
+export type GoogleProfile = {
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export type GoogleAuthResult =
+  | AuthResponse
+  | { needsPhone: true; profile: GoogleProfile };
 
 export type ForgotPasswordDto = { email: string };
 

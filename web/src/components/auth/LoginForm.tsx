@@ -2,22 +2,21 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LocalizedLink as Link } from '../ui/LocalizedLink';
-import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
 import { authService } from '../../api/auth.api';
-import { supportService } from '../../api/support.api';
-import { ordersService } from '../../api/orders.api';
-import { useMergeGuestCartMutation } from '../../hooks/mutations/useCartMutations';
-import { useAppDispatch } from '../../store/hooks';
-import { setAuth } from '../../store/slices/authSlice';
-import { peekGuestToken } from '../../utils/guestToken';
+import { useFinishSignIn } from '../../hooks/useFinishSignIn';
+import {
+  GoogleAuthSection,
+  GoogleCompleteForm,
+  type PendingGoogleSignUp,
+} from './GoogleAuth';
 import styles from './AuthPanel.module.scss';
 import { apiErrorMessage } from '../../utils/apiError';
 
 export default function LoginForm() {
   const { t } = useTranslation('auth');
-  const navigate = useLocalizedNavigate();
-  const dispatch = useAppDispatch();
-  const mergeGuestCart = useMergeGuestCartMutation();
+  const finishSignIn = useFinishSignIn();
+  const [pendingGoogle, setPendingGoogle] =
+    useState<PendingGoogleSignUp | null>(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,25 +30,24 @@ export default function LoginForm() {
     try {
       setLoading(true);
       const auth = await authService.login({ email, password });
-      dispatch(setAuth(auth));
-
-      // Whatever this browser did as a guest — a cart, a support thread, past
-      // orders — follows them into the account. Orders are claimed before the
-      // cart merge, which clears the guest token on success.
-      const guestToken = peekGuestToken();
-      if (guestToken) {
-        await ordersService.claimGuestOrders(guestToken).catch(() => {});
-        await mergeGuestCart.mutateAsync(guestToken).catch(() => {});
-        await supportService.claimGuestChat(guestToken).catch(() => {});
-      }
-
-      navigate('/');
+      await finishSignIn(auth);
     } catch (err) {
       setError(apiErrorMessage(err, t('login.error')));
     } finally {
       setLoading(false);
     }
   };
+
+  // A first-time visitor who pressed Google here rather than on /register
+  // still gets an account — it just needs a phone number first.
+  if (pendingGoogle) {
+    return (
+      <GoogleCompleteForm
+        pending={pendingGoogle}
+        onCancel={() => setPendingGoogle(null)}
+      />
+    );
+  }
 
   return (
     <div className={styles.panel}>
@@ -87,6 +85,8 @@ export default function LoginForm() {
           {loading ? t('login.wait') : t('login.submit')}
         </button>
       </form>
+
+      <GoogleAuthSection mode="signin" onNeedsPhone={setPendingGoogle} />
 
       <p className={styles.switch}>
         <Link to="/forgot-password" className={styles.switchLink}>

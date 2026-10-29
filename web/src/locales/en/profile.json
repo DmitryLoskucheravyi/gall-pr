@@ -53,7 +53,10 @@
       "saving": "Saving…",
       "error": "Couldn't change the password",
       "mismatch": "The passwords don't match",
-      "tooShort": "The password must be at least 8 characters"
+      "tooShort": "The password must be at least 8 characters",
+      "setTitle": "Set a password",
+      "setLead": "You sign in with Google. Set a password to be able to sign in with your email as well.",
+      "setSubmit": "Set password"
     },
     "sessions": {
       "title": "Active devices",

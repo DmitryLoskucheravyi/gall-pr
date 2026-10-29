@@ -4,6 +4,8 @@ import type {
   AuthSession,
   ChangePasswordDto,
   ForgotPasswordDto,
+  GoogleAuthDto,
+  GoogleAuthResult,
   LoginDto,
   RegisterDto,
   ResetPasswordDto,
@@ -18,6 +20,14 @@ class AuthService {
 
   async login(dto: LoginDto): Promise<AuthResponse> {
     const response = await api.post('/auth/login', dto);
+    return response.data;
+  }
+
+  // Sign in and sign up in one call. An existing account comes back signed in;
+  // a newcomer comes back as `needsPhone`, and the page resends the same
+  // credential with a phone number to finish.
+  async google(dto: GoogleAuthDto): Promise<GoogleAuthResult> {
+    const response = await api.post('/auth/google', dto);
     return response.data;
   }
 

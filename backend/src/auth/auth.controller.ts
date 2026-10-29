@@ -18,6 +18,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -85,6 +86,31 @@ export class AuthController {
       loginDto,
       this.userAgentOf(request),
     );
+    setRefreshCookie(response, refreshToken);
+
+    return rest;
+  }
+
+  // Sign in or sign up with Google — see AuthService.googleSignIn. A first
+  // visit answers `needsPhone` without a session, so the cookie is only set
+  // when tokens actually came back.
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post('google')
+  async google(
+    @Req() request: ExpressRequest,
+    @Body() dto: GoogleAuthDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.googleSignIn(
+      dto,
+      this.userAgentOf(request),
+    );
+
+    if (!('refreshToken' in result)) {
+      return result;
+    }
+
+    const { refreshToken, ...rest } = result;
     setRefreshCookie(response, refreshToken);
 
     return rest;

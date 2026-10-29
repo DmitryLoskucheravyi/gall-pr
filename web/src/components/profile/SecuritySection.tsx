@@ -5,9 +5,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService } from '../../api/auth.api';
 import type { ChangePasswordDto } from '../../types/auth.types';
 import { apiErrorMessage } from '../../utils/apiError';
-import { useAppDispatch } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { showToast } from '../../store/slices/toastSlice';
-import { logout } from '../../store/slices/authSlice';
+import { logout, setUser } from '../../store/slices/authSlice';
 import { useConfirm } from '../ui/ConfirmDialog';
 import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
 import styles from './SecuritySection.module.scss';
@@ -49,6 +49,10 @@ export default function SecuritySection() {
   const navigate = useLocalizedNavigate();
   const confirm = useConfirm();
   const queryClient = useQueryClient();
+  const user = useAppSelector((state) => state.auth.user);
+  // An account opened through Google has no password yet: the form sets one
+  // instead of changing it, and has nothing to ask for as the current one.
+  const hasPassword = user?.hasPassword ?? true;
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -68,6 +72,9 @@ export default function SecuritySection() {
       setConfirmPassword('');
       setError(null);
       dispatch(showToast({ message: result.message }));
+      if (user && !user.hasPassword) {
+        dispatch(setUser({ ...user, hasPassword: true }));
+      }
       // Every other device was just signed out, so the list is stale.
       void queryClient.invalidateQueries({ queryKey: ['auth', 'sessions'] });
     },
@@ -135,22 +142,30 @@ export default function SecuritySection() {
 
       <div className={styles.grid}>
         <div className={styles.card}>
-          <h3 className={styles.cardTitle}>{t('security.password.title')}</h3>
+          <h3 className={styles.cardTitle}>
+            {hasPassword
+              ? t('security.password.title')
+              : t('security.password.setTitle')}
+          </h3>
 
           <form onSubmit={handleSubmit} className={styles.form}>
-            <label className={styles.field}>
-              <span className={styles.label}>
-                {t('security.password.current')}
-              </span>
-              <input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className={styles.input}
-              />
-            </label>
+            {hasPassword ? (
+              <label className={styles.field}>
+                <span className={styles.label}>
+                  {t('security.password.current')}
+                </span>
+                <input
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
+            ) : (
+              <p className={styles.hint}>{t('security.password.setLead')}</p>
+            )}
 
             <label className={styles.field}>
               <span className={styles.label}>{t('security.password.next')}</span>
@@ -191,7 +206,9 @@ export default function SecuritySection() {
             >
               {changePassword.isPending
                 ? t('security.password.saving')
-                : t('security.password.submit')}
+                : hasPassword
+                  ? t('security.password.submit')
+                  : t('security.password.setSubmit')}
             </button>
           </form>
         </div>

@@ -15,6 +15,8 @@ import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
+import { GoogleIdTokenVerifier } from './google-id-token.verifier';
 import { User } from '../users/entities/user.entity';
 import { RefreshSession } from './entities/refresh-session.entity';
 import { PasswordReset } from './entities/password-reset.entity';
@@ -71,6 +73,7 @@ export class AuthService {
     private readonly sessionsRepository: Repository<RefreshSession>,
     @InjectRepository(PasswordReset)
     private readonly passwordResetsRepository: Repository<PasswordReset>,
+    private readonly googleVerifier: GoogleIdTokenVerifier,
   ) {}
 
   private buildUserResponse(user: User) {
@@ -82,6 +85,10 @@ export class AuthService {
       phone: user.phone,
       role: user.role,
       telegramLinked: !!user.telegramChatId,
+      // The profile needs both: an account opened through Google has no
+      // password to change, only one to set.
+      hasPassword: !!user.passwordHash,
+      googleLinked: !!user.googleId,
     };
   }
 
@@ -150,6 +157,16 @@ export class AuthService {
       throw new BadRequestException('Невірний email або пароль');
     }
 
+    // Opened through Google and never given a password. Said plainly rather
+    // than as "wrong password": registration already tells anyone whether an
+    // address has an account, so hiding it here would only confuse the owner.
+    if (!user.passwordHash) {
+      await bcrypt.compare(loginDto.password, DUMMY_HASH);
+      throw new BadRequestException(
+        'Цей акаунт створено через Google. Увійдіть кнопкою Google або встановіть пароль через «Забули пароль?».',
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.passwordHash,
@@ -160,6 +177,98 @@ export class AuthService {
     }
 
     this.assertActive(user);
+
+    const tokens = await this.issueSession(user, userAgent);
+
+    return { ...tokens, user: this.buildUserResponse(user) };
+  }
+
+  // Signing in and signing up are one route: Google has already told us who
+  // this is, so whether an account exists decides which of the two it was.
+  //
+  //  1. An account already linked to this Google identity  -> signed in.
+  //  2. An account with the same (Google-verified) address  -> linked, then
+  //     signed in. The address is verified by Google, so this is the owner.
+  //  3. Nobody                                              -> a new account,
+  //     but only once the page has sent a phone number. Until then the answer
+  //     is `needsPhone` with what Google told us, and no session is issued.
+  async googleSignIn(dto: GoogleAuthDto, userAgent?: string) {
+    const identity = await this.googleVerifier.verify(dto.credential);
+
+    let user = await this.usersService.findByGoogleId(identity.sub);
+
+    if (!user) {
+      const byEmail = await this.usersService.findByEmail(identity.email);
+
+      if (byEmail) {
+        this.assertActive(byEmail);
+
+        await this.usersService.update(byEmail.id, { googleId: identity.sub });
+
+        // An account registered with a password was never asked to prove it
+        // owned its address — so whoever typed that password may not be the
+        // person Google has just vouched for. Ending the sessions already open
+        // on it means the owner's first Google sign-in is also the moment any
+        // such squatter is signed out.
+        await this.sessionsRepository.delete({ userId: byEmail.id });
+
+        user = { ...byEmail, googleId: identity.sub };
+      }
+    }
+
+    if (user) {
+      this.assertActive(user);
+
+      const tokens = await this.issueSession(user, userAgent);
+
+      return { ...tokens, user: this.buildUserResponse(user) };
+    }
+
+    if (!dto.phone) {
+      return {
+        needsPhone: true as const,
+        profile: {
+          email: identity.email,
+          firstName: identity.firstName,
+          lastName: identity.lastName,
+        },
+      };
+    }
+
+    const firstName = dto.firstName?.trim() || identity.firstName;
+    const lastName = dto.lastName?.trim() || identity.lastName;
+
+    if (!firstName || !lastName) {
+      throw new BadRequestException('Вкажіть імʼя та прізвище');
+    }
+
+    try {
+      user = await this.usersService.create({
+        email: identity.email,
+        passwordHash: null,
+        googleId: identity.sub,
+        firstName,
+        lastName,
+        phone: dto.phone,
+      });
+    } catch (error) {
+      // Two tabs finishing the same sign-up at once: the loser's insert hits
+      // a unique key. The winner's account is the one they both meant.
+      if (isDuplicateKey(error)) {
+        const existing = await this.usersService.findByGoogleId(identity.sub);
+
+        if (existing) {
+          this.assertActive(existing);
+          const tokens = await this.issueSession(existing, userAgent);
+
+          return { ...tokens, user: this.buildUserResponse(existing) };
+        }
+
+        throw new BadRequestException('Користувач з таким email вже існує');
+      }
+
+      throw error;
+    }
 
     const tokens = await this.issueSession(user, userAgent);
 
@@ -447,13 +556,17 @@ export class AuthService {
       throw new BadRequestException('Користувача не знайдено');
     }
 
-    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    // An account opened through Google has no current password to confirm —
+    // this is setting one for the first time, and the session is the proof.
+    if (user.passwordHash) {
+      const valid = await bcrypt.compare(currentPassword, user.passwordHash);
 
-    if (!valid) {
-      throw new BadRequestException('Поточний пароль невірний');
+      if (!valid) {
+        throw new BadRequestException('Поточний пароль невірний');
+      }
     }
 
-    if (currentPassword === newPassword) {
+    if (user.passwordHash && currentPassword === newPassword) {
       throw new BadRequestException(
         'Новий пароль має відрізнятися від поточного',
       );

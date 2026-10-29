@@ -291,7 +291,8 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `email` varchar(255) COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `password_hash` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `google_id` varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `first_name` varchar(100) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `last_name` varchar(100) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `role` enum('USER','ADMIN') COLLATE utf8mb4_0900_ai_ci DEFAULT 'USER',
@@ -304,7 +305,8 @@ CREATE TABLE `users` (
   `telegram_link_code` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `telegram_link_code_expires_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
-  UNIQUE KEY `email` (`email`)
+  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `uq_users_google_id` (`google_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 

@@ -54,12 +54,23 @@ function build(user: User | null) {
   const users = {
     findByEmail: jest.fn().mockResolvedValue(user),
     findById: jest.fn().mockResolvedValue(user),
+    findByGoogleId: jest.fn().mockResolvedValue(null),
     create: jest.fn().mockResolvedValue(user ?? userLike()),
     update: jest.fn().mockResolvedValue(undefined),
   };
   const mail = { sendPasswordReset: jest.fn().mockResolvedValue(undefined) };
   const sessions = repo();
   const resets = repo();
+  const google = {
+    verify: jest
+      .fn()
+      .mockResolvedValue({
+        sub: 'google-sub-1',
+        email: 'buyer@example.test',
+        firstName: 'Оля',
+        lastName: 'Мельник',
+      }),
+  };
 
   const service = new AuthService(
     users as never,
@@ -67,9 +78,10 @@ function build(user: User | null) {
     mail as never,
     sessions as never,
     resets as never,
+    google as never,
   );
 
-  return { service, users, mail, sessions, resets };
+  return { service, users, mail, sessions, resets, google };
 }
 
 describe('AuthService.login', () => {
@@ -339,5 +351,97 @@ describe('AuthService.changePassword', () => {
 
     expect(sessions.delete).toHaveBeenCalledWith({ id: 1 });
     expect(sessions.delete).toHaveBeenCalledWith({ id: 2 });
+  });
+});
+
+describe('AuthService.googleSignIn', () => {
+  it('signs in an account already linked to the Google identity', async () => {
+    const linked = userLike({ googleId: 'google-sub-1' });
+    const { service, users, sessions } = build(null);
+    users.findByGoogleId.mockResolvedValue(linked);
+
+    const result = await service.googleSignIn({ credential: 'id-token' });
+
+    expect('accessToken' in result && result.user.googleLinked).toBe(true);
+    expect(users.update).not.toHaveBeenCalled();
+    expect(sessions.save).toHaveBeenCalled();
+  });
+
+  it('links an existing account by its address and ends its old sessions', async () => {
+    const { service, users, sessions } = build(userLike());
+
+    const result = await service.googleSignIn({ credential: 'id-token' });
+
+    expect(users.update).toHaveBeenCalledWith(7, { googleId: 'google-sub-1' });
+    expect(sessions.delete).toHaveBeenCalledWith({ userId: 7 });
+    expect('accessToken' in result).toBe(true);
+  });
+
+  it('asks a newcomer for a phone before opening an account', async () => {
+    const { service, users, sessions } = build(null);
+
+    const result = await service.googleSignIn({ credential: 'id-token' });
+
+    expect(result).toEqual({
+      needsPhone: true,
+      profile: {
+        email: 'buyer@example.test',
+        firstName: 'Оля',
+        lastName: 'Мельник',
+      },
+    });
+    expect(users.create).not.toHaveBeenCalled();
+    expect(sessions.save).not.toHaveBeenCalled();
+  });
+
+  it('opens a passwordless account once the phone arrives', async () => {
+    const { service, users } = build(null);
+    users.create.mockImplementation((data: Partial<User>) =>
+      Promise.resolve(userLike({ ...data, id: 9 })),
+    );
+
+    const result = await service.googleSignIn({
+      credential: 'id-token',
+      phone: '+380501112233',
+    });
+
+    expect(users.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'buyer@example.test',
+        passwordHash: null,
+        googleId: 'google-sub-1',
+        phone: '+380501112233',
+      }),
+    );
+    expect('accessToken' in result && result.user.hasPassword).toBe(false);
+  });
+
+  it('refuses a disabled account even through Google', async () => {
+    const { service } = build(userLike({ isActive: false }));
+
+    await expect(
+      service.googleSignIn({ credential: 'id-token' }),
+    ).rejects.toThrow('призупинено');
+  });
+});
+
+describe('AuthService without a password', () => {
+  it('turns a password login away with a pointer to Google', async () => {
+    const { service } = build(userLike({ passwordHash: null }));
+
+    await expect(
+      service.login({ email: 'buyer@example.test', password: 'anything' }),
+    ).rejects.toThrow('через Google');
+  });
+
+  it('sets a first password without asking for a current one', async () => {
+    const { service, users } = build(userLike({ passwordHash: null }));
+
+    await service.changePassword(7, '', 'a-new-password');
+
+    expect(users.update).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ passwordHash: expect.any(String) }),
+    );
   });
 });

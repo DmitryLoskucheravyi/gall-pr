@@ -13,6 +13,7 @@ import { RefreshSession } from './entities/refresh-session.entity';
 import { PasswordReset } from './entities/password-reset.entity';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleIdTokenVerifier } from './google-id-token.verifier';
 import { jwtAccessSecret } from '../config/secrets';
 
 @Module({
@@ -32,7 +33,7 @@ import { jwtAccessSecret } from '../config/secrets';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, GoogleIdTokenVerifier],
   controllers: [AuthController],
 })
 export class AuthModule {}

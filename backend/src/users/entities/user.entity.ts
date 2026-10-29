@@ -30,8 +30,25 @@ export class User {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ name: 'password_hash' })
-  passwordHash: string;
+  // Null for an account opened through Google that has never set a password.
+  @Column({
+    name: 'password_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  passwordHash: string | null;
+
+  // Google's `sub` claim — stable for the life of the Google account, unlike
+  // the address, which its owner can change. See temp/2026-10-google-auth.sql.
+  @Column({
+    name: 'google_id',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+    unique: true,
+  })
+  googleId: string | null;
 
   @Column({ name: 'first_name', nullable: true })
   firstName: string;

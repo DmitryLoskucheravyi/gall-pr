@@ -53,6 +53,15 @@ const SENTRY_ORIGIN = process.env.NEXT_PUBLIC_SENTRY_DSN
   ? originOf(process.env.NEXT_PUBLIC_SENTRY_DSN)
   : '';
 
+// Sign in with Google. Its script, the iframe the button is drawn in, the
+// stylesheet it injects and the calls it makes all live under one path on
+// accounts.google.com — allowed by that path, not the whole origin, and only
+// when a client id is configured at all.
+// https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid#content_security_policy
+const GOOGLE_GSI = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+  ? 'https://accounts.google.com/gsi/'
+  : '';
+
 function originOf(url: string): string {
   try {
     return new URL(url).origin;
@@ -68,9 +77,10 @@ const CSP = [
   "frame-ancestors 'none'",
   "form-action 'self' https://www.liqpay.ua https://secure.wayforpay.com",
   `script-src 'self' 'unsafe-inline'${ANALYTICS_ORIGIN ? ` ${ANALYTICS_ORIGIN}` : ''}${
-    DEV ? " 'unsafe-eval'" : ''
-  }`,
-  "style-src 'self' 'unsafe-inline'",
+    GOOGLE_GSI ? ` ${GOOGLE_GSI}client` : ''
+  }${DEV ? " 'unsafe-eval'" : ''}`,
+  `style-src 'self' 'unsafe-inline'${GOOGLE_GSI ? ` ${GOOGLE_GSI}style` : ''}`,
+  ...(GOOGLE_GSI ? [`frame-src ${GOOGLE_GSI}`] : []),
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "media-src 'self' https://res.cloudinary.com",
   "font-src 'self' data:",
@@ -79,7 +89,9 @@ const CSP = [
   // honest about what it permits.
   `connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN}${
     ANALYTICS_ORIGIN ? ` ${ANALYTICS_ORIGIN}` : ''
-  }${SENTRY_ORIGIN ? ` ${SENTRY_ORIGIN}` : ''}${DEV ? ' ws: wss:' : ''}`,
+  }${SENTRY_ORIGIN ? ` ${SENTRY_ORIGIN}` : ''}${
+    GOOGLE_GSI ? ` ${GOOGLE_GSI}` : ''
+  }${DEV ? ' ws: wss:' : ''}`,
   'upgrade-insecure-requests',
 ].join('; ');
 

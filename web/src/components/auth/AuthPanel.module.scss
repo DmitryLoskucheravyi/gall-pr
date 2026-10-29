@@ -174,10 +174,77 @@
   width: 100%;
 }
 
+// "or" and Google's button under the password form.
+.googleSection {
+  margin-top: $spacing-xl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// A hairline either side of the word — the same thin-rule vocabulary as the
+// underlined fields above it.
+.divider {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  font-family: $font-accent;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(237, 234, 226, 0.45);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(237, 234, 226, 0.2);
+  }
+}
+
+// Google's button is an iframe it draws itself; this only reserves its
+// height so the panel doesn't jump when it arrives, and dims it while the
+// server is answering.
+.google {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+  transition: opacity $duration-fast ease;
+
+  &[data-disabled] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+.googleStatus {
+  font-size: 13px;
+  text-align: center;
+  color: rgba(237, 234, 226, 0.6);
+}
+
 .switch {
   margin-top: $spacing-xxl;
   font-size: 14px;
   color: rgba(237, 234, 226, 0.6);
+}
+
+// "Back" on the Google phone step — a button, because it changes state rather
+// than going anywhere, dressed as the links beside it.
+.switchButton {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-accent-text);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .switchLink {

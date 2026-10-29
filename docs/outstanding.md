@@ -67,6 +67,12 @@
   навмисно: раніше він мовчки відправляв безкоштовно.
 - **SMTP_\***. Скидання пароля — це лист і більше нічого. Без пошти людина, що
   забула пароль, назад не потрапить.
+- **Google OAuth client id.** Google Cloud Console → Credentials → OAuth
+  client (Web application). В «Authorized JavaScript origins» — кожна адреса,
+  з якої відкривають сайт (дев-адреса tailnet і прод). Значення — у
+  `GOOGLE_CLIENT_ID` (API) і `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (web). Поки
+  порожнє — кнопки Google просто немає. Міграція:
+  `backend/temp/2026-10-google-auth.sql`.
 - **`API_URL` у Cloudflare Pages** (Production і Preview). Потрібна для
   SEO-функцій поточного застосунку. Без неї вони тихо пропускають запит далі —
   сайт працює, превʼю лишаються загальними.

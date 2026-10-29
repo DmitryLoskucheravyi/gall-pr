@@ -2,22 +2,21 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LocalizedLink as Link } from '../ui/LocalizedLink';
-import { useLocalizedNavigate } from '../../hooks/useLocalizedNavigate';
 import { authService } from '../../api/auth.api';
-import { supportService } from '../../api/support.api';
-import { ordersService } from '../../api/orders.api';
-import { useMergeGuestCartMutation } from '../../hooks/mutations/useCartMutations';
-import { useAppDispatch } from '../../store/hooks';
-import { setAuth } from '../../store/slices/authSlice';
-import { peekGuestToken } from '../../utils/guestToken';
+import { useFinishSignIn } from '../../hooks/useFinishSignIn';
+import {
+  GoogleAuthSection,
+  GoogleCompleteForm,
+  type PendingGoogleSignUp,
+} from './GoogleAuth';
 import styles from './AuthPanel.module.scss';
 import { apiErrorMessage } from '../../utils/apiError';
 
 export default function RegisterForm() {
   const { t } = useTranslation('auth');
-  const navigate = useLocalizedNavigate();
-  const dispatch = useAppDispatch();
-  const mergeGuestCart = useMergeGuestCartMutation();
+  const finishSignIn = useFinishSignIn();
+  const [pendingGoogle, setPendingGoogle] =
+    useState<PendingGoogleSignUp | null>(null);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -41,25 +40,22 @@ export default function RegisterForm() {
         phone,
         password,
       });
-      dispatch(setAuth(auth));
-
-      // Whatever this browser did as a guest — a cart, a support thread, past
-      // orders — follows them into the new account. Orders are claimed before
-      // the cart merge, which clears the guest token on success.
-      const guestToken = peekGuestToken();
-      if (guestToken) {
-        await ordersService.claimGuestOrders(guestToken).catch(() => {});
-        await mergeGuestCart.mutateAsync(guestToken).catch(() => {});
-        await supportService.claimGuestChat(guestToken).catch(() => {});
-      }
-
-      navigate('/');
+      await finishSignIn(auth);
     } catch (err) {
       setError(apiErrorMessage(err, t('register.error')));
     } finally {
       setLoading(false);
     }
   };
+
+  if (pendingGoogle) {
+    return (
+      <GoogleCompleteForm
+        pending={pendingGoogle}
+        onCancel={() => setPendingGoogle(null)}
+      />
+    );
+  }
 
   return (
     <div className={styles.panel}>
@@ -150,6 +146,8 @@ export default function RegisterForm() {
           {loading ? t('register.wait') : t('register.submit')}
         </button>
       </form>
+
+      <GoogleAuthSection mode="signup" onNeedsPhone={setPendingGoogle} />
 
       <p className={styles.switch}>
         {t('register.switchText')}{' '}
