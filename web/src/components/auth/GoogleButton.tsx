@@ -1,41 +1,32 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { useLocale } from '../../hooks/useLocale';
 import styles from './AuthPanel.module.scss';
 
-// Google Identity Services, the minimum of its surface this file touches.
-// https://developers.google.com/identity/gsi/web/reference/js-reference
-type CredentialResponse = { credential: string };
+// Google Identity Services' token client — the part of it that lets a page
+// use its own button. Google's rendered button draws itself in an iframe and
+// can't be restyled; this one opens the same account chooser in a popup and
+// hands back an access token, which the API checks was issued to our client
+// id before reading the profile (see GoogleIdTokenVerifier.verifyAccessToken).
+// https://developers.google.com/identity/oauth2/web/reference/js-reference
+type TokenResponse = { access_token?: string; error?: string };
 
-type GoogleAccountsId = {
-  initialize: (config: {
+type TokenClient = { requestAccessToken: (options?: { prompt?: string }) => void };
+
+type GoogleOAuth2 = {
+  initTokenClient: (config: {
     client_id: string;
-    callback: (response: CredentialResponse) => void;
-    ux_mode?: 'popup' | 'redirect';
-    context?: 'signin' | 'signup' | 'use';
-    auto_select?: boolean;
-    cancel_on_tap_outside?: boolean;
-  }) => void;
-  renderButton: (
-    parent: HTMLElement,
-    options: {
-      type?: 'standard' | 'icon';
-      theme?: 'outline' | 'filled_blue' | 'filled_black';
-      size?: 'large' | 'medium' | 'small';
-      text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
-      shape?: 'rectangular' | 'pill' | 'circle' | 'square';
-      logo_alignment?: 'left' | 'center';
-      width?: number;
-      locale?: string;
-    },
-  ) => void;
+    scope: string;
+    callback: (response: TokenResponse) => void;
+    error_callback?: (error: { type?: string }) => void;
+  }) => TokenClient;
 };
 
 declare global {
   interface Window {
-    google?: { accounts: { id: GoogleAccountsId } };
+    google?: { accounts: { oauth2: GoogleOAuth2 } };
   }
 }
 
@@ -47,7 +38,7 @@ const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '';
 let scriptPromise: Promise<void> | null = null;
 
 function loadScript(): Promise<void> {
-  if (window.google?.accounts?.id) return Promise.resolve();
+  if (window.google?.accounts?.oauth2) return Promise.resolve();
 
   scriptPromise ??= new Promise<void>((resolve, reject) => {
     const script = document.createElement('script');
@@ -69,61 +60,46 @@ function loadScript(): Promise<void> {
 export const isGoogleAuthEnabled = CLIENT_ID !== '';
 
 type Props = {
-  // Which wording Google puts on the button: "Sign in with" or "Sign up with".
-  // The flow behind both is the same — see AuthService.googleSignIn.
   mode: 'signin' | 'signup';
-  onCredential: (credential: string) => void;
+  onAccessToken: (accessToken: string) => void;
   disabled?: boolean;
 };
 
-// Google's own button, not a lookalike: their branding rules require it, and
-// it is the button that carries the account chooser and FedCM. It renders
-// into an iframe, so it is sized from its container rather than styled.
-export default function GoogleButton({ mode, onCredential, disabled }: Props) {
-  const locale = useLocale();
-  const containerRef = useRef<HTMLDivElement>(null);
+// The site's own button: an outline the height and shape of the form's
+// submit, in its type, with a monoline "G" drawn in the same hairline as the
+// rest of the site's icons rather than Google's four-colour mark.
+export default function GoogleButton({ mode, onAccessToken, disabled }: Props) {
+  const { t } = useTranslation('auth');
+  const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const clientRef = useRef<TokenClient | null>(null);
 
-  // initialize() is global to the page, so the callback it holds is whatever
-  // the last mount passed. A ref keeps it pointed at this render's handler
-  // without re-rendering Google's iframe on every keystroke in the form.
-  const callbackRef = useRef(onCredential);
+  // The token client holds its callback for good; a ref keeps it pointed at
+  // this render's handler.
+  const callbackRef = useRef(onAccessToken);
   useEffect(() => {
-    callbackRef.current = onCredential;
-  }, [onCredential]);
+    callbackRef.current = onAccessToken;
+  }, [onAccessToken]);
 
   useEffect(() => {
     if (!CLIENT_ID) return;
-
     let cancelled = false;
 
+    // Loaded up front, not on click: popup blockers allow a window only
+    // inside the click itself, so the client must already exist by then.
     loadScript()
       .then(() => {
-        const container = containerRef.current;
-        const id = window.google?.accounts.id;
-        if (cancelled || !container || !id) return;
+        const oauth2 = window.google?.accounts.oauth2;
+        if (cancelled || !oauth2) return;
 
-        id.initialize({
+        clientRef.current = oauth2.initTokenClient({
           client_id: CLIENT_ID,
-          callback: (response) => callbackRef.current(response.credential),
-          ux_mode: 'popup',
-          context: mode === 'signup' ? 'signup' : 'signin',
-          auto_select: false,
-          cancel_on_tap_outside: true,
+          scope: 'openid email profile',
+          callback: (response) => {
+            if (response.access_token) callbackRef.current(response.access_token);
+          },
         });
-
-        container.replaceChildren();
-        id.renderButton(container, {
-          type: 'standard',
-          theme: 'filled_black',
-          size: 'large',
-          text: mode === 'signup' ? 'signup_with' : 'signin_with',
-          shape: 'rectangular',
-          logo_alignment: 'center',
-          // Google caps the width at 400px; the panel is 380px at most.
-          width: Math.min(Math.round(container.offsetWidth) || 320, 400),
-          locale: locale === 'ua' ? 'uk' : 'en',
-        });
+        setReady(true);
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -132,16 +108,27 @@ export default function GoogleButton({ mode, onCredential, disabled }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [mode, locale]);
+  }, []);
 
   if (!CLIENT_ID || failed) return null;
 
   return (
-    <div
-      ref={containerRef}
-      className={styles.google}
-      aria-disabled={disabled || undefined}
-      data-disabled={disabled || undefined}
-    />
+    <button
+      type="button"
+      className={styles.googleButton}
+      disabled={!ready || disabled}
+      onClick={() => clientRef.current?.requestAccessToken({ prompt: 'select_account' })}
+    >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={styles.googleGlyph}>
+        <path
+          d="M20 12a8 8 0 1 1-2.34-5.66"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path d="M20.5 12H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      <span>{mode === 'signup' ? t('google.signup') : t('google.signin')}</span>
+    </button>
   );
 }

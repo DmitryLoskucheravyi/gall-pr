@@ -203,19 +203,51 @@
   }
 }
 
-// Google's button is an iframe it draws itself; this only reserves its
-// height so the panel doesn't jump when it arrives, and dims it while the
-// server is answering.
-.google {
-  width: 100%;
-  min-height: 44px;
+// The site's own Google button: an outline in the form's hairline, the same
+// height and corners as the submit above it, so the two read as a pair — the
+// filled one the main way in, this the alternative.
+.googleButton {
+  @include button-base;
   display: flex;
+  width: 100%;
+  align-items: center;
   justify-content: center;
-  transition: opacity $duration-fast ease;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-xxl;
+  border: 1px solid rgba(237, 234, 226, 0.32);
+  background: transparent;
+  color: #edeae2;
+  transition:
+    border-color $duration-fast ease,
+    background-color $duration-fast ease,
+    color $duration-fast ease;
 
-  &[data-disabled] {
+  &:hover:not(:disabled) {
+    border-color: var(--color-accent-text);
+    background-color: rgba(237, 234, 226, 0.06);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent-text);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
     opacity: 0.5;
-    pointer-events: none;
+    cursor: default;
+  }
+}
+
+.googleGlyph {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent-text);
+  transition: transform 0.4s $ease-out;
+
+  .googleButton:hover:not(:disabled) & {
+    transform: rotate(-20deg);
   }
 }
 

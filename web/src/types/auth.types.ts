@@ -22,10 +22,11 @@ export type RegisterDto = {
 
 export type LoginDto = { email: string; password: string };
 
-// The ID token from Google Identity Services, plus — only on the second step
-// of a first sign-up — the details Google doesn't give us.
+// The access token from Google's token client (the site's own button), plus
+// — only on the second step of a first sign-up — the details Google doesn't
+// give us.
 export type GoogleAuthDto = {
-  credential: string;
+  accessToken: string;
   phone?: string;
   firstName?: string;
   lastName?: string;

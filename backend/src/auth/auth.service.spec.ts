@@ -61,15 +61,15 @@ function build(user: User | null) {
   const mail = { sendPasswordReset: jest.fn().mockResolvedValue(undefined) };
   const sessions = repo();
   const resets = repo();
+  const identity = {
+    sub: 'google-sub-1',
+    email: 'buyer@example.test',
+    firstName: 'Оля',
+    lastName: 'Мельник',
+  };
   const google = {
-    verify: jest
-      .fn()
-      .mockResolvedValue({
-        sub: 'google-sub-1',
-        email: 'buyer@example.test',
-        firstName: 'Оля',
-        lastName: 'Мельник',
-      }),
+    verify: jest.fn().mockResolvedValue(identity),
+    verifyAccessToken: jest.fn().mockResolvedValue(identity),
   };
 
   const service = new AuthService(
@@ -443,5 +443,25 @@ describe('AuthService without a password', () => {
       7,
       expect.objectContaining({ passwordHash: expect.any(String) }),
     );
+  });
+});
+
+describe('AuthService.googleSignIn with an access token', () => {
+  it('verifies the access token, not an ID token', async () => {
+    const { service, google, users } = build(null);
+    users.findByGoogleId.mockResolvedValue(
+      userLike({ googleId: 'google-sub-1' }),
+    );
+
+    await service.googleSignIn({ accessToken: 'ya29.token' });
+
+    expect(google.verifyAccessToken).toHaveBeenCalledWith('ya29.token');
+    expect(google.verify).not.toHaveBeenCalled();
+  });
+
+  it('refuses a request with neither token', async () => {
+    const { service } = build(null);
+
+    await expect(service.googleSignIn({})).rejects.toThrow('токена');
   });
 });

@@ -16,7 +16,10 @@ import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
-import { GoogleIdTokenVerifier } from './google-id-token.verifier';
+import {
+  GoogleIdTokenVerifier,
+  type GoogleIdentity,
+} from './google-id-token.verifier';
 import { User } from '../users/entities/user.entity';
 import { RefreshSession } from './entities/refresh-session.entity';
 import { PasswordReset } from './entities/password-reset.entity';
@@ -193,7 +196,14 @@ export class AuthService {
   //     but only once the page has sent a phone number. Until then the answer
   //     is `needsPhone` with what Google told us, and no session is issued.
   async googleSignIn(dto: GoogleAuthDto, userAgent?: string) {
-    const identity = await this.googleVerifier.verify(dto.credential);
+    let identity: GoogleIdentity;
+    if (dto.accessToken) {
+      identity = await this.googleVerifier.verifyAccessToken(dto.accessToken);
+    } else if (dto.credential) {
+      identity = await this.googleVerifier.verify(dto.credential);
+    } else {
+      throw new BadRequestException('Немає токена Google');
+    }
 
     let user = await this.usersService.findByGoogleId(identity.sub);
 

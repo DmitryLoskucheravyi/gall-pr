@@ -12,7 +12,7 @@ import type { GoogleProfile } from '../../types/auth.types';
 import styles from './AuthPanel.module.scss';
 
 export type PendingGoogleSignUp = {
-  credential: string;
+  accessToken: string;
   profile: GoogleProfile;
 };
 
@@ -34,16 +34,16 @@ export function GoogleAuthSection({ mode, onNeedsPhone }: SectionProps) {
 
   if (!isGoogleAuthEnabled) return null;
 
-  const handleCredential = async (credential: string) => {
+  const handleAccessToken = async (accessToken: string) => {
     if (busy) return;
     setError(null);
 
     try {
       setBusy(true);
-      const result = await authService.google({ credential });
+      const result = await authService.google({ accessToken });
 
       if ('needsPhone' in result) {
-        onNeedsPhone({ credential, profile: result.profile });
+        onNeedsPhone({ accessToken, profile: result.profile });
         return;
       }
 
@@ -63,7 +63,7 @@ export function GoogleAuthSection({ mode, onNeedsPhone }: SectionProps) {
 
       <GoogleButton
         mode={mode}
-        onCredential={handleCredential}
+        onAccessToken={handleAccessToken}
         disabled={busy}
       />
 
@@ -100,7 +100,7 @@ export function GoogleCompleteForm({ pending, onCancel }: CompleteProps) {
     try {
       setLoading(true);
       const result = await authService.google({
-        credential: pending.credential,
+        accessToken: pending.accessToken,
         phone,
         firstName,
         lastName,
