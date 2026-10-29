@@ -126,6 +126,15 @@ const nextConfig: NextConfig = {
           // invisible overlay on the "buy" button.
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Google's sign-in popup reports back to this page with
+          // postMessage. Without an explicit policy Chrome warns that a
+          // stricter one would block it; allow-popups keeps the page isolated
+          // from anything that opens it while letting the popups it opens
+          // talk back. Google's own recommendation for the GIS button.
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',

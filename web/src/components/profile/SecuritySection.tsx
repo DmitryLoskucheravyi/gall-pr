@@ -149,6 +149,17 @@ export default function SecuritySection() {
           </h3>
 
           <form onSubmit={handleSubmit} className={styles.form}>
+            {/* Hidden, for the password manager: it saves the new password
+                against this account's email rather than against nothing. */}
+            <input
+              type="email"
+              name="username"
+              autoComplete="username"
+              value={user?.email ?? ''}
+              readOnly
+              hidden
+            />
+
             {hasPassword ? (
               <label className={styles.field}>
                 <span className={styles.label}>

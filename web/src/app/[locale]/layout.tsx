@@ -49,6 +49,9 @@ export const metadata: Metadata = {
     images: [{ url: '/og-cover.jpg', width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image' },
+  // Declared, so the browser stops guessing /favicon.ico — which doesn't
+  // exist and answered every page load with a 404.
+  icons: { icon: { url: '/favicon.svg', type: 'image/svg+xml' } },
   // Google Search Console's ownership check. Next renders the meta tag only
   // when the token is set, so nothing appears until the property is actually
   // claimed — and the token itself stays out of the repository.
