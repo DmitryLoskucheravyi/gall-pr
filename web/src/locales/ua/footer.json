@@ -2,7 +2,8 @@
   "columns": {
     "navigation": "Навігація",
     "account": "Кабінет",
-    "help": "Допомога"
+    "help": "Допомога",
+    "documents": "Документи"
   },
   "nav": {
     "home": "Головна",

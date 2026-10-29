@@ -1,7 +1,7 @@
 .card {
   position: relative;
   overflow: hidden;
-  border-radius: $radius-md;
+  border-radius: $radius-card;
   background-color: var(--color-background-alt);
   transition:
     transform 0.35s $ease-out,

@@ -48,7 +48,7 @@
   position: relative;
   width: 100%;
   margin: auto 0 0;
-  border-radius: $radius-xl $radius-xl 0 0;
+  border-radius: $radius-card $radius-card 0 0;
   background-color: var(--color-surface);
   padding: $spacing-xl $spacing-lg max(#{$spacing-xl}, env(safe-area-inset-bottom));
   box-shadow: var(--shadow-lg);
@@ -56,7 +56,7 @@
   @include respond-up($breakpoint-md) {
     max-width: 980px;
     margin: auto 0;
-    border-radius: $radius-xl;
+    border-radius: $radius-card;
     padding: 0;
     overflow: hidden;
   }
@@ -125,7 +125,7 @@
 .work {
   margin: 0;
   overflow: hidden;
-  border-radius: $radius-md;
+  border-radius: $radius-card;
   aspect-ratio: 1;
   background-color: var(--color-background-alt);
 

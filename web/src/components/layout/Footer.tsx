@@ -6,6 +6,8 @@ import { useAuthorName, useSupportTelegramUrl } from '../../hooks/queries/useSet
 import { openCookieSettings } from '../../lib/consent';
 import { useAppSelector } from '../../store/hooks';
 import { safeExternalUrl } from '../../utils/safeUrl';
+import BrandLockup from '../ui/BrandLockup';
+import { useInView } from '../../hooks/useInView';
 import styles from './Footer.module.scss';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -25,6 +27,7 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
   const supportTelegramUrl = useSupportTelegramUrl();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const year = new Date().getFullYear();
+  const { ref: logoRef, inView: logoInView } = useInView<HTMLAnchorElement>(0.6);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -36,8 +39,15 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
         {/* Logo on one side, the way on to the next page (if there is one —
             see useScrollContinue) on the other, opposite it. */}
         <div className={styles.top}>
-          <Link to="/" className={styles.logo}>
-            <span className={styles.wordmark}>Viktorumm</span>
+          <Link
+            ref={logoRef}
+            to="/"
+            className={styles.logo}
+            aria-label="Viktorumm art"
+          >
+            {/* Straight on the footer's ground, in its cream, and written
+                in when the footer comes into view. */}
+            <BrandLockup className={styles.logoImage} play={logoInView} />
           </Link>
 
           {continueTo && (
@@ -69,6 +79,21 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
         </div>
 
         <div className={styles.main}>
+          <div className={styles.info}>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>{t('info.paymentLabel')}</span>
+              <span className={styles.infoValue}>{t('info.paymentValue')}</span>
+            </div>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>{t('info.deliveryLabel')}</span>
+              <span className={styles.infoValue}>{t('info.deliveryValue')}</span>
+            </div>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>{t('info.guaranteeLabel')}</span>
+              <span className={styles.infoValue}>{t('info.guaranteeValue')}</span>
+            </div>
+          </div>
+
           <div className={styles.links}>
             <nav className={styles.column}>
               <h3 className={styles.columnTitle}>{t('columns.navigation')}</h3>
@@ -97,6 +122,16 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
               <NavLink to="/profile" className={linkClass}>
                 {t('nav.profile')}
               </NavLink>
+              {!isAuthenticated && (
+                <>
+                  <NavLink to="/login" className={linkClass}>
+                    {t('nav.login')}
+                  </NavLink>
+                  <NavLink to="/register" className={linkClass}>
+                    {t('nav.register')}
+                  </NavLink>
+                </>
+              )}
             </nav>
 
             <nav className={styles.column}>
@@ -120,6 +155,12 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
               <NavLink to="/returns" className={linkClass}>
                 {t('nav.returns')}
               </NavLink>
+            </nav>
+
+            {/* The legal pages on their own: help was twice as long as the
+                other columns, which is what left the row so empty. */}
+            <nav className={styles.column}>
+              <h3 className={styles.columnTitle}>{t('columns.documents')}</h3>
               <NavLink to="/offer" className={linkClass}>
                 {t('nav.offer')}
               </NavLink>
@@ -133,32 +174,7 @@ export default function Footer({ continueTo, continueProgress = 0 }: Props) {
               >
                 {t('nav.cookieSettings')}
               </button>
-              {!isAuthenticated && (
-                <>
-                  <NavLink to="/login" className={linkClass}>
-                    {t('nav.login')}
-                  </NavLink>
-                  <NavLink to="/register" className={linkClass}>
-                    {t('nav.register')}
-                  </NavLink>
-                </>
-              )}
             </nav>
-          </div>
-        </div>
-
-        <div className={styles.info}>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>{t('info.paymentLabel')}</span>
-            <span className={styles.infoValue}>{t('info.paymentValue')}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>{t('info.deliveryLabel')}</span>
-            <span className={styles.infoValue}>{t('info.deliveryValue')}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>{t('info.guaranteeLabel')}</span>
-            <span className={styles.infoValue}>{t('info.guaranteeValue')}</span>
           </div>
         </div>
 

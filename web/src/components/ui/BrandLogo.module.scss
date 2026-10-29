@@ -1,0 +1,16 @@
+// Ink is whatever colour the surrounding text is — see BrandLogo.tsx.
+.logo {
+  display: block;
+  flex: none;
+  max-width: 100%;
+  background-color: currentColor;
+  -webkit-mask: var(--logo-src) center / contain no-repeat;
+  mask: var(--logo-src) center / contain no-repeat;
+
+  // Windows High Contrast drops background colours, which would erase a
+  // mask-painted logo entirely; CanvasText keeps it visible.
+  @media (forced-colors: active) {
+    background-color: CanvasText;
+    forced-color-adjust: none;
+  }
+}

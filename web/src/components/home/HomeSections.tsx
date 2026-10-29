@@ -17,8 +17,8 @@ const STEPS = ['choose', 'order', 'pay', 'receive'] as const;
 
 export function HomeHowToBuy() {
   const { t } = useTranslation('home');
-  // One trigger for the whole row: the cards deal out together, each from
-  // under the one before it, so they must share a moment to start from.
+  // One trigger for the whole row: the line is drawn through all four steps
+  // in one stroke, so they must share a moment to start from.
   const { ref, inView } = useInView<HTMLOListElement>();
 
   return (
@@ -37,11 +37,14 @@ export function HomeHowToBuy() {
             className={styles.step}
             style={{ '--i': index } as CSSProperties}
           >
-            {/* The numeral is drawn, not set: an outline as tall as the
-                card, behind its text. Decorative — the list already counts. */}
-            <span className={styles.stepNumber} aria-hidden="true">
-              {String(index + 1).padStart(2, '0')}
-            </span>
+            {/* Numeral and rule: a timeline read left to right. Decorative —
+                the <ol> already counts for assistive tech. */}
+            <div className={styles.stepHead} aria-hidden="true">
+              <span className={styles.stepNumber}>
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span className={styles.stepRule} />
+            </div>
             <h3 className={styles.stepTitle}>{t(`howToBuy.steps.${step}.title`)}</h3>
             <p className={styles.stepText}>{t(`howToBuy.steps.${step}.text`)}</p>
           </li>

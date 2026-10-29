@@ -27,6 +27,11 @@
   width: 100%;
   max-width: $container-max-width;
   flex: 1;
+  // At least a screen below the header, so the footer never rides up under
+  // a short page — an empty cart or favourites list used to end with the
+  // footer filling the bottom half of the first screen. --header-height is
+  // written by Header itself, and tracks it as it resizes.
+  min-height: calc(100dvh - var(--header-height, 80px));
   padding: $spacing-xxxxl $container-padding;
 }
 

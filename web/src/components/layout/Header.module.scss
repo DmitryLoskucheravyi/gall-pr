@@ -61,20 +61,51 @@
 }
 
 .logo {
+  display: block;
   line-height: 1;
+  color: var(--color-text);
 }
 
-.wordmark {
-  font-family: $font-display;
-  font-weight: 700;
-  font-size: 28px;
-  letter-spacing: 0.01em;
-  color: var(--color-text);
+// The artwork is tall for its text — the figure is the "V" — so it needs more
+// height than the 28px type it replaced for the letters to read.
+.logoImage {
+  height: 40px;
 
-  &::after {
-    content: '.';
-    color: var(--color-accent-text);
+  @include respond-up($breakpoint-md) {
+    height: 48px;
   }
+}
+
+// Which logo shows is decided here, against the components' own `display`
+// (BrandLogo is a block, BrandLockup an inline-flex) — hence the extra class
+// of specificity: at equal weight the order the stylesheets load in wins,
+// and that order is not this file's to choose.
+.logo .logoImage {
+  @include respond-up($breakpoint-lg) {
+    display: none;
+  }
+}
+
+.logo .logoDesktop {
+  display: none;
+
+  @include respond-up($breakpoint-lg) {
+    display: inline-flex;
+  }
+}
+
+.compact .logoDesktop {
+  --height: 38px;
+}
+
+.compact .logoImage {
+  height: 38px;
+}
+
+// A mask takes no text-shadow; the glyphs over the hero get the same lift
+// the links and icons beside them do.
+.header[data-over-hero] :is(.logoImage, .logoDesktop) {
+  filter: drop-shadow(0 1px 6px rgb(0 0 0 / 40%));
 }
 
 .nav {
@@ -199,8 +230,6 @@
 }
 
 .drawerBrand {
-  font-family: $font-display;
-  font-size: 22px;
   color: var(--color-text);
 }
 
@@ -498,7 +527,7 @@
   flex-direction: column;
   gap: 2px;
   border: 1px solid var(--color-border);
-  border-radius: $radius-lg;
+  border-radius: $radius-card;
   background-color: var(--color-surface);
   padding: $spacing-sm;
   box-shadow: var(--shadow-lg);
@@ -539,31 +568,23 @@
 }
 
 .userGroup {
-  display: flex;
-  align-items: center;
-  gap: $spacing-lg;
-}
-
-.cartButton {
   position: relative;
   display: flex;
-  height: 34px;
-  width: 34px;
   align-items: center;
-  justify-content: center;
-  color: var(--color-text-secondary);
-  transition:
-    color 0.2s ease,
-    transform 0.3s $ease-spring;
+}
 
-  svg {
-    height: 21px;
-    width: 21px;
-  }
+// Last in the row, at the header's edge, and the only icon with its name beside it:
+// the cart is where a visit is meant to end up.
+.cartButton {
+  display: flex;
+  height: 34px;
+  align-items: center;
+  gap: $spacing-sm;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
 
   &:hover {
     color: var(--color-text);
-    transform: translateY(-1px);
   }
 
   &.active {
@@ -571,8 +592,44 @@
   }
 }
 
+// The icon's own box — the badge and the vines are placed against it, and
+// the add-to-cart flight aims at it (data-cart-target).
+.cartIcon {
+  position: relative;
+  display: flex;
+  height: 34px;
+  width: 34px;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s $ease-spring;
+
+
+  .cartButton:hover & {
+    transform: translateY(-1px);
+  }
+}
+
+.cartGlyph {
+  display: flex;
+
+  svg {
+    height: 21px;
+    width: 21px;
+  }
+}
+
+.cartLabel {
+  // Room for the right-hand branch when the vines grow.
+  margin-left: 2px;
+  font-family: $font-accent;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
 .cartBadge {
   position: absolute;
+  z-index: 1;
   top: -2px;
   right: -6px;
   display: flex;
@@ -658,30 +715,65 @@
   }
 }
 
+// Log out lives under the profile icon now, not beside it: one fewer icon in
+// the row, and a destructive action no longer a stray click away. The menu
+// opens on hover and on keyboard focus anywhere in the group.
+.userMenu {
+  position: absolute;
+  top: 100%;
+  right: -$spacing-sm;
+  z-index: 10;
+  // The gap between icon and panel is padding, not margin, so the pointer
+  // crossing it never leaves the group and the menu stays open.
+  padding-top: $spacing-sm;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s $ease-out,
+    visibility 0s linear 0.22s;
+
+  .userGroup:hover &,
+  .userGroup:focus-within & {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.18s ease,
+      transform 0.22s $ease-out,
+      visibility 0s;
+  }
+}
+
 .logoutButton {
   display: flex;
-  height: 34px;
-  width: 34px;
   align-items: center;
-  justify-content: center;
+  gap: $spacing-sm;
+  min-width: 140px;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-card;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  white-space: nowrap;
   color: var(--color-error);
   cursor: pointer;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+  // The header over the hero lightens every --color-*; the menu is a solid
+  // surface, so it keeps the shadow off its text.
+  text-shadow: none;
+  transition: background-color 0.2s ease;
 
   svg {
-    height: 19px;
-    width: 19px;
+    flex: none;
+    height: 18px;
+    width: 18px;
+    filter: none;
   }
 
   &:hover {
-    opacity: 0.8;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
+    background-color: color-mix(in srgb, var(--color-surface) 92%, var(--color-text));
   }
 }
 

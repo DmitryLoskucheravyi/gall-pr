@@ -64,27 +64,8 @@
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-}
-
-.logo {
-  display: block;
-  width: 28px;
-  height: 28px;
-}
-
-// Same wordmark as the header, scaled down.
-.wordmark {
-  font-family: $font-display;
-  font-weight: 700;
-  font-size: 1.3rem;
-  line-height: 1;
-  letter-spacing: 0.01em;
+  // The logo is a mask filled with currentColor — see ui/BrandLogo.
   color: var(--color-text);
-
-  &::after {
-    content: '.';
-    color: var(--color-accent-text);
-  }
 }
 
 .text {
@@ -248,7 +229,7 @@
 
 .categories {
   border: 1px solid var(--color-border);
-  border-radius: $radius-md;
+  border-radius: $radius-card;
 }
 
 .category + .category {

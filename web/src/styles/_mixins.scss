@@ -190,7 +190,7 @@
 }
 
 @mixin card {
-  border-radius: $radius-lg;
+  border-radius: $radius-card;
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
   box-shadow: var(--shadow-sm);

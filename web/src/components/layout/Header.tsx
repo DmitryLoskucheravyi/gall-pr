@@ -22,6 +22,9 @@ import styles from './Header.module.scss';
 import { useSettings } from '../../hooks/queries/useSettings';
 import { safeExternalUrl } from '../../utils/safeUrl';
 import { openCookieSettings } from '../../lib/consent';
+import BrandLogo from '../ui/BrandLogo';
+import CartVines from './CartVines';
+import BrandLockup from '../ui/BrandLockup';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `${styles.navLink} ${isActive ? styles.active : ''}`;
@@ -333,8 +336,9 @@ export default function Header({ compact = false }: Props) {
       data-over-hero={overHero || undefined}
     >
       <div className={styles.inner}>
-        <Link to="/" className={styles.logo}>
-          <span className={styles.wordmark}>Viktorumm</span>
+        <Link to="/" className={styles.logo} aria-label="Viktorumm art">
+          <BrandLockup className={styles.logoDesktop} />
+          <BrandLogo variant="wordmark" className={styles.logoImage} />
         </Link>
 
         <nav className={styles.nav}>
@@ -443,21 +447,9 @@ export default function Header({ compact = false }: Props) {
             {otherLocale.toUpperCase()}
           </button>
 
-          <NavLink
-            to="/cart"
-            data-cart-target
-            aria-label={t('cartAria')}
-            className={({ isActive }) =>
-              `${styles.cartButton} ${isActive ? styles.active : ''}`
-            }
-          >
-            {cartIcon}
-            {cartCount > 0 && (
-              <span className={styles.cartBadge}>{cartCount}</span>
-            )}
-          </NavLink>
-
           {!authKnown ? null : user ? (
+            // The menu opens on hover and on keyboard focus (focus-within), so
+            // a Tab from the profile icon lands on "log out" and reveals it.
             <div className={styles.userGroup}>
               <NavLink
                 to="/profile"
@@ -468,9 +460,9 @@ export default function Header({ compact = false }: Props) {
               >
                 {profileIcon}
               </NavLink>
+              <div className={styles.userMenu}>
               <button
                 onClick={handleLogout}
-                aria-label={t('logoutAria')}
                 className={styles.logoutButton}
               >
                 <svg viewBox="0 0 24 24" fill="none">
@@ -489,13 +481,37 @@ export default function Header({ compact = false }: Props) {
                     strokeLinejoin="round"
                   />
                 </svg>
+                <span>{t('nav.logout')}</span>
               </button>
+              </div>
             </div>
           ) : (
             <NavLink to="/login" className={navLinkClass}>
               {t('nav.login')}
             </NavLink>
           )}
+
+          {/* Last, at the header's edge: the cart is where a visit is meant
+              to end, so it closes the row. */}
+          <NavLink
+            to="/cart"
+            aria-label={t('cartAria')}
+            className={({ isActive }) =>
+              `${styles.cartButton} ${isActive ? styles.active : ''}`
+            }
+          >
+            {/* data-cart-target sits on the icon, not the link: the flying
+                thumbnail from "add to cart" aims at it, and the link is now
+                wider than the icon by the width of its label. */}
+            <span className={styles.cartIcon} data-cart-target>
+              <CartVines />
+              <span className={styles.cartGlyph}>{cartIcon}</span>
+              {cartCount > 0 && (
+                <span className={styles.cartBadge}>{cartCount}</span>
+              )}
+            </span>
+            <span className={styles.cartLabel}>{t('nav.cart')}</span>
+          </NavLink>
         </nav>
 
         <div className={styles.mobileActions}>
@@ -596,7 +612,7 @@ export default function Header({ compact = false }: Props) {
             />
             <nav className={styles.mobilePanel} aria-label={t('menuOpen')}>
               <div className={styles.drawerHead}>
-                <span className={styles.drawerBrand}>Viktorumm.</span>
+                <BrandLogo variant="lockup" height={44} className={styles.drawerBrand} />
                 <button
                   type="button"
                   className={styles.drawerClose}

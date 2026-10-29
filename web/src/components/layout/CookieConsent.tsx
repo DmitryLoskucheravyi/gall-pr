@@ -9,6 +9,7 @@ import {
   writeConsent,
 } from '../../lib/consent';
 import { LocalizedLink as Link } from '../ui/LocalizedLink';
+import BrandLogo from '../ui/BrandLogo';
 import styles from './CookieConsent.module.scss';
 
 // The cookie banner and the settings panel it opens.
@@ -79,8 +80,7 @@ export default function CookieConsent() {
         >
           <div className={styles.card}>
             <div className={styles.brand}>
-              <img src="/favicon.svg" alt="" className={styles.logo} />
-              <span className={styles.wordmark}>Viktorumm</span>
+              <BrandLogo variant="wordmark" height={34} />
             </div>
 
             <p className={styles.text}>

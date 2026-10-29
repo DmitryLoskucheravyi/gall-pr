@@ -51,7 +51,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: $radius-lg;
+  border-radius: $radius-card;
   border: 1px solid var(--color-border);
   background-color: var(--color-background-alt);
   padding: $spacing-xxl;
@@ -183,7 +183,7 @@
 
   position: relative;
   overflow: hidden;
-  border-radius: $radius-xl;
+  border-radius: $radius-card;
   background-color: var(--panel);
   color: var(--panel-ink);
   box-shadow: var(--shadow-md);
@@ -334,7 +334,7 @@
   align-items: center;
   justify-content: center;
   gap: $spacing-sm;
-  border-radius: $radius-md;
+  border-radius: $radius-card;
   border: 1px solid rgba(168, 187, 146, 0.45);
   padding: $spacing-md;
   font-size: 14px;
@@ -395,12 +395,12 @@
 
 .frameSkeleton {
   aspect-ratio: 4 / 3;
-  border-radius: $radius-lg;
+  border-radius: $radius-card;
   background-color: var(--color-background-alt);
 }
 
 .sideSkeleton {
   height: 340px;
-  border-radius: $radius-xl;
+  border-radius: $radius-card;
   background-color: var(--color-background-alt);
 }

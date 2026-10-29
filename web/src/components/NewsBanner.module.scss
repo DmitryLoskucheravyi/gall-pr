@@ -200,7 +200,7 @@
   position: relative;
   margin: 0;
   overflow: hidden;
-  border-radius: $radius-lg;
+  border-radius: $radius-card;
   aspect-ratio: 4 / 3;
   background-color: rgb(0 0 0 / 14%);
 
@@ -213,7 +213,7 @@
     grid-row: 1 / -1;
     margin-block: calc(-1 * var(--pad-y));
     margin-right: calc(50% - 50vw);
-    border-radius: $radius-lg 0 0 $radius-lg;
+    border-radius: $radius-card 0 0 $radius-card;
     aspect-ratio: auto;
     align-self: stretch;
     min-height: 320px;
@@ -455,7 +455,7 @@
   margin: 0;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: $radius-md;
+  border-radius: $radius-card;
   background-color: rgb(0 0 0 / 12%);
 }
 

@@ -61,7 +61,14 @@ export default function Slider({ children, label, className, bleed = false }: Pr
     const max = track.scrollWidth - track.clientWidth;
     // A pixel of tolerance: snapping and subpixel layout leave the ends a
     // fraction short of 0 and max.
-    const pages = max > 1 ? Math.ceil(track.scrollWidth / track.clientWidth - 0.05) : 1;
+    //
+    // A track with no width yet (hidden, or not laid out) would divide by
+    // zero: Infinity pages, and Array.from({ length: Infinity }) throws, which
+    // took the whole reviews section down. It is one page until it has a size.
+    const pages =
+      max > 1 && track.clientWidth > 0
+        ? Math.min(Math.ceil(track.scrollWidth / track.clientWidth - 0.05), 50)
+        : 1;
     const page = max > 1 ? Math.round((track.scrollLeft / max) * (pages - 1)) : 0;
     const next: View = {
       prev: track.scrollLeft > 1,

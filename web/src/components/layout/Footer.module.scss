@@ -64,39 +64,59 @@
 
 // ---------- Main: brand + link columns ----------
 
+// Phones: links first, the facts under them. Desktop: the facts as a column
+// on the left and the four link columns after it, all five at their own
+// widths and evenly spaced — three stretched columns of short lists left
+// most of the row empty.
 .main {
   display: grid;
   grid-template-columns: 1fr;
   gap: $spacing-huge $spacing-xxxl;
   padding-bottom: $spacing-huge;
-}
 
-.logo {
-  line-height: 1;
-}
-
-.wordmark {
-  font-family: $font-display;
-  font-weight: 700;
-  font-size: 34px;
-  letter-spacing: 0.01em;
-  color: #f8f6f0;
-
-  &::after {
-    content: '.';
-    color: var(--color-accent-text);
+  @include respond-up($breakpoint-lg) {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    column-gap: 120px;
   }
 }
 
-// Link columns: 2-up on phones (compact, no tall single stack),
-// 3-up once there is room.
+.logo {
+  display: block;
+  width: fit-content;
+  line-height: 1;
+  color: #f8f6f0;
+}
+
+// A little larger than the header's, and no larger: the lettering is a
+// 27px-tall cut of the artwork, and past about 60px of logo it is being
+// enlarged and goes soft.
+.logoImage {
+  --height: 52px;
+
+  @include respond-up($breakpoint-md) {
+    --height: 60px;
+  }
+}
+
+// Link columns: 2-up on phones (compact, no tall single stack), 4-up from
+// tablets, and on desktop sized to their content with a fixed gap rather
+// than stretched to fill the row.
 .links {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: $spacing-xxxl $spacing-lg;
 
-  @include respond-up($breakpoint-sm) {
-    grid-template-columns: repeat(3, 1fr);
+  @include respond-up($breakpoint-md) {
+    grid-template-columns: repeat(4, auto);
+    justify-content: space-between;
+  }
+
+  // Even spacing from the facts on the left to the last column on the right:
+  // gathering the columns at one end only moved the empty space to the
+  // middle.
+  @include respond-up($breakpoint-lg) {
+    justify-content: space-between;
   }
 }
 
@@ -106,23 +126,6 @@
   align-items: flex-start;
   gap: $spacing-md;
   min-width: 0;
-
-  // On a phone the third column would sit alone in the left half of a second
-  // row, a long list hugging one edge. It takes the whole row instead, with
-  // its own links in two columns.
-  &:nth-child(3) {
-    @media (max-width: #{$breakpoint-sm - 1px}) {
-      display: grid;
-      grid-column: 1 / -1;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-      gap: $spacing-md $spacing-lg;
-
-      > :first-child {
-        grid-column: 1 / -1;
-      }
-    }
-  }
 }
 
 .columnTitle {
@@ -167,16 +170,26 @@
 // ---------- Info strip: payment / delivery / guarantee ----------
 
 .info {
+  order: 2;
   display: grid;
   // Two up on a phone rather than one long column of short facts.
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $spacing-lg;
   border-top: 1px solid rgba(237, 234, 226, 0.14);
-  padding: $spacing-xxl 0;
+  padding-top: $spacing-xxl;
 
   @include respond-up($breakpoint-sm) {
     grid-template-columns: repeat(3, 1fr);
     gap: $spacing-xxl;
+  }
+
+  // Desktop: a stacked column beside the links, no rule of its own.
+  @include respond-up($breakpoint-lg) {
+    order: 0;
+    grid-template-columns: 1fr;
+    gap: $spacing-xl;
+    border-top: 0;
+    padding-top: 0;
   }
 }
 

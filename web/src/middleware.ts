@@ -30,6 +30,6 @@ export const config = {
   // needs the backslash doubled: a single one is eaten by the string literal
   // and never reaches the pattern.
   matcher: [
-    '/((?!_next/static|_next/image|favicon[.]svg|og-cover[.]jpg|robots[.]txt|sitemap[.]xml|.*[.](?:mp4|jpg|jpeg|png|webp|svg|ico|txt|xml|woff2?)$).*)',
+    '/((?!_next/static|_next/image|favicon[.]ico|manifest[.]webmanifest|og-cover[.]jpg|robots[.]txt|sitemap[.]xml|.*[.](?:mp4|jpg|jpeg|png|webp|svg|ico|txt|xml|woff2?)$).*)',
   ],
 };

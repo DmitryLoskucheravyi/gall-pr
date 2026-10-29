@@ -2,7 +2,8 @@
   "columns": {
     "navigation": "Navigation",
     "account": "Account",
-    "help": "Help"
+    "help": "Help",
+    "documents": "Documents"
   },
   "nav": {
     "home": "Home",

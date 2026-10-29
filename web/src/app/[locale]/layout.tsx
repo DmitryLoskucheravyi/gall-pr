@@ -31,6 +31,12 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // The mobile browser's own bar, matched to the page behind it so the
+  // screen reads as one surface — global.scss's --color-background per theme.
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#eee9e4' },
+    { media: '(prefers-color-scheme: dark)', color: '#1b1a17' },
+  ],
 };
 
 export const metadata: Metadata = {
@@ -49,9 +55,20 @@ export const metadata: Metadata = {
     images: [{ url: '/og-cover.jpg', width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image' },
-  // Declared, so the browser stops guessing /favicon.ico — which doesn't
-  // exist and answered every page load with a 404.
-  icons: { icon: { url: '/favicon.svg', type: 'image/svg+xml' } },
+  // The figure from the logo, cream on the shop's burgundy. Generated from
+  // design/logo/ along with the rest of public/brand/. The .ico is what tabs,
+  // bookmarks and anything still asking for /favicon.ico get; the PNG is the
+  // sharper choice where a browser takes one; apple-touch-icon is the
+  // home-screen icon on iOS, which doesn't read the manifest.
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      { url: '/brand/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: { url: '/brand/apple-touch-icon.png', sizes: '180x180' },
+  },
+  manifest: '/manifest.webmanifest',
   // Google Search Console's ownership check. Next renders the meta tag only
   // when the token is set, so nothing appears until the property is actually
   // claimed — and the token itself stays out of the repository.

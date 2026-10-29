@@ -30,19 +30,19 @@
     "steps": {
       "choose": {
         "title": "Choose a work",
-        "text": "Browse the catalogue or the gallery. Every painting’s page lists its size and technique, and many show it hanging in a room."
+        "text": "Size, technique and room photos on every painting’s page."
       },
       "order": {
         "title": "Place an order",
-        "text": "Add the painting to your cart and enter delivery details. No account needed."
+        "text": "Your cart and a delivery address. No account needed."
       },
       "pay": {
         "title": "Pay on delivery",
-        "text": "Cash on delivery: you pay at the post office once the painting is in your hands."
+        "text": "Cash on delivery, once the painting is in your hands."
       },
       "receive": {
         "title": "Collect it from Nova Poshta",
-        "text": "Follow the order status on the site or in our Telegram bot."
+        "text": "Track it on the site or in our Telegram bot."
       }
     }
   },
